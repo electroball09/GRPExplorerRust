@@ -17,7 +17,7 @@ fn main() {
 
     let mut bigfile = Bigfile::<BigfileIOPacked>::new(path).expect("oh no why?");
     bigfile.load_metadata().expect("oh no!");
-    dbg!(&bigfile);
+    // println!("{:?}", &bigfile);
 }
 
 pub mod consts {
