@@ -1,0 +1,256 @@
+#[allow(dead_code)]
+
+use std::io::{Read, Seek, SeekFrom};
+use std::{ffi::CString};
+use byteorder::{ReadBytesExt, LittleEndian};
+
+pub fn seek_to_bigfile_header(reader: &mut impl Seek, seg_header: &SegmentHeader) -> Result<u64, std::io::Error> {
+    reader.seek(SeekFrom::Start(seg_header.header_offset.into()))
+}
+
+#[derive(Debug, Default)]
+pub struct SegmentHeader {
+    pub sig: [u8; 4],
+    pub segment: u8,
+    pub num_segments: u8,
+    pub unk01: u16,
+    pub unk02: u32,
+    pub unk03: u32,
+    pub header_offset: u32,
+    pub unk04: [u8; 28],
+}
+
+impl SegmentHeader {
+    pub fn read_from(read: &mut impl Read) -> Result<SegmentHeader, &'static str> {
+        let mut header = SegmentHeader::default();
+
+        if read.read(&mut header.sig).expect("error reading signature!") != 4 {
+            return Err("could not read header correctly!");
+        }
+
+        header.segment = read.read_u8().unwrap();
+        header.num_segments = read.read_u8().unwrap();
+        header.unk01 = read.read_u16::<LittleEndian>().unwrap();
+        header.unk02 = read.read_u32::<LittleEndian>().unwrap();
+        header.unk03 = read.read_u32::<LittleEndian>().unwrap();
+        header.header_offset = read.read_u32::<LittleEndian>().unwrap();
+
+        header.verify_integrity()?;
+
+        Ok(header)
+    }
+
+    pub fn verify_integrity(&self) -> Result<(), &'static str> {
+        if self.sig[0] != b'Y'
+            || self.sig[1] != b'B'
+            || self.sig[2] != b'I'
+            || self.sig[3] != b'G' {
+            return Err("signature invalid!");
+        }
+
+        if self.segment == 0 || self.num_segments == 0 
+            || self.segment > self.num_segments {
+            return Err("segment counts invalid!");
+        }
+
+        if self.header_offset < 48 {
+            return Err("header offset too small! (<48)")
+        }
+
+        if self.header_offset > 163840 {
+            return Err("header offset too large! (>163840)");
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct BigfileHeader {
+    pub version: i16,
+    pub num_folders: i16,
+    pub num_files: i32,
+    pub unk01: [u8; 30],
+    pub unk02: [u8; 30],
+    pub unk03: [u8; 30],
+    pub unk04: [u8; 30]
+}
+
+#[derive(Debug, Default)]
+pub struct FolderEntry {
+    pub unk01: i16,
+    pub unk02: i16,
+    pub previous_folder: i16,
+    pub next_folder: i16,
+    pub unk03: i16,
+    pub name: CString
+}
+
+#[derive(Debug, Default)]
+pub struct FileEntry {
+    pub offset: i32,
+    pub key: i32,
+    pub unk01: i32,
+    pub object_type: ObjectType,
+    pub parent_folder: i16,
+    pub timestamp: i32,
+    pub flags: i32,
+    pub unk02: i32,
+    pub crc: [u8; 4],
+    pub name: CString,
+    pub unk03: i32,
+    pub zip: i32
+}
+
+#[allow(non_camel_case_types)]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default)]
+pub enum ObjectType {
+    #[default]
+    null = 0,
+    ini = 0x0001, //yeti - ini file
+    __1 = 0x0002,
+    dup = 0x0003, //duplicate files
+    wor = 0x0004, //world - world
+    wot = 0x0005,
+    woc = 0x0006, //world - engine config
+    gol = 0x0007, //world - game object list
+    ioi = 0x0008,
+    wal = 0x0009, //world - way list
+    lay = 0x000A,
+    rec = 0x000B,
+    rsy = 0x000C,
+    gao = 0x000D, //object - game object
+    way = 0x000E, //way - way
+    nas = 0x000F,
+    cur = 0x0010, //curve - curve
+    wel = 0x0011, //way - exernal link
+    gtm = 0x0012,
+    seq = 0x0013, //sequence - sequence
+    cov = 0x0014, //cover -  covers manager
+    vgl = 0x0015,
+    vgc = 0x0016,
+    vgg = 0x0017,
+    ssq = 0x0018, //sequence - ???
+    got = 0x0019, //object - graphic object table
+    __2 = 0x001A,
+    msh = 0x001B, //visual - mesh metadata
+    vxc = 0x001C, //visual - something about vertex buffer ???
+    vxt = 0x001D,
+    mat = 0x001E, //visual - material/shader
+    sha = 0x001F, //visual - shader
+    tga = 0x0020, //visual - texture metadata
+    txs = 0x0021,
+    __3 = 0x0022,
+    ske = 0x0023,
+    sfx = 0x0024,
+    vid = 0x0025,
+    shd = 0x0026, //visual - visual shader (probably a shader graph or something)
+    she = 0x0027,
+    dst = 0x0028, //visual - dustfx
+    cub = 0x0029, //visual - cubemap light
+    zc_ = 0x002A, //ai - script file
+    tes = 0x002B,
+    tsc = 0x002C,
+    mgm = 0x002D,
+    mgb = 0x002E,
+    mft = 0x002F,
+    acb = 0x0030, //animation - action bank
+    act = 0x0031, //animation - action
+    ani = 0x0032, //animation - animation
+    aev = 0x0033, //animation - animation events
+    snk = 0x0034, //sound - sound bank
+    __4 = 0x0035,
+    __5 = 0x0036,
+    __6 = 0x0037,
+    __7 = 0x0038,
+    __8 = 0x0039,
+    __9 = 0x003A,
+    _1_ = 0x003B,
+    end = 0x003C, //?? - enumerable descriptor
+    sam = 0x003D, //sound - ambience
+    sin = 0x003E, //sound - config
+    smx = 0x003F, //sound - sound mix
+    svs = 0x0040, //sound - volumetric object
+    _2_ = 0x0041,
+    _3_ = 0x0042,
+    _4_ = 0x0043,
+    _5_ = 0x0044,
+    _6_ = 0x0045,
+    _7_ = 0x0046,
+    ai_ = 0x0047, //ai - ai model
+    aid = 0x0048,
+    ste = 0x0049,
+    fcf = 0x004A,
+    var = 0x004B,
+    aiv = 0x004C, //ai - ai variable
+    stt = 0x004D,
+    zar = 0x004E,
+    zon = 0x004F, //zone - zone
+    col = 0x0050, //object - collision ?
+    cot = 0x0051, //object - collision object table
+    gml = 0x0052, //visual - game material list
+    gmt = 0x0053, //visual - game material
+    phs = 0x0054, //object - physics structure ?
+    _8_ = 0x0055,
+    ccm = 0x0056, //object - cooked collision mesh?
+    dbk = 0x0057, //dynamic bank - bank
+    dbl = 0x0058, //dynamic bank - bank list
+    dbr = 0x0059, //dynamic bank - bank element reference list
+    edi = 0x005A,
+    hel = 0x005B,
+    hsl = 0x005C,
+    his = 0x005D,
+    mta = 0x005E,
+    wil = 0x005F, //world - world include list
+    _9_ = 0x0060,
+    ymf = 0x0061,
+    _0_ = 0x0062,
+    fbx = 0x0063,
+    dds = 0x0064,
+    png = 0x0065,
+    bmp = 0x0066,
+    jpg = 0x0067,
+    ppm = 0x0068,
+    grd = 0x0069,
+    dlc = 0x006A, //dlc ?
+    ymt = 0x006B,
+    par = 0x006C,
+    ard = 0x006D,
+    med = 0x006E,
+    lab = 0x006F, //animation - list action-bank
+    feu = 0x0070, //fire - fire package
+    ffd = 0x0071, //fire - fire font package
+    top = 0x0072, //world - datastreaming entity topography
+    msd = 0x0073, //visual - mesh data
+    nav = 0x0074, //world - nav data
+    skp = 0x0075, //skeleton - procedural data ?
+    ago = 0x0076, //visual - dust fx ago ??
+    afx = 0x0077, //visual - ago FX ???
+    abk = 0x0078, //visual - ago FX bank
+    cst = 0x0079, //ai - const list
+    syw = 0x007A, //synapse - ???
+    sym = 0x007B,
+    aer = 0x007C,
+    ghk = 0x007D, //game hook ?
+    txd = 0x007E, //visual - texture data
+    fbk = 0x007F, //fire - fire bank
+    pfx = 0x0080,
+    eps = 0x0081, //ai - dll editable param struct
+    psh = 0x0082,
+    epl = 0x0083, //ai - dll editable param list
+    lgr = 0x0084,
+    acp = 0x0085,
+    ask = 0x0086,
+    swl = 0x0087, //synapse - synapse world list
+    ano = 0x0088, //animation - ano ???
+    ann = 0x0089,
+    rsf = 0x008A,
+    led = 0x008B,
+    shg = 0x008C, //??? shader - "SH_cl_List"
+    cld = 0x008D, //cover - covers LD
+    dtb = 0x008E, //data table - data table
+    otf = 0x008F,
+    ttf = 0x0090,
+    adf = 0x0091,
+    pco = 0x0092,
+}
