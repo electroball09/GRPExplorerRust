@@ -1,5 +1,8 @@
 use std::fs::{File};
 use std::io::{Error, SeekFrom, Seek};
+use std::collections::HashMap;
+
+use crate::util::IndAcc;
 
 use super::metadata::{SegmentHeader, BigfileHeader, FileEntry, FolderEntry};
 
@@ -18,30 +21,33 @@ pub fn seek_to_folder_table(reader: &mut impl Seek, seg_header: &SegmentHeader, 
 pub trait BigfileIO {
     fn create_from_path(path: &str) -> Result<Self, Error> where Self: Sized;
 
+    fn get_path(&self) -> &str;
+
     fn load_segment_header(&mut self) -> Result<SegmentHeader, String>;
     fn load_bigfile_header(&mut self, seg_header: &SegmentHeader) -> Result<BigfileHeader, String>;
-    fn load_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<Vec<FileEntry>, String>;
-    fn load_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<Vec<FolderEntry>, String>;
+    fn load_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u32, FileEntry>, String>;
+    fn load_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u16, FolderEntry>, String>;
 }
 
 #[derive(Debug)]
 pub struct BigfileIOPacked {
-    path: String,
     file: File,
+    path: String,
 }
 
 impl BigfileIO for BigfileIOPacked {
     fn create_from_path(path: &str) -> Result<Self, Error> {
-        let file = match File::open(path) {
-            Ok(f) => f,
-            Err(error) => return Err(error)
-        };
+        let file = File::open(path)?;
 
         let packed = BigfileIOPacked {
+            file,
             path: String::from(path),
-            file: file
         };
         Ok(packed)
+    }
+
+    fn get_path(&self) -> &str {
+        &self.path
     }
 
     fn load_segment_header(& mut self) -> Result<SegmentHeader,String> {
@@ -69,42 +75,40 @@ impl BigfileIO for BigfileIOPacked {
         BigfileHeader::read_from(&mut self.file)
     }
 
-    fn load_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<Vec<FileEntry>, String> {
+    fn load_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u32, FileEntry>, String> {
         if let Err(error) = seek_to_file_table(&mut self.file, seg_header, bf_header) {
             return Err(error.to_string());
         }
 
         println!("loading file table, num_files={}", bf_header.num_files);
 
-        let mut v: Vec<FileEntry> = Vec::new();
-        v.reserve_exact(bf_header.num_files as usize);
-
-        let mut i = 0;
+        let mut v = HashMap::with_capacity(bf_header.num_files as usize);
+        
+        let mut i: u32 = 0;
         while i < bf_header.num_files {
             let entry = FileEntry::read_from(&mut self.file)?;
-            // println!("{:?}", &entry);
-            v.push(entry);
+            // println!("{}", entry.get_name());
+            v.insert(entry.key, entry);
             i = i + 1;
         };
 
         Ok(v)
     }
 
-    fn load_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<Vec<FolderEntry>, String> {
+    fn load_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u16, FolderEntry>, String> {
         if let Err(error) = seek_to_folder_table(&mut self.file, seg_header, bf_header) {
             return Err(error.to_string());
         }
 
         println!("loading folder table, num_folders={}", bf_header.num_folders);
 
-        let mut v: Vec<FolderEntry> = Vec::new();
-        v.reserve_exact(bf_header.num_folders as usize);
+        let mut v = HashMap::with_capacity(bf_header.num_folders as usize);
         
-        let mut i = 0;
+        let mut i: u16 = 0;
         while i < bf_header.num_folders {
             let entry = FolderEntry::read_from(&mut self.file)?;
             // println!("{:?}", &entry);
-            v.push(entry);
+            v.insert(i, entry);
             i = i + 1;
         }
 

@@ -3,23 +3,26 @@ use bigfile::*;
 use bigfile::metadata::*;
 use bigfile::io::*;
 
+use crate::ui::ExplorerApp;
+
 mod bigfile;
+mod ui;
+mod util;
 #[macro_use] extern crate num_derive;
+
+pub mod consts {
+    pub const YETI_BIG: &str = "Yeti.big";
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     dbg!(&args);
-    let path = &args[1];
 
-    // let mut reader = File::open(path).expect("wtf");
-    // let header = SegmentHeader::read_from(&mut reader).expect("wtf2");
-    // seek_to_bigfile_header(&mut reader, &header);
+    env::set_var("RUST_BACKTRACE", "1");
 
-    let mut bigfile = Bigfile::<BigfileIOPacked>::new(path).expect("oh no why?");
+    let mut bigfile = Bigfile::<BigfileIOPacked>::new("H:/SteamLibrary/steamapps/common/_Tom Clancy's Ghost Recon Phantoms NA/Game/NCSA-Live/Yeti.big").expect("oh no why?");
     bigfile.load_metadata().expect("oh no!");
     // println!("{:?}", &bigfile);
-}
 
-pub mod consts {
-    pub const YETI_BIG: &str = "Yeti.big";
+    eframe::run_native("test", eframe::NativeOptions::default(), ExplorerApp::make_creator());
 }

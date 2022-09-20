@@ -102,43 +102,57 @@ impl BigfileHeader {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct FolderEntry {
-    pub unk01: i16,
-    pub unk02: i16,
-    pub previous_folder: i16,
-    pub next_folder: i16,
-    pub unk03: i16,
-    pub unk04: i16,
-    pub unk05: i16,
-    pub name: CString
+    pub unk01: u16,
+    pub unk02: u16,
+    pub unk03: u16,
+    pub unk04: u16,
+    pub parent_folder: u16,
+    pub first_child: u16,
+    pub unk05: u16,
+    pub name: [u8; 50]
+}
+
+impl Default for FolderEntry {
+    fn default() -> Self {
+        FolderEntry {
+            unk01: 0,
+            unk02: 0,
+            unk03: 0,
+            unk04: 0,
+            parent_folder: 0,
+            first_child: 0,
+            unk05: 0,
+            name: [0; 50]
+        }
+    }
 }
 
 impl FolderEntry {
     pub fn read_from(reader: &mut impl Read) -> Result<FolderEntry, String> {
         let mut entry = FolderEntry::default();
-        entry.unk01 = reader.read_i16::<LittleEndian>().unwrap();
-        entry.unk02 = reader.read_i16::<LittleEndian>().unwrap();
-        entry.previous_folder = reader.read_i16::<LittleEndian>().unwrap();
-        entry.next_folder = reader.read_i16::<LittleEndian>().unwrap();
-        entry.unk03 = reader.read_i16::<LittleEndian>().unwrap();
-        entry.unk04 = reader.read_i16::<LittleEndian>().unwrap();
-        entry.unk05 = reader.read_i16::<LittleEndian>().unwrap();
-
-        let mut buf: [u8; 50] = [0; 50];
-        reader.read(&mut buf).unwrap();
-        // println!("{:?}", &buf);
-        let vbuf: Vec<u8> = buf.into_iter().take_while(|b| *b as u32 != 0x00).collect();
-        entry.name = CString::new::<Vec<u8>>(vbuf).expect("name wrong lol");
+        entry.unk01 = reader.read_u16::<LittleEndian>().unwrap();
+        entry.unk02 = reader.read_u16::<LittleEndian>().unwrap();
+        entry.unk03 = reader.read_u16::<LittleEndian>().unwrap();
+        entry.unk04 = reader.read_u16::<LittleEndian>().unwrap();
+        entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
+        entry.first_child = reader.read_u16::<LittleEndian>().unwrap();
+        entry.unk05 = reader.read_u16::<LittleEndian>().unwrap();
+        reader.read(&mut entry.name).unwrap();
 
         Ok(entry)
     }
+
+    pub fn get_name(&self) -> &str {
+        std::str::from_utf8(&self.name).unwrap()
+    }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Copy)]
 pub struct FileEntry {
-    pub offset: i32,
-    pub key: i32,
+    pub offset: u32,
+    pub key: u32,
     pub unk01: i32,
     pub object_type: ObjectType,
     pub parent_folder: i16,
@@ -146,16 +160,35 @@ pub struct FileEntry {
     pub flags: i32,
     pub unk02: i32,
     pub crc: [u8; 4],
-    pub name: CString,
+    pub name: [u8; 60],
     pub unk03: i32,
     pub zip: bool
+}
+
+impl Default for FileEntry {
+    fn default() -> Self {
+        FileEntry {
+            offset: 0,
+            key: 0,
+            unk01: 0,
+            object_type: ObjectType::null,
+            parent_folder: 0,
+            timestamp: 0,
+            flags: 0,
+            unk02: 0,
+            crc: [0; 4],
+            name: [0; 60],
+            unk03: 0,
+            zip: false
+        }
+    }
 }
 
 impl FileEntry {
     pub fn read_from(reader: &mut impl Read) -> Result<FileEntry, String> {
         let mut entry = FileEntry::default();
-        entry.offset = reader.read_i32::<LittleEndian>().unwrap();
-        entry.key = reader.read_i32::<LittleEndian>().unwrap();
+        entry.offset = reader.read_u32::<LittleEndian>().unwrap();
+        entry.key = reader.read_u32::<LittleEndian>().unwrap();
         entry.unk01 = reader.read_i32::<LittleEndian>().unwrap();
         entry.object_type = FromPrimitive::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
         entry.parent_folder = reader.read_i16::<LittleEndian>().unwrap();
@@ -163,18 +196,19 @@ impl FileEntry {
         entry.flags = reader.read_i32::<LittleEndian>().unwrap();
         entry.unk02 = reader.read_i32::<LittleEndian>().unwrap();
         reader.read(&mut entry.crc).unwrap();
-        let mut buf: [u8; 60] = [0; 60];
-        reader.read(&mut buf).unwrap();
-        let vbuf: Vec<u8> = buf.into_iter().take_while(|b| *b as u32 != 0x00).collect();
-        entry.name = CString::new::<Vec<u8>>(vbuf).expect("name wrong lol");
+        reader.read(&mut entry.name).unwrap();
         entry.unk03 = reader.read_i32::<LittleEndian>().unwrap();
         entry.zip = reader.read_i32::<LittleEndian>().unwrap() == 1;
         Ok(entry)
     }
+
+    pub fn get_name(&self) -> &str {
+        std::str::from_utf8(&self.name).unwrap()
+    }
 }
 
 #[allow(non_camel_case_types)]
-#[derive(FromPrimitive, ToPrimitive, Debug, Default)]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy)]
 pub enum ObjectType {
     #[default]
     null = 0,
