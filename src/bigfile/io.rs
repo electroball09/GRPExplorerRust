@@ -106,7 +106,8 @@ impl BigfileIO for BigfileIOPacked {
         
         let mut i: u16 = 0;
         while i < bf_header.num_folders {
-            let entry = FolderEntry::read_from(&mut self.file)?;
+            let mut entry = FolderEntry::read_from(&mut self.file)?;
+            entry.idx = i;
             // println!("{:?}", &entry);
             v.insert(i, entry);
             i = i + 1;

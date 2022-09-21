@@ -13,3 +13,9 @@ id_tree = "1.8.0"
 num = "0.4"
 num-derive = "0.3"
 num-traits = "0.2"
+rfd = "0.10.0"
+strum_macros = "0.24"
+
+[dependencies.strum]
+version = "0.24.1"
+features = ["derive"]

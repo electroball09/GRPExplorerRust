@@ -1,9 +1,9 @@
 #[allow(dead_code)]
 
-use std::io::{Read, Seek, SeekFrom};
-use std::ffi::{CString, CStr};
+use std::io::{Read};
 use byteorder::{ReadBytesExt, LittleEndian};
 use num::FromPrimitive;
+use strum_macros::EnumString;
 
 #[derive(Debug, Default)]
 pub struct SegmentHeader {
@@ -104,6 +104,7 @@ impl BigfileHeader {
 
 #[derive(Debug, Clone, Copy)]
 pub struct FolderEntry {
+    pub idx: u16,
     pub unk01: u16,
     pub unk02: u16,
     pub unk03: u16,
@@ -117,6 +118,7 @@ pub struct FolderEntry {
 impl Default for FolderEntry {
     fn default() -> Self {
         FolderEntry {
+            idx: 0,
             unk01: 0,
             unk02: 0,
             unk03: 0,
@@ -145,7 +147,7 @@ impl FolderEntry {
     }
 
     pub fn get_name(&self) -> &str {
-        std::str::from_utf8(&self.name).unwrap()
+        std::str::from_utf8(&self.name).unwrap().trim()
     }
 }
 
@@ -155,14 +157,16 @@ pub struct FileEntry {
     pub key: u32,
     pub unk01: i32,
     pub object_type: ObjectType,
-    pub parent_folder: i16,
+    pub parent_folder: u16,
     pub timestamp: i32,
     pub flags: i32,
     pub unk02: i32,
     pub crc: [u8; 4],
     pub name: [u8; 60],
     pub unk03: i32,
-    pub zip: bool
+    pub zip: bool,
+
+    tmp_name_buf: [u8; 64]
 }
 
 impl Default for FileEntry {
@@ -179,7 +183,9 @@ impl Default for FileEntry {
             crc: [0; 4],
             name: [0; 60],
             unk03: 0,
-            zip: false
+            zip: false,
+
+            tmp_name_buf: [0; 64]
         }
     }
 }
@@ -191,7 +197,7 @@ impl FileEntry {
         entry.key = reader.read_u32::<LittleEndian>().unwrap();
         entry.unk01 = reader.read_i32::<LittleEndian>().unwrap();
         entry.object_type = FromPrimitive::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
-        entry.parent_folder = reader.read_i16::<LittleEndian>().unwrap();
+        entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
         entry.timestamp = reader.read_i32::<LittleEndian>().unwrap();
         entry.flags = reader.read_i32::<LittleEndian>().unwrap();
         entry.unk02 = reader.read_i32::<LittleEndian>().unwrap();
@@ -199,16 +205,25 @@ impl FileEntry {
         reader.read(&mut entry.name).unwrap();
         entry.unk03 = reader.read_i32::<LittleEndian>().unwrap();
         entry.zip = reader.read_i32::<LittleEndian>().unwrap() == 1;
+
+        let mut buf: [u8; 64] = [0; 64];
+        buf[..60].clone_from_slice(&entry.name[..]);
+        let idx = buf.iter().position(|b| *b == 0).unwrap();
+        let ext = format!("{:?}", entry.object_type);
+        buf[60] = b'.';
+        buf[61..].copy_from_slice(&ext.as_bytes()[..]);
+        entry.tmp_name_buf.copy_from_slice(&buf);
+
         Ok(entry)
     }
 
     pub fn get_name(&self) -> &str {
-        std::str::from_utf8(&self.name).unwrap()
+        std::str::from_utf8(&self.tmp_name_buf).unwrap()
     }
 }
 
 #[allow(non_camel_case_types)]
-#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy)]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, EnumString)]
 pub enum ObjectType {
     #[default]
     null = 0,
