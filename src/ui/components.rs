@@ -21,17 +21,13 @@ pub fn draw_file_tree(bf: &Bigfile, ui: &mut Ui, ctx: &eframe::egui::Context, de
         });
         if debug_folders {
             rsp.header_response.on_hover_ui_at_pointer(|ui| {
-                draw_folder_debug_label(folder, ui, ctx);
+                ui.label(format!("idx: {:#06X}\nparent_folder: {:#06X}\n first_child: {:#06X}\n unk03: {:#06X}\n unk05: {:#06X}", 
+                                        folder.idx, folder.parent_folder, folder.first_child, folder.unk03, folder.unk05));
             });
         }
     }
 
     draw_folder(bf, &bf.node_id_map[&0].0, ctx, ui, debug_folders, debug_files);
-}
-
-pub fn draw_folder_debug_label(folder: &crate::FolderEntry, ui: &mut Ui, ctx: &eframe::egui::Context) {
-    ui.label(format!("idx: {:#06X}\nparent_folder: {:#06X}\n first_child: {:#06X}\n unk03: {:#06X}\n unk05: {:#06X}", 
-                            folder.idx, folder.parent_folder, folder.first_child, folder.unk03, folder.unk05));
 }
 
 pub fn draw_file_button(file: &crate::FileEntry, ui: &mut Ui, ctx: &eframe::egui::Context, debug: bool) {

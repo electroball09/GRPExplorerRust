@@ -9,15 +9,18 @@ use crate::bigfile::io::*;
 use crate::FileDialog;
 use crate::Bigfile;
 
-use self::views::FileTreeView;
-use self::views::View;
+use self::views::*;
 
 pub mod components;
 pub mod views;
+pub mod editors;
+
+pub type BfRef = Option<Rc<RefCell<Bigfile>>>;
 
 pub struct ExplorerApp {
-    pub bigfile: Option<Rc<RefCell<Bigfile>>>,
-    ft_view: FileTreeView
+    pub bigfile: BfRef,
+    ft_view: FileTreeView,
+    fe_view: FileEditorTabs,
 }
 
 impl ExplorerApp {
@@ -48,6 +51,7 @@ impl ExplorerApp {
         ExplorerApp {
             bigfile: None,
             ft_view: FileTreeView::new(None),
+            fe_view: FileEditorTabs::new(None),
         }
     }
 }
@@ -74,7 +78,8 @@ impl eframe::App for ExplorerApp {
                 
                             self.bigfile.replace(Rc::new(RefCell::new(bigfile)));
                 
-                            self.ft_view.bigfile = self.bigfile.clone();
+                            self.ft_view = FileTreeView::new(self.bigfile.clone());
+                            self.fe_view = FileEditorTabs::new(self.bigfile.clone());
                         }
                     }
                     if ui.button("Quit").clicked() {
@@ -85,13 +90,14 @@ impl eframe::App for ExplorerApp {
         });
 
         egui::SidePanel::left("folder_browser").min_width(400.0).max_width(400.0).resizable(false).show(ctx, |ui| {
-            egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui|{
-                self.ft_view.draw(ui, ctx);
-            });
+            self.ft_view.draw(ui, ctx);
+            if let Some(key) = self.ft_view.did_click_file() {
+                self.fe_view.open_new_tab(key);
+            }
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            ui.heading("hello");
+            self.fe_view.draw(ui, ctx);
         });
     }
 }

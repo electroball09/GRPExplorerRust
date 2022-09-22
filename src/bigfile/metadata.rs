@@ -224,7 +224,8 @@ impl FileEntry {
     }
 
     pub fn get_name_ext(&self) -> &str {
-        std::str::from_utf8(&self.tmp_name_buf).unwrap()
+        let idx = self.tmp_name_buf.iter().position(|b| *b == 0).unwrap();
+        std::str::from_utf8(&self.tmp_name_buf[..idx]).unwrap()
     }
 }
 
