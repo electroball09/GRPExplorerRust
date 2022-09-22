@@ -147,7 +147,8 @@ impl FolderEntry {
     }
 
     pub fn get_name(&self) -> &str {
-        std::str::from_utf8(&self.name).unwrap().trim()
+        let idx = self.name.iter().position(|b| *b == 0).unwrap();
+        std::str::from_utf8(&self.name[..idx]).unwrap().trim()
     }
 }
 
@@ -210,14 +211,19 @@ impl FileEntry {
         buf[..60].clone_from_slice(&entry.name[..]);
         let idx = buf.iter().position(|b| *b == 0).unwrap();
         let ext = format!("{:?}", entry.object_type);
-        buf[60] = b'.';
-        buf[61..].copy_from_slice(&ext.as_bytes()[..]);
+        buf[idx] = b'.';
+        buf[idx + 1..idx + 4].copy_from_slice(&ext.as_bytes()[..]);
         entry.tmp_name_buf.copy_from_slice(&buf);
 
         Ok(entry)
     }
 
     pub fn get_name(&self) -> &str {
+        let idx = self.name.iter().position(|b| *b == 0).unwrap();
+        std::str::from_utf8(&self.name[..idx]).unwrap()
+    }
+
+    pub fn get_name_ext(&self) -> &str {
         std::str::from_utf8(&self.tmp_name_buf).unwrap()
     }
 }

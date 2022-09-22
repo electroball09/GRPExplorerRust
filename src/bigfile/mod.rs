@@ -7,19 +7,19 @@ use id_tree::InsertBehavior::*;
 
 use metadata::*;
 use io::*;
-pub struct Bigfile<'a> {
+pub struct Bigfile {
     pub segment_header: SegmentHeader,
     pub bigfile_header: BigfileHeader,
     pub file_table: HashMap<u32,FileEntry>,
     pub folder_table: HashMap<u16, FolderEntry>,
-    pub io: Box<dyn BigfileIO + 'a>,
+    pub io: Box<dyn BigfileIO>,
     pub tree: Tree<u16>,
     pub file_list_map: HashMap<u16, Box<Vec<u32>>>,
     pub node_id_map: HashMap<u16, (NodeId, u16)>,
 }
 
-impl <'a> Bigfile<'a> {
-    pub fn new<T: BigfileIO + 'a>(path: String) -> Result<Bigfile<'a>, String> {
+impl Bigfile {
+    pub fn new<T: BigfileIO + 'static>(path: String) -> Result<Bigfile, String> {
         let path = String::from(path);
         let io = match T::create_from_path(&path) {
             Ok(io) => io,
