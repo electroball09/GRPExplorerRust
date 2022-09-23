@@ -7,7 +7,7 @@ use crate::ui::ExplorerApp;
 
 mod bigfile;
 mod ui;
-mod util;
+mod objects;
 #[macro_use] extern crate num_derive;
 extern crate strum_macros;
 

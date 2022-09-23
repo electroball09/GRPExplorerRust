@@ -16,6 +16,7 @@ num-traits = "0.2"
 rfd = "0.10.0"
 strum_macros = "0.24"
 font-loader = "0.11.0"
+flate2 = { version = "1.0.24", default-features = false, features = ["zlib"] }
 
 [dependencies.strum]
 version = "0.24.1"

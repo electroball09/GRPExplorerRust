@@ -207,13 +207,11 @@ impl FileEntry {
         entry.unk03 = reader.read_i32::<LittleEndian>().unwrap();
         entry.zip = reader.read_i32::<LittleEndian>().unwrap() == 1;
 
-        let mut buf: [u8; 64] = [0; 64];
-        buf[..60].clone_from_slice(&entry.name[..]);
-        let idx = buf.iter().position(|b| *b == 0).unwrap();
+        entry.tmp_name_buf[..60].clone_from_slice(&entry.name[..]);
+        let idx = entry.tmp_name_buf.iter().position(|b| *b == 0).unwrap();
         let ext = format!("{:?}", entry.object_type);
-        buf[idx] = b'.';
-        buf[idx + 1..idx + 4].copy_from_slice(&ext.as_bytes()[..]);
-        entry.tmp_name_buf.copy_from_slice(&buf);
+        entry.tmp_name_buf[idx] = b'.';
+        entry.tmp_name_buf[idx + 1..idx + 4].copy_from_slice(&ext.as_bytes()[..]);
 
         Ok(entry)
     }

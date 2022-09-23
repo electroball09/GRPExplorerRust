@@ -7,10 +7,16 @@ use id_tree::InsertBehavior::*;
 
 use metadata::*;
 use io::*;
+
+use crate::objects::YetiObject;
+use crate::objects::get_archetype_for_type;
+
+use crate::objects::ObjectArchetype;
 pub struct Bigfile {
     pub segment_header: SegmentHeader,
     pub bigfile_header: BigfileHeader,
     pub file_table: HashMap<u32,FileEntry>,
+    pub object_table: HashMap<u32, YetiObject>,
     pub folder_table: HashMap<u16, FolderEntry>,
     pub io: Box<dyn BigfileIO>,
     pub tree: Tree<u16>,
@@ -31,6 +37,7 @@ impl Bigfile {
             segment_header: SegmentHeader::default(),
             bigfile_header: BigfileHeader::default(),
             file_table: HashMap::new(),
+            object_table: HashMap::new(),
             folder_table: HashMap::new(),
             tree: TreeBuilder::new().build(),
             file_list_map: HashMap::new(),
@@ -41,15 +48,37 @@ impl Bigfile {
     }
 
     pub fn load_metadata(&mut self) -> Result<(), String> {
-        self.segment_header = match self.io.load_segment_header() {
+        println!("loading metadata");
+        self.segment_header = match self.io.read_segment_header() {
             Ok(header) => header,
             Err(error) => return Err(String::from(error))
         };
-        self.bigfile_header = self.io.load_bigfile_header(&self.segment_header)?;
-        self.file_table = self.io.load_file_table(&self.segment_header, &self.bigfile_header)?;
-        self.folder_table = self.io.load_folder_table(&self.segment_header, &self.bigfile_header)?;
+        self.bigfile_header = self.io.read_bigfile_header(&self.segment_header)?;
+        self.file_table = self.io.read_file_table(&self.segment_header, &self.bigfile_header)?;
+        self.object_table = self.build_archetype_table()?;
+        self.folder_table = self.io.read_folder_table(&self.segment_header, &self.bigfile_header)?;
         self.build_file_tree()?;
+        println!("all metadata loaded");
         Ok(())
+    }
+
+    pub fn load_file(&mut self, key: u32) -> Result<(), String> {
+        let v = self.io.read_file(&self.segment_header, &self.bigfile_header, &self.file_table[&key]).unwrap();
+
+        let mut buf: [u8; 4] = [0; 4];
+        buf.copy_from_slice(&v[..4]);
+        let num_refs = i32::from_le_bytes(buf);
+        println!("num refs {}", &num_refs);
+
+        self.object_table.get_mut(&key).unwrap().archetype.load_from_buf(&v[(4 + (num_refs as usize) * 4)..])
+    }
+
+    fn build_archetype_table(&mut self) -> Result<HashMap<u32, YetiObject>, String> {
+        let mut table = HashMap::<u32, YetiObject>::new();
+        for kv in self.file_table.iter() {
+            table.insert(kv.0.clone(), get_archetype_for_type(&kv.1.object_type));
+        };
+        Ok(table)
     }
 
     fn build_file_tree(&mut self) -> Result<(), String> {
@@ -58,13 +87,16 @@ impl Bigfile {
         println!("building file lists");
         let mut file_list_map: HashMap<u16, Box<Vec<u32>>> = HashMap::new();
         for file in self.file_table.values() {
-            file_list_map.entry(file.parent_folder).or_insert(Box::new(Vec::new())).push(file.key);
+            file_list_map.entry(file.parent_folder).or_insert(Box::new(Vec::with_capacity(1))).push(file.key);
+        }
+
+        println!("sorting file lists");
+        for kv in file_list_map.iter_mut() {
+            kv.1.sort_by(|a, b| self.file_table[a].get_name().cmp(self.file_table[b].get_name()));
         }
 
         println!("building tree");
-
         let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-
         let mut node_id_map: HashMap<u16, (NodeId, u16)> = HashMap::with_capacity(self.folder_table.len());
         for kv in self.folder_table.iter() {
             node_id_map.insert(kv.0.clone(), (tree.insert(Node::new(kv.0.clone()), UnderNode(&root_id)).unwrap(), kv.1.parent_folder));

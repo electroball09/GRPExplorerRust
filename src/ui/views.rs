@@ -1,3 +1,5 @@
+use std::borrow::BorrowMut;
+use std::ops::DerefMut;
 use std::{rc::Rc, cell::RefCell, ops::Deref, borrow::Borrow};
 use egui::Ui;
 use id_tree::NodeId;
@@ -5,7 +7,7 @@ use id_tree::NodeId;
 use crate::bigfile::Bigfile;
 use crate::bigfile::metadata::FileEntry;
 use crate::ui::*;
-use crate::ui::editors::get_editor_for_type;
+use crate::ui::editors::draw_editor_for_type;
 
 pub trait View {
     fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
@@ -118,15 +120,14 @@ impl FileEditorTabs {
     pub fn open_new_tab(&mut self, key: u32) {
         if !self.editor_tabs.contains(&key) {
             self.editor_tabs.push(key);
+            self.bigfile.as_ref().unwrap().as_ref().borrow_mut().load_file(key).unwrap();
         }
        self.set_open_tab(key);
     }
 
     pub fn set_open_tab(&mut self, key: u32) {
-        if let Some(idx) = self.editor_tabs.iter().position(|k| *k == key) {
-            let new_key = self.editor_tabs.remove(idx as usize);
-            self.editor_tabs.insert(0, new_key);
-            self.open_tab = Some(new_key);
+        if self.editor_tabs.contains(&key) {
+            self.open_tab = Some(key);
         } else {
             println!("wtf couldn't find key for tab!");
         }
@@ -135,12 +136,14 @@ impl FileEditorTabs {
     pub fn close_tab(&mut self, key: u32) {
         if let Some(idx) = self.editor_tabs.iter().position(|k| *k == key) {
             self.editor_tabs.remove(idx);
-            if self.editor_tabs.len() > 0 {
-                self.set_open_tab(self.editor_tabs[0]);
+            let idx = (idx as i32).min(self.editor_tabs.len() as i32 - 1);
+            if idx >= 0 {
+                self.set_open_tab(self.editor_tabs[idx as usize]);
             } else {
                 self.open_tab = None;
             }
         }
+        dbg!(&self.open_tab);
     }
 
     fn draw_file_metadata_view(file: &FileEntry, ui: &mut Ui, ctx: &eframe::egui::Context) {
@@ -153,60 +156,44 @@ impl FileEditorTabs {
             clicked
         }
 
-        egui::SidePanel::left("file_entry_panel").default_width(200.0)
-            .resizable(false).show(ctx, |ui| {
-                file_metadata_line(ui, "      key:", &format!("{:#010X}", file.key));
-                file_metadata_line(ui, "   offset:", &format!("{:#010X}", file.offset));
-                file_metadata_line(ui, "    unk01:", &format!("{:#010X}", file.unk01));
-                file_metadata_line(ui, "     type:", &format!("{:?}", file.object_type));
-                file_metadata_line(ui, "   folder:", &format!("{:#06X}", file.parent_folder));
-                file_metadata_line(ui, "timestamp:", &format!("{}", file.timestamp));
-                file_metadata_line(ui, "    flags:", &format!("{:#010X}", file.flags));
-                file_metadata_line(ui, "    unk02:", &format!("{:#010X}", file.unk02));
-                file_metadata_line(ui, "    unk03:", &format!("{:#010X}", file.unk03));
-                file_metadata_line(ui, "      zip:", &format!("{}", file.zip));
-        });
+        file_metadata_line(ui, "      key:", &format!("{:#010X}", file.key));
+        file_metadata_line(ui, "   offset:", &format!("{:#010X}", file.offset));
+        file_metadata_line(ui, "    unk01:", &format!("{:#010X}", file.unk01));
+        file_metadata_line(ui, "     type:", &format!("{:?}", file.object_type));
+        file_metadata_line(ui, "   folder:", &format!("{:#06X}", file.parent_folder));
+        file_metadata_line(ui, "timestamp:", &format!("{}", file.timestamp));
+        file_metadata_line(ui, "    flags:", &format!("{:#010X}", file.flags));
+        file_metadata_line(ui, "    unk02:", &format!("{:#010X}", file.unk02));
+        file_metadata_line(ui, "    unk03:", &format!("{:#010X}", file.unk03));
+        file_metadata_line(ui, "      zip:", &format!("{}", file.zip));
     }
 }
 
 impl View for FileEditorTabs {
     fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         if let Some(bf) = self.bigfile.clone() {
-            let r = bf.as_ref().borrow();
-            let bf = r.deref();
+            let mut r = bf.as_ref().borrow_mut();
+            let bf = r.deref_mut();
             egui::TopBottomPanel::top("file_editor_tabs").show(ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     let mut new_open_tab: Option<u32> = None;
                     let mut close_tab: Option<u32> = None;
                     for key in self.editor_tabs.iter() {
-                        match self.open_tab {
-                            Some(key2) => {
-                                if key.clone() == key2 { 
-                                    ui.label(bf.file_table[key].get_name_ext());
-                                } else {
-                                    let rsp = ui.selectable_label(false, bf.file_table[key].get_name_ext());
-                                    if rsp.clicked() {
-                                        new_open_tab = Some(*key);
-                                    }
-                                    if rsp.middle_clicked() {
-                                        close_tab = Some(*key);
-                                    }
-                                }
-                                if ui.selectable_label(false, "x").clicked() {
-                                    if let Some(idx) = self.editor_tabs.iter().position(|k| *k == *key) {
-                                        self.editor_tabs.remove(idx);
-                                        if self.editor_tabs.len() > 0 {
-                                            self.set_open_tab(self.editor_tabs[0]);
-                                        } else {
-                                            self.open_tab = None;
-                                        }
-                                    }
-                                    return;
-                                }
-                            },
-                            None => { }
+                        let open_tab_key = self.open_tab.expect("we have tabs, but none are open???");
+                        if *key == open_tab_key { 
+                            ui.label(bf.file_table[key].get_name_ext());
+                        } else {
+                            let rsp = ui.selectable_label(false, bf.file_table[key].get_name_ext());
+                            if rsp.clicked() {
+                                new_open_tab = Some(*key);
+                            }
+                            if rsp.middle_clicked() {
+                                close_tab = Some(*key);
+                            }
                         }
-                        ui.separator();
+                        if ui.selectable_label(false, "x").clicked() {
+                            close_tab = Some(*key);
+                        }
                     }
                     if let Some(key) = new_open_tab {
                         self.set_open_tab(key);
@@ -217,7 +204,14 @@ impl View for FileEditorTabs {
                 });
             });
             if let Some(key) = self.open_tab {
-                FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, ctx)
+                egui::SidePanel::left("file_entry_panel").default_width(200.0)
+                    .resizable(false).show(ctx, |ui| {
+                        FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, ctx);
+                    });
+                egui::CentralPanel::default().show(ctx, |ui| {
+                    let mut y = bf.object_table.get_mut(&key).unwrap();
+                    draw_editor_for_type(&bf.file_table[&key].object_type, &mut y, ui, ctx);
+                });
             }
         }
     }

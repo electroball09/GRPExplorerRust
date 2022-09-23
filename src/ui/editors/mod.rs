@@ -1,15 +1,19 @@
 mod script_editor;
 mod blank_editor;
 
+use std::{rc::Rc, cell::RefCell, ops::{Deref, DerefMut}};
+
 pub use script_editor::*;
 pub use blank_editor::*;
+use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::metadata::ObjectType};
 
 pub trait Editor {
-    fn draw(&self, ui: &mut egui::Ui, ctx: &egui::Context);
+    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context);
 }
 
-pub fn get_editor_for_type(obj_type: crate::ObjectType) -> impl Editor {
+pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) {
     match obj_type {
-        _ => blank_editor::BlankEditor { }
+        ObjectType::zc_ => ScriptEditor::draw(obj, ui, ctx),
+        _ => BlankEditor::draw(obj, ui, ctx)
     }
 }
