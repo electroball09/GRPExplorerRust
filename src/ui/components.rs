@@ -22,7 +22,7 @@ pub fn draw_file_tree(bf: &Bigfile, ui: &mut Ui, ctx: &eframe::egui::Context, de
         if debug_folders {
             rsp.header_response.on_hover_ui_at_pointer(|ui| {
                 ui.label(format!("idx: {:#06X}\nparent_folder: {:#06X}\n first_child: {:#06X}\n unk03: {:#06X}\n unk05: {:#06X}", 
-                                        folder.idx, folder.parent_folder, folder.first_child, folder.unk03, folder.unk05));
+                                        folder.idx, folder.parent_folder, folder.first_child, folder.unk03, folder.next_folder));
             });
         }
     }

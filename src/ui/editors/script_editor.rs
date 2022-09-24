@@ -1,7 +1,5 @@
-use std::{ops::Deref, rc::Rc, cell::RefCell};
-
 use super::Editor;
-use crate::objects::{*, yeti_script::YetiScript};
+use crate::objects::*;
 
 pub struct ScriptEditor {
 

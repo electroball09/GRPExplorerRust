@@ -1,8 +1,10 @@
 use std::{ops::{Deref, DerefMut}, rc::Rc, cell::{RefCell}};
 
 pub mod yeti_script;
+pub mod ini;
 
 use yeti_script::YetiScript;
+use ini::YetiIni;
 
 use crate::bigfile::metadata::ObjectType;
 
@@ -20,12 +22,14 @@ impl YetiObject {
 pub enum ObjectArchetype {
     NoImpl,
     Script(YetiScript),
+    Ini(YetiIni)
 }
 
 impl ObjectArchetype {
     pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
         match self {
             Self::Script(script) => script.load_from_buf(buf),
+            Self::Ini(ini) => ini.load_from_buf(buf),
             Self::NoImpl => { Ok(()) }
         }
     }
@@ -34,6 +38,7 @@ impl ObjectArchetype {
 pub fn get_archetype_for_type(obj_type: &ObjectType) -> YetiObject {
     let archetype = match obj_type {
         ObjectType::zc_ => ObjectArchetype::Script(YetiScript::default()),
+        ObjectType::ini => ObjectArchetype::Ini(YetiIni::default()),
         _ => ObjectArchetype::NoImpl
     };
 

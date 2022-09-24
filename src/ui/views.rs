@@ -25,7 +25,7 @@ impl FileTreeView {
         FileTreeView {
             bigfile,
             debug_folders: false,
-            debug_files: true,
+            debug_files: false,
             clicked_file: None
         }
     }
@@ -35,16 +35,18 @@ impl FileTreeView {
     }
 
     fn draw_file_tree(&mut self, ui: &mut Ui, ctx: &eframe::egui::Context, debug_folders: bool, debug_files: bool) {
-        fn draw_folder(bf: &Bigfile, node_id: &NodeId, ctx: &eframe::egui::Context, ui: &mut Ui, debug_folders: bool, debug_files: bool) -> Option<u32> {
-            let folder = bf.node_id_to_folder(node_id);
+        fn draw_folder2(idx: &u16, bf: &Bigfile, ctx: &eframe::egui::Context, ui: &mut Ui, debug_folders: bool, debug_files: bool) -> Option<u32> {
+            let folder = bf.folder_table[&idx];
             let rsp = ui.collapsing(folder.get_name(), |ui| {
-                for node_id in bf.tree.get(node_id).unwrap().children().iter() {
-                    if let Some(key) = draw_folder(bf, node_id, ctx, ui, debug_folders, debug_files) {
+                let mut child = folder.first_child;
+                while child != 0xFFFF {
+                    if let Some(key) = draw_folder2(&child, bf, ctx, ui, debug_folders, debug_files) {
                         return Some(key);
                     }
-                }
+                    child = bf.folder_table[&child].next_folder;
+                };
                 let mut opt: Option<u32> = None;
-                if let Some(v) = bf.file_list_map.get(&bf.node_id_to_folder(node_id).idx) {
+                if let Some(v) = bf.file_list_map.get(&idx) {
                     for key in v.iter() {
                         let file = &bf.file_table[key];
                         ui.horizontal(|ui| {
@@ -67,20 +69,17 @@ impl FileTreeView {
             });
             if debug_folders {
                 rsp.header_response.on_hover_ui_at_pointer(|ui| {
-                    ui.label(format!("idx: {:#06X}\nparent_folder: {:#06X}\nfirst_child: {:#06X}\nunk03: {:#06X}\nunk05: {:#06X}", 
-                                            folder.idx, folder.parent_folder, folder.first_child, folder.unk03, folder.unk05));
+                    ui.label(format!("idx: {:#06X}\nparent_folder: {:#06X}\nfirst_child: {:#06X}\nnext_folder: {:#06X}\nunk01: {:#06X}\nunk02: {:#06X}\nunk03: {:#06X}\nunk04: {:#06X}", 
+                                            folder.idx, folder.parent_folder, folder.first_child, folder.next_folder, folder.unk01, folder.unk02, folder.unk03, folder.unk04));
                 });
             };
-            if let Some(inner) = rsp.body_returned {
-                return inner;
-            };
-            None
+            rsp.body_returned?
         }
 
         if let Some(bf) = self.bigfile.clone() {
             let r = bf.as_ref().borrow();
             let bf = r.deref();
-            self.clicked_file = draw_folder(&bf, &bf.node_id_map[&0].0, ctx, ui, debug_folders, debug_files);
+            self.clicked_file = draw_folder2(&0, &bf, ctx, ui, debug_folders, debug_files);
         }
     }
 }
@@ -136,14 +135,18 @@ impl FileEditorTabs {
     pub fn close_tab(&mut self, key: u32) {
         if let Some(idx) = self.editor_tabs.iter().position(|k| *k == key) {
             self.editor_tabs.remove(idx);
-            let idx = (idx as i32).min(self.editor_tabs.len() as i32 - 1);
+            let mut idx = idx as i32;
+            if key == self.open_tab.unwrap() {
+                idx = (idx).min(self.editor_tabs.len() as i32 - 1);
+            } else {
+                idx = self.editor_tabs.iter().position(|k| self.open_tab.unwrap() == *k).unwrap() as i32;
+            }
             if idx >= 0 {
                 self.set_open_tab(self.editor_tabs[idx as usize]);
             } else {
                 self.open_tab = None;
             }
         }
-        dbg!(&self.open_tab);
     }
 
     fn draw_file_metadata_view(file: &FileEntry, ui: &mut Ui, ctx: &eframe::egui::Context) {
@@ -156,21 +159,21 @@ impl FileEditorTabs {
             clicked
         }
 
-        file_metadata_line(ui, "      key:", &format!("{:#010X}", file.key));
-        file_metadata_line(ui, "   offset:", &format!("{:#010X}", file.offset));
-        file_metadata_line(ui, "    unk01:", &format!("{:#010X}", file.unk01));
-        file_metadata_line(ui, "     type:", &format!("{:?}", file.object_type));
-        file_metadata_line(ui, "   folder:", &format!("{:#06X}", file.parent_folder));
-        file_metadata_line(ui, "timestamp:", &format!("{}", file.timestamp));
-        file_metadata_line(ui, "    flags:", &format!("{:#010X}", file.flags));
-        file_metadata_line(ui, "    unk02:", &format!("{:#010X}", file.unk02));
-        file_metadata_line(ui, "    unk03:", &format!("{:#010X}", file.unk03));
-        file_metadata_line(ui, "      zip:", &format!("{}", file.zip));
+        file_metadata_line(ui, "   key:", &format!("{:#010X}", file.key));
+        file_metadata_line(ui, "offset:", &format!("{:#010X}", file.offset));
+        file_metadata_line(ui, " unk01:", &format!("{:#010X}", file.unk01));
+        file_metadata_line(ui, "  type:", &format!("{:?}", file.object_type));
+        file_metadata_line(ui, "folder:", &format!("{:#06X}", file.parent_folder));
+        file_metadata_line(ui, "  time:", &format!("{}", file.timestamp));
+        file_metadata_line(ui, " flags:", &format!("{:#010X}", file.flags));
+        file_metadata_line(ui, " unk02:", &format!("{:#010X}", file.unk02));
+        file_metadata_line(ui, " unk03:", &format!("{:#010X}", file.unk03));
+        file_metadata_line(ui, "   zip:", &format!("{}", file.zip));
     }
 }
 
 impl View for FileEditorTabs {
-    fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(&mut self, _ui: &mut egui::Ui, ctx: &egui::Context) {
         if let Some(bf) = self.bigfile.clone() {
             let mut r = bf.as_ref().borrow_mut();
             let bf = r.deref_mut();
@@ -180,20 +183,24 @@ impl View for FileEditorTabs {
                     let mut close_tab: Option<u32> = None;
                     for key in self.editor_tabs.iter() {
                         let open_tab_key = self.open_tab.expect("we have tabs, but none are open???");
-                        if *key == open_tab_key { 
-                            ui.label(bf.file_table[key].get_name_ext());
-                        } else {
-                            let rsp = ui.selectable_label(false, bf.file_table[key].get_name_ext());
-                            if rsp.clicked() {
-                                new_open_tab = Some(*key);
+                        let rsp = match *key == open_tab_key {
+                            true => {
+                                ui.label(bf.file_table[key].get_name_ext())
+                            },
+                            false => {
+                                ui.selectable_label(false, bf.file_table[key].get_name_ext())
                             }
-                            if rsp.middle_clicked() {
-                                close_tab = Some(*key);
-                            }
+                        };
+                        if rsp.clicked() {
+                            new_open_tab = Some(*key);
+                        }
+                        if rsp.middle_clicked() {
+                            close_tab = Some(*key);
                         }
                         if ui.selectable_label(false, "x").clicked() {
                             close_tab = Some(*key);
                         }
+                        ui.separator();
                     }
                     if let Some(key) = new_open_tab {
                         self.set_open_tab(key);

@@ -2,6 +2,7 @@
 
 use std::io::{Read};
 use byteorder::{ReadBytesExt, LittleEndian};
+use chrono::NaiveDateTime;
 use num::FromPrimitive;
 use strum_macros::EnumString;
 
@@ -111,7 +112,7 @@ pub struct FolderEntry {
     pub unk04: u16,
     pub parent_folder: u16,
     pub first_child: u16,
-    pub unk05: u16,
+    pub next_folder: u16,
     pub name: [u8; 50]
 }
 
@@ -125,7 +126,7 @@ impl Default for FolderEntry {
             unk04: 0,
             parent_folder: 0,
             first_child: 0,
-            unk05: 0,
+            next_folder: 0,
             name: [0; 50]
         }
     }
@@ -140,7 +141,7 @@ impl FolderEntry {
         entry.unk04 = reader.read_u16::<LittleEndian>().unwrap();
         entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
         entry.first_child = reader.read_u16::<LittleEndian>().unwrap();
-        entry.unk05 = reader.read_u16::<LittleEndian>().unwrap();
+        entry.next_folder = reader.read_u16::<LittleEndian>().unwrap();
         reader.read(&mut entry.name).unwrap();
 
         Ok(entry)
@@ -159,7 +160,7 @@ pub struct FileEntry {
     pub unk01: i32,
     pub object_type: ObjectType,
     pub parent_folder: u16,
-    pub timestamp: i32,
+    pub timestamp: NaiveDateTime,
     pub flags: i32,
     pub unk02: i32,
     pub crc: [u8; 4],
@@ -178,7 +179,7 @@ impl Default for FileEntry {
             unk01: 0,
             object_type: ObjectType::null,
             parent_folder: 0,
-            timestamp: 0,
+            timestamp: NaiveDateTime::default(),
             flags: 0,
             unk02: 0,
             crc: [0; 4],
@@ -199,7 +200,7 @@ impl FileEntry {
         entry.unk01 = reader.read_i32::<LittleEndian>().unwrap();
         entry.object_type = FromPrimitive::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
         entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
-        entry.timestamp = reader.read_i32::<LittleEndian>().unwrap();
+        entry.timestamp = NaiveDateTime::from_timestamp(reader.read_i32::<LittleEndian>().unwrap() as i64, 0);
         entry.flags = reader.read_i32::<LittleEndian>().unwrap();
         entry.unk02 = reader.read_i32::<LittleEndian>().unwrap();
         reader.read(&mut entry.crc).unwrap();
