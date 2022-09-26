@@ -2,7 +2,6 @@ use std::fs::{File};
 use std::io::{Error, SeekFrom, Seek, Read};
 use std::collections::HashMap;
 use byteorder::{ReadBytesExt, LittleEndian};
-use flate2::Decompress;
 use flate2::read::ZlibDecoder;
 
 use super::metadata::{SegmentHeader, BigfileHeader, FileEntry, FolderEntry};
@@ -20,15 +19,15 @@ pub fn seek_to_folder_table(reader: &mut impl Seek, seg_header: &SegmentHeader, 
 }
 
 pub fn seek_to_file_data(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_header: &BigfileHeader, offset: u32) -> Result<u64, Error> {
-    println!("{}", &offset);
+    //println!("{}", &offset);
     seek_to_folder_table(reader, seg_header, bf_header)?;
     let folder_data_size = bf_header.num_folders as i64 * 64;
     reader.seek(SeekFrom::Current(folder_data_size)).unwrap();
     let byte_pack_offset = 8 - ((reader.stream_position().unwrap()) % 8);
     reader.seek(SeekFrom::Current(byte_pack_offset as i64)).unwrap();
-    println!("{}", reader.stream_position().unwrap());
+    //println!("{}", reader.stream_position().unwrap());
     let r = reader.seek(SeekFrom::Current((offset as i64) * 8));
-    println!("{}", reader.stream_position().unwrap());
+    //println!("{}", reader.stream_position().unwrap());
     r
 }
 
@@ -153,6 +152,11 @@ impl BigfileIO for BigfileIOPacked {
     }
 
     fn read_file(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader, entry: &FileEntry) -> Result<Vec<u8>, String> {
+        if entry.offset == 0xFFFFFFFF {
+            println!("could not seek, offset is invalid");
+            return Err(String::from("invalid offset"));
+        }
+
         if let Err(error) = seek_to_file_data(&mut self.file, seg_header, bf_header, entry.offset) {
             return Err(error.to_string());
         }
@@ -160,8 +164,8 @@ impl BigfileIO for BigfileIOPacked {
         if entry.zip {
             let compressed_size = self.file.read_i32::<LittleEndian>().unwrap();
             let decompressed_size = self.file.read_i32::<LittleEndian>().unwrap();
-            dbg!(&compressed_size);
-            dbg!(&decompressed_size);
+            //dbg!(&compressed_size);
+            //dbg!(&decompressed_size);
 
             let mut v = vec![0; decompressed_size as usize];
             let mut decompress = ZlibDecoder::new(&mut self.file);

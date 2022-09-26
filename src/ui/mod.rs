@@ -68,7 +68,7 @@ impl eframe::App for ExplorerApp {
                         if ui.button("Open Bigfile...").clicked() {
                             let file = FileDialog::new()
                             .add_filter("bigfile", &["big"])
-                            .set_directory("H:/SteamLibrary/steamapps/common/_Tom Clancy's Ghost Recon Phantoms NA/Game/NCSA-Live")
+                            //.set_directory("")
                             .pick_file()
                             .unwrap();
                 

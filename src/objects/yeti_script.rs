@@ -1,4 +1,4 @@
-use super::ObjectArchetype;
+use super::{ObjectArchetype};
 
 
 
@@ -13,5 +13,9 @@ impl YetiScript {
     pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
         self.buffer = buf.to_vec();
         Ok(())
+    }
+
+    pub fn unload(&mut self) {
+        self.buffer.clear();
     }
 }

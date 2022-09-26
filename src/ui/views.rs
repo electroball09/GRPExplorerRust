@@ -1,8 +1,6 @@
-use std::borrow::BorrowMut;
 use std::ops::DerefMut;
-use std::{rc::Rc, cell::RefCell, ops::Deref, borrow::Borrow};
+use std::{ops::Deref};
 use egui::Ui;
-use id_tree::NodeId;
 
 use crate::bigfile::Bigfile;
 use crate::bigfile::metadata::FileEntry;
@@ -119,7 +117,9 @@ impl FileEditorTabs {
     pub fn open_new_tab(&mut self, key: u32) {
         if !self.editor_tabs.contains(&key) {
             self.editor_tabs.push(key);
-            self.bigfile.as_ref().unwrap().as_ref().borrow_mut().load_file(key).unwrap();
+            if let Err(error) = self.bigfile.as_ref().unwrap().as_ref().borrow_mut().load_file(key) {
+                println!("{}", error);
+            }
         }
        self.set_open_tab(key);
     }
@@ -132,9 +132,12 @@ impl FileEditorTabs {
         }
     }
 
-    pub fn close_tab(&mut self, key: u32) {
+    pub fn close_tab(&mut self, key: u32, bf: &mut Bigfile) {
         if let Some(idx) = self.editor_tabs.iter().position(|k| *k == key) {
             self.editor_tabs.remove(idx);
+
+            bf.unload_file(key).expect("failed to unload file");
+
             let mut idx = idx as i32;
             if key == self.open_tab.unwrap() {
                 idx = (idx).min(self.editor_tabs.len() as i32 - 1);
@@ -176,7 +179,7 @@ impl View for FileEditorTabs {
     fn draw(&mut self, _ui: &mut egui::Ui, ctx: &egui::Context) {
         if let Some(bf) = self.bigfile.clone() {
             let mut r = bf.as_ref().borrow_mut();
-            let bf = r.deref_mut();
+            let mut bf = r.deref_mut();
             egui::TopBottomPanel::top("file_editor_tabs").show(ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     let mut new_open_tab: Option<u32> = None;
@@ -206,7 +209,7 @@ impl View for FileEditorTabs {
                         self.set_open_tab(key);
                     }
                     if let Some(key) = close_tab {
-                        self.close_tab(key);
+                        self.close_tab(key, &mut bf);
                     }
                 });
             });
@@ -214,6 +217,19 @@ impl View for FileEditorTabs {
                 egui::SidePanel::left("file_entry_panel").default_width(200.0)
                     .resizable(false).show(ctx, |ui| {
                         FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, ctx);
+
+                        ui.horizontal(|ui| {
+                            if ui.button("Extract...").clicked()  {
+                                let path = rfd::FileDialog::new()
+                                    .pick_folder()
+                                    .unwrap();
+
+                                let mut path = String::from(path.to_str().unwrap());
+                                path += &String::from(format!("/{}", String::from(bf.file_table[&key].get_name_ext())));
+
+                                bf.extract_file_to_path(&path, key).unwrap();
+                            }
+                        });
                     });
                 egui::CentralPanel::default().show(ctx, |ui| {
                     let mut y = bf.object_table.get_mut(&key).unwrap();

@@ -66,14 +66,39 @@ impl Bigfile {
         let obj = self.object_table.get_mut(&key).unwrap();
         if obj.is_loaded() { return Ok(()); }
         
-        let v = self.io.read_file(&self.segment_header, &self.bigfile_header, file).unwrap();
+        let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, file)?;
 
         let mut buf: [u8; 4] = [0; 4];
-        buf.copy_from_slice(&v[..4]);
+        buf.copy_from_slice(&bytes[..4]);
         let num_refs = i32::from_le_bytes(buf);
-        println!("num refs {}", &num_refs);
+        //println!("num refs {}", &num_refs);
 
-        obj.archetype.load_from_buf(&v[(4 + (num_refs as usize) * 4)..])
+        obj.load_from_buf(&bytes[(4 + (num_refs as usize) * 4)..])
+    }
+
+    pub fn unload_file(&mut self, key: u32) -> Result<(), String> {
+        let obj = self.object_table.get_mut(&key).unwrap();
+        obj.unload();
+        Ok(())
+    }
+
+    pub fn extract_file_to_path(&mut self, path: &str, key: u32) -> Result<(), String> {
+        let mut file = match std::fs::File::create(path) {
+            Ok(file) => file,
+            Err(error) => return Err(error.to_string())
+        };
+
+        let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, &self.file_table[&key])?;
+
+        let mut buf: [u8; 4] = [0; 4];
+        buf.copy_from_slice(&bytes[..4]);
+        let num_refs = i32::from_le_bytes(buf);
+
+        if let Err(error) = std::io::Write::write(&mut file, &bytes[(4 + (num_refs as usize) * 4)..]) {
+            return Err(error.to_string());
+        }
+
+        Ok(())
     }
 
     fn build_archetype_table(&mut self) -> Result<HashMap<u32, YetiObject>, String> {

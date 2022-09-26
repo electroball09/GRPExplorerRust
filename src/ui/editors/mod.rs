@@ -1,12 +1,16 @@
 mod script_editor;
 mod blank_editor;
 mod ini_editor;
+mod curve_editor;
+mod otf_editor;
 
 use std::{rc::Rc, cell::RefCell, ops::{Deref, DerefMut}};
 
 pub use script_editor::*;
 pub use blank_editor::*;
 pub use ini_editor::*;
+pub use curve_editor::*;
+pub use otf_editor::*;
 use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::metadata::ObjectType};
 
 pub trait Editor {
@@ -17,6 +21,8 @@ pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mu
     match obj_type {
         ObjectType::zc_ => ScriptEditor::draw(obj, ui, ctx),
         ObjectType::ini => IniEditor::draw(obj, ui, ctx),
+        ObjectType::cur => CurveEditor::draw(obj, ui, ctx),
+        ObjectType::otf => CurveEditor::draw(obj, ui, ctx),
         _ => BlankEditor::draw(obj, ui, ctx)
     }
 }

@@ -16,10 +16,12 @@ pub enum IniEntry {
 impl YetiIni {
     pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
         let mut cursor = Cursor::new(buf);
-        self.load_from_reader(&mut cursor)
+        self.entries = self.load_from_reader(&mut cursor)?;
+        Ok(())
     }
 
-    fn load_from_reader(&mut self, reader: &mut impl Read) -> Result<(), String> {
+    fn load_from_reader(&self, reader: &mut impl Read) -> Result<HashMap<String, IniEntry>, String> {
+        let mut entries: HashMap<String, IniEntry> = HashMap::new();
         let num_entries = reader.read_u32::<LittleEndian>().unwrap();
         let mut i = 0;
         while i < num_entries {
@@ -39,11 +41,16 @@ impl YetiIni {
                 _ => IniEntry::Invalid
             };
 
-            self.entries.insert(key, value);
+            entries.insert(key, value);
 
             i += 1;
         }
 
-        Ok(())
+        Ok(entries)
+    }
+
+    pub fn unload(&mut self) {
+        self.entries.clear();
+        self.entries.shrink_to_fit();
     }
 }
