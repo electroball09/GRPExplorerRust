@@ -15,9 +15,8 @@ impl Editor for ScriptEditor {
             let mut buf = script.buffer.clone();
             buf.pop(); //nul terminator
             let mut script_string = String::from_utf8(buf).unwrap();
-            ui.text_edit_multiline(&mut script_string);
-        } else {
-            ui.label(format!("wrong editor ???"));
+            ui.code_editor(&mut script_string);
+            //ui.text_edit_multiline(&mut script_string);
         }
     }
 }

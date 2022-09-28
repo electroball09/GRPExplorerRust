@@ -18,6 +18,8 @@ strum_macros = "0.24"
 font-loader = "0.11.0"
 flate2 = { version = "1.0.24", default-features = false, features = ["zlib"] }
 chrono = "0.4.22"
+glam = "0.21.3"
+bitflags = "1.3.2"
 
 [dependencies.strum]
 version = "0.24.1"

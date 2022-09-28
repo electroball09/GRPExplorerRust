@@ -1,0 +1,32 @@
+ 1 - attachments extended structure
+ 2 - initial position
+ 3 - collision ??
+ 4 - Has_Anim
+ 5 - collision list handle
+ 6 - dustFXDeflector ??
+ 7 - physics object
+ 8 - visual
+ 9 - bounding box
+10 - GAMstruct ??
+11 - zone array
+12 - AI extended structure flag
+13 - sequence
+14 - light flag / special FX extended structure
+15 - 
+16 - 
+17 - dustfx extended structure
+18 - 
+19 - collision list extended structure
+20 - 
+21 - 
+22 - 
+23 - SNDobject
+24 - 
+25 - game group
+26 - game hook
+27 - 
+28 - sfx object extended structure
+29 - editable bounding volume
+30 - oriented box
+31 - spawner bank ??
+32 - 

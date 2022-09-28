@@ -11,6 +11,71 @@ use io::*;
 use crate::objects::YetiObject;
 use crate::objects::get_archetype_for_type;
 
+pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
+    match obj_type {
+        ObjectType::ini => Some("Yeti INI"),
+        ObjectType::wor => Some("World"),
+        ObjectType::gol => Some("World Game Object List"),
+        ObjectType::wal => Some("World Way List"),
+        ObjectType::lay => Some("World Layer"),
+        ObjectType::gao => Some("Game Object"),
+        ObjectType::way => Some("Way (?)"),
+        ObjectType::cur => Some("Curve"),
+        ObjectType::wel => Some("Way External Link"),
+        ObjectType::seq => Some("Sequence"),
+        ObjectType::got => Some("Graphic Object Table"),
+        ObjectType::msh => Some("Mesh Metadata"),
+        ObjectType::vxc => Some("Vertex Cache (?)"),
+        ObjectType::mat => Some("Material"),
+        ObjectType::sha => Some("Shader"),
+        ObjectType::tga => Some("Texture Metadata"),
+        ObjectType::ske => Some("Skeleton"),
+        ObjectType::shd => Some("Visual Shader"),
+        ObjectType::dst => Some("DustFX"),
+        ObjectType::cub => Some("Cubemap"),
+        ObjectType::zc_ => Some("AI Script"),
+        ObjectType::acb => Some("Action Bank"),
+        ObjectType::act => Some("Action"),
+        ObjectType::ani => Some("Animation"),
+        ObjectType::aev => Some("Animation Event"),
+        ObjectType::snk => Some("Sound Bank"),
+        ObjectType::end => Some("Enumerable Descriptor"),
+        ObjectType::sam => Some("Sound Ambience"),
+        ObjectType::sin => Some("Sound INI"),
+        ObjectType::smx => Some("Sound Mix"),
+        ObjectType::svs => Some("Sound Volumetric Object"),
+        ObjectType::ai_ => Some("AI Model"),
+        ObjectType::aiv => Some("AI Variable"),
+        ObjectType::zon => Some("Zone"),
+        ObjectType::col => Some("Collision ???"),
+        ObjectType::cot => Some("Collision Object Table"),
+        ObjectType::gml => Some("Game Material List"),
+        ObjectType::gmt => Some("Game Material"),
+        ObjectType::ccm => Some("Cooked Collision Mesh ???"),
+        ObjectType::dbk => Some("Dynamic Bank"),
+        ObjectType::dbl => Some("Dynamic Bank List"),
+        ObjectType::dbr => Some("Dynamic Bank Reference List"),
+        ObjectType::wil => Some("World Include List"),
+        ObjectType::lab => Some("List Action Bank"),
+        ObjectType::feu => Some("Fire Package"),
+        ObjectType::ffd => Some("Fire Font Package"),
+        ObjectType::top => Some("World Topography"),
+        ObjectType::msd => Some("Mesh Data"),
+        ObjectType::nav => Some("World Nav Data"),
+        ObjectType::cst => Some("AI Const List"),
+        ObjectType::syw => Some("Synapse World ???"),
+        ObjectType::txd => Some("Texture Data"),
+        ObjectType::fbk => Some("Fire Bank"),
+        ObjectType::eps => Some("AI Editable Param Struct"),
+        ObjectType::epl => Some("AI Editable Param List"),
+        ObjectType::swl => Some("Synapse World List ???"),
+        ObjectType::dtb => Some("Data Table"),
+        ObjectType::otf => Some("OTF Font"),
+        ObjectType::ttf => Some("TTF Font"),
+        _ => None
+    }
+}
+
 pub struct Bigfile {
     pub segment_header: SegmentHeader,
     pub bigfile_header: BigfileHeader,
@@ -71,8 +136,18 @@ impl Bigfile {
         let mut buf: [u8; 4] = [0; 4];
         buf.copy_from_slice(&bytes[..4]);
         let num_refs = i32::from_le_bytes(buf);
-        //println!("num refs {}", &num_refs);
+        let mut refs: Vec<u32> = Vec::new();
+        if num_refs > 0 {
+            let mut i: usize = 0;
+            while i < num_refs as usize {
+                let ind = 4 + i * 4;
+                buf.copy_from_slice(&bytes[ind..ind + 4]);
+                refs.push(u32::from_le_bytes(buf));
+                i += 1;
+            }
+        }
 
+        obj.references = refs;
         obj.load_from_buf(&bytes[(4 + (num_refs as usize) * 4)..])
     }
 
@@ -99,6 +174,25 @@ impl Bigfile {
         }
 
         Ok(())
+    }
+
+    pub fn get_full_directory(&self, folder: u16) -> String {
+        let mut dir = String::new();
+
+        let mut dirs: Vec<u16> = Vec::new();
+        dirs.push(folder);
+        let mut parent = self.folder_table[&folder].parent_folder;
+        while parent != 0xFFFF {
+            dirs.push(parent);
+            parent = self.folder_table[&parent].parent_folder;
+        };
+
+        for folder in dirs.iter().rev() {
+            dir += &String::from(self.folder_table[&folder].get_name());
+            dir += "/";
+        }
+
+        dir
     }
 
     fn build_archetype_table(&mut self) -> Result<HashMap<u32, YetiObject>, String> {
@@ -147,27 +241,4 @@ impl Bigfile {
         Ok(())
     }
 
-    pub fn print_tree(&self) {
-        let root_id = self.tree.root_node_id().unwrap();
-
-        fn recurse(bf: &Bigfile, node_id: &NodeId, indentation: &String) {
-            let node = bf.tree.get(node_id).unwrap();
-            println!("{}{}", indentation, bf.folder_table[node.data()].get_name());
-            let mut new_ind = indentation.clone();
-            new_ind += &"-";
-            for child in node.children().iter() {
-                recurse(bf, child, &new_ind);
-            }
-        }
-
-        recurse(self, root_id, &String::from(""));
-    }
-
-    pub fn folder_idx_to_node(&self, idx: &u16) -> &Node<u16> {
-        self.tree.get(&self.node_id_map[idx].0).unwrap()
-    }
-
-    pub fn node_id_to_folder(&self, node_id: &NodeId) -> &FolderEntry {
-        &self.folder_table[self.tree.get(node_id).unwrap().data()]
-    }
 }

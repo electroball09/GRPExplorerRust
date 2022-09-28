@@ -11,7 +11,6 @@ use crate::Bigfile;
 
 use self::views::*;
 
-pub mod components;
 pub mod views;
 pub mod editors;
 

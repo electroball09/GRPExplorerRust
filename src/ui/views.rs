@@ -2,7 +2,7 @@ use std::ops::DerefMut;
 use std::{ops::Deref};
 use egui::Ui;
 
-use crate::bigfile::Bigfile;
+use crate::bigfile::{Bigfile, obj_type_to_name};
 use crate::bigfile::metadata::FileEntry;
 use crate::ui::*;
 use crate::ui::editors::draw_editor_for_type;
@@ -162,10 +162,16 @@ impl FileEditorTabs {
             clicked
         }
 
+        let tmp_type_name = &format!("{:?}", file.object_type);
+        let obj_type_name: &str = match obj_type_to_name(&file.object_type) {
+            Some(string) => string,
+            None => &tmp_type_name
+        };
+
         file_metadata_line(ui, "   key:", &format!("{:#010X}", file.key));
         file_metadata_line(ui, "offset:", &format!("{:#010X}", file.offset));
         file_metadata_line(ui, " unk01:", &format!("{:#010X}", file.unk01));
-        file_metadata_line(ui, "  type:", &format!("{:?}", file.object_type));
+        file_metadata_line(ui, "  type:", &format!("{}", obj_type_name));
         file_metadata_line(ui, "folder:", &format!("{:#06X}", file.parent_folder));
         file_metadata_line(ui, "  time:", &format!("{}", file.timestamp));
         file_metadata_line(ui, " flags:", &format!("{:#010X}", file.flags));
@@ -177,6 +183,7 @@ impl FileEditorTabs {
 
 impl View for FileEditorTabs {
     fn draw(&mut self, _ui: &mut egui::Ui, ctx: &egui::Context) {
+        let mut open_new_tab: Option<u32> = None;
         if let Some(bf) = self.bigfile.clone() {
             let mut r = bf.as_ref().borrow_mut();
             let mut bf = r.deref_mut();
@@ -188,7 +195,9 @@ impl View for FileEditorTabs {
                         let open_tab_key = self.open_tab.expect("we have tabs, but none are open???");
                         let rsp = match *key == open_tab_key {
                             true => {
-                                ui.label(bf.file_table[key].get_name_ext())
+                                egui::Frame::default().fill(egui::Color32::from_rgb(255, 255, 255)).show(ui, |ui| {
+                                    ui.label(bf.file_table[key].get_name_ext())
+                                }).response
                             },
                             false => {
                                 ui.selectable_label(false, bf.file_table[key].get_name_ext())
@@ -212,6 +221,12 @@ impl View for FileEditorTabs {
                         self.close_tab(key, &mut bf);
                     }
                 });
+                if let Some(key) = self.open_tab {
+                    ui.separator();
+                    let mut dir = bf.get_full_directory(bf.file_table[&key].parent_folder);
+                    dir += bf.file_table[&key].get_name_ext();
+                    ui.label(dir);
+                }
             });
             if let Some(key) = self.open_tab {
                 egui::SidePanel::left("file_entry_panel").default_width(200.0)
@@ -225,17 +240,34 @@ impl View for FileEditorTabs {
                                     .unwrap();
 
                                 let mut path = String::from(path.to_str().unwrap());
-                                path += &String::from(format!("/{}", String::from(bf.file_table[&key].get_name_ext())));
+                                path += &String::from(format!("/{:#010X} {}", key, String::from(bf.file_table[&key].get_name_ext())));
 
                                 bf.extract_file_to_path(&path, key).unwrap();
                             }
                         });
+
+                        ui.add_space(15.0);
+
+                        egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui| {
+                            for key in bf.object_table[&key].references.iter() {
+                                if bf.file_table.contains_key(&key) {
+                                    if ui.selectable_label(false, format!("{:#010X}", key)).clicked() {
+                                        open_new_tab = Some(*key);
+                                    }
+                                } else {
+                                    ui.label(format!("{:#010X}", key));
+                                }
+                            }
+                        })
                     });
                 egui::CentralPanel::default().show(ctx, |ui| {
                     let mut y = bf.object_table.get_mut(&key).unwrap();
                     draw_editor_for_type(&bf.file_table[&key].object_type, &mut y, ui, ctx);
-                });
+                }); 
             }
+        }
+        if let Some(key) = open_new_tab {
+            self.open_new_tab(key);
         }
     }
 }
