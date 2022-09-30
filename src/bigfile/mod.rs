@@ -9,12 +9,12 @@ use metadata::*;
 use io::*;
 
 use crate::objects::YetiObject;
-use crate::objects::get_archetype_for_type;
 
 pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
     match obj_type {
         ObjectType::ini => Some("Yeti INI"),
         ObjectType::wor => Some("World"),
+        ObjectType::woc => Some("World Engine Config"),
         ObjectType::gol => Some("World Game Object List"),
         ObjectType::wal => Some("World Way List"),
         ObjectType::lay => Some("World Layer"),
@@ -47,7 +47,7 @@ pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
         ObjectType::ai_ => Some("AI Model"),
         ObjectType::aiv => Some("AI Variable"),
         ObjectType::zon => Some("Zone"),
-        ObjectType::col => Some("Collision ???"),
+        ObjectType::col => Some("Collision List"),
         ObjectType::cot => Some("Collision Object Table"),
         ObjectType::gml => Some("Game Material List"),
         ObjectType::gmt => Some("Game Material"),
@@ -133,22 +133,7 @@ impl Bigfile {
         
         let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, file)?;
 
-        let mut buf: [u8; 4] = [0; 4];
-        buf.copy_from_slice(&bytes[..4]);
-        let num_refs = i32::from_le_bytes(buf);
-        let mut refs: Vec<u32> = Vec::new();
-        if num_refs > 0 {
-            let mut i: usize = 0;
-            while i < num_refs as usize {
-                let ind = 4 + i * 4;
-                buf.copy_from_slice(&bytes[ind..ind + 4]);
-                refs.push(u32::from_le_bytes(buf));
-                i += 1;
-            }
-        }
-
-        obj.references = refs;
-        obj.load_from_buf(&bytes[(4 + (num_refs as usize) * 4)..])
+        obj.load_from_buf(&bytes)
     }
 
     pub fn unload_file(&mut self, key: u32) -> Result<(), String> {
@@ -198,7 +183,8 @@ impl Bigfile {
     fn build_archetype_table(&mut self) -> Result<HashMap<u32, YetiObject>, String> {
         let mut table = HashMap::<u32, YetiObject>::new();
         for kv in self.file_table.iter() {
-            table.insert(kv.0.clone(), get_archetype_for_type(&kv.1.object_type));
+            table.insert(*kv.0, YetiObject::from_file_entry(&self.file_table[kv.0]));
+            //table.insert(*kv.0, create_object_for_type(*kv.0, self.file_table[kv.0].get_name(), &kv.1.object_type));
         };
         Ok(table)
     }

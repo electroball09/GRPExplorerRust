@@ -57,7 +57,8 @@ impl GameObject {
         let mut cursor = Cursor::new(buf);
 
         self.zero = cursor.read_u32::<LittleEndian>().unwrap();
-        self.identity_flags = IdentityFlags::from_bits(cursor.read_u32::<LittleEndian>().unwrap()).unwrap();
+        let flags = cursor.read_u32::<LittleEndian>().unwrap();
+        self.identity_flags = IdentityFlags::from_bits(flags).unwrap();
         self.streaming_flags = cursor.read_u32::<LittleEndian>().unwrap();
         self.flag_a = cursor.read_u8().unwrap();
         self.flag_b = cursor.read_u8().unwrap();

@@ -30,3 +30,20 @@
 30 - oriented box
 31 - spawner bank ??
 32 - 
+
+MATH_cl_CurveObject
+AI_cl_Script
+HDR_cl_PostEffect
+ZON_cl_Mod
+ capsule
+ oriented box
+ axis aligned box
+ sphere
+ ray
+ point
+ zone
+sub_8620B0
+sub_6A6080
+sub_8C7E00
+WAY_cl_Way
+SYN_cl

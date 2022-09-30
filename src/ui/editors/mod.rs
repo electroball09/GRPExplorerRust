@@ -5,8 +5,8 @@ mod curve_editor;
 mod otf_editor;
 mod layer_editor;
 mod gao_editor;
-
-use std::{rc::Rc, cell::RefCell, ops::{Deref, DerefMut}};
+mod feu_editor;
+mod ai_const_editor;
 
 pub use script_editor::*;
 pub use blank_editor::*;
@@ -15,6 +15,8 @@ pub use curve_editor::*;
 pub use otf_editor::*;
 pub use layer_editor::*;
 pub use gao_editor::*;
+pub use feu_editor::*;
+pub use ai_const_editor::*;
 use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::metadata::ObjectType};
 
 pub trait Editor {
@@ -29,6 +31,8 @@ pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mu
         ObjectType::otf => CurveEditor::draw(obj, ui, ctx),
         ObjectType::lay => LayerEditor::draw(obj, ui, ctx),
         ObjectType::gao => GameobjectEditor::draw(obj, ui, ctx),
+        ObjectType::feu => FeuEditor::draw(obj, ui, ctx),
+        ObjectType::cst => AIConstEditor::draw(obj, ui, ctx),
         _ => BlankEditor::draw(obj, ui, ctx)
     }
 }
