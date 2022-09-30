@@ -248,6 +248,7 @@ impl View for FileEditorTabs {
 
                         ui.add_space(15.0);
 
+                        ui.label(format!("references: {}", bf.object_table[&key].references.len()));
                         egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui| {
                             for key in bf.object_table[&key].references.iter() {
                                 if bf.file_table.contains_key(&key) {

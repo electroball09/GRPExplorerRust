@@ -26,7 +26,7 @@ impl Editor for FeuEditor {
             ui.label(format!("unk_01: {}", feu.unk_01));
             ui.label(format!("unk_02: {}", feu.unk_02));
             ui.add_space(5.0);
-            ui.label(format!("num refs: {}", feu.feu_refs.len()));
+            ui.label(format!("fire refs: {}", feu.feu_refs.len()));
             egui::ScrollArea::new([false, true]).auto_shrink([false, true]).max_height(350.0).show(ui,|ui| {
                 for fref in feu.feu_refs.iter() {
                     ui.label(fref);

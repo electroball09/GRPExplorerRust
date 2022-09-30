@@ -17,16 +17,15 @@ impl Feu {
         self.unk_01 = cursor.read_u32::<LittleEndian>().unwrap();
         self.unk_02 = cursor.read_u32::<LittleEndian>().unwrap();
 
-        let check_uef = |pos: usize| {
-            let mut uef_buf: [u8; 4] = [0; 4];
-            uef_buf.copy_from_slice(&buf[pos..pos + 4]);
-            return uef_buf[0] == b'U' &&
-                    uef_buf[1] == b'E' &&
-                    uef_buf[2] == b'F' &&
-                    uef_buf[3] == 0x08;
-        };
+        fn check_uef(buf: &[u8]) -> bool {
+            buf[0] == b'U' &&
+            buf[1] == b'E' &&
+            buf[2] == b'F' &&
+            buf[3] == 0x08
+        }
 
-        let mut found_uef = check_uef(cursor.position() as usize);
+        let cursor_pos = cursor.position() as usize;
+        let mut found_uef = check_uef(&buf[cursor_pos..cursor_pos + 4]);
         let mut refs: Vec<String> = Vec::new();
 
         while !found_uef {
@@ -37,14 +36,11 @@ impl Feu {
                 b = cursor.read_u8().unwrap();
             }
             refs.push(r);
-            found_uef = check_uef(cursor.position() as usize);
+            let cursor_pos = cursor.position() as usize;
+            found_uef = check_uef(&buf[cursor_pos..cursor_pos + 4]);
         }
 
         self.feu_refs = refs;
-
-        self.feu_data.push(b'F');
-        self.feu_data.push(b'W');
-        self.feu_data.push(b'S');
 
         let data_pos = cursor.position() as usize;
         self.feu_data = (&buf[data_pos..]).iter().map(|b| *b).collect();
