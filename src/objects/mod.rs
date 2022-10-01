@@ -6,6 +6,7 @@ pub mod layer;
 pub mod gameobject;
 pub mod feu;
 pub mod ai_const;
+pub mod dbk;
 
 use std::io::Cursor;
 
@@ -16,7 +17,7 @@ use curve::*;
 
 use crate::bigfile::metadata::{ObjectType, FileEntry};
 
-use self::{otf::Otf, layer::YetiLayer, gameobject::GameObject, feu::Feu, ai_const::AIConstList};
+use self::{otf::Otf, layer::YetiLayer, gameobject::GameObject, feu::Feu, ai_const::AIConstList, dbk::DynamicBank};
 
 pub struct YetiObject {
     loaded: bool,
@@ -58,6 +59,7 @@ impl YetiObject {
             ObjectType::gao => ObjectArchetype::GameObject(GameObject::default()),
             ObjectType::feu => ObjectArchetype::Feu(Feu::default()),
             ObjectType::cst => ObjectArchetype::ConstList(AIConstList::default()),
+            ObjectType::dbk => ObjectArchetype::Dbk(DynamicBank::default()),
             _ => ObjectArchetype::NoImpl
         }
     }
@@ -78,7 +80,7 @@ impl YetiObject {
         let mut cursor = Cursor::new(buf);
         let num_refs = cursor.read_u32::<LittleEndian>().unwrap();
         let mut refs: Vec<u32> = Vec::with_capacity(num_refs as usize);
-        dbg!(num_refs);
+        //dbg!(num_refs);
         let mut i = 0;
         while i < num_refs {
             refs.push(cursor.read_u32::<LittleEndian>().unwrap());
@@ -110,6 +112,7 @@ pub enum ObjectArchetype {
     GameObject(GameObject),
     Feu(Feu),
     ConstList(AIConstList),
+    Dbk(DynamicBank)
 }
 
 impl ObjectArchetype {
@@ -123,6 +126,7 @@ impl ObjectArchetype {
             Self::GameObject(gao) => gao.load_from_buf(buf),
             Self::Feu(feu) => feu.load_from_buf(buf),
             Self::ConstList(list) => list.load_from_buf(buf),
+            Self::Dbk(dbk) => dbk.load_from_buf(buf),
             Self::NoImpl => { Ok(()) }
         }
     }
@@ -137,6 +141,7 @@ impl ObjectArchetype {
             Self::GameObject(gao) => gao.unload(),
             Self::Feu(feu) => feu.unload(),
             Self::ConstList(list) => list.unload(),
+            Self::Dbk(dbk) => dbk.unload(),
             Self::NoImpl => { }
         }
     }

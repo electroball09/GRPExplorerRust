@@ -6,19 +6,36 @@ pub struct IniEditor {
 }
 
 impl Editor for IniEditor {
-    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Ini(ini) = &obj.archetype {
-            for kv in ini.entries.iter() {
-                ui.horizontal(|ui| {
-                    ui.label(kv.0);
-                    ui.label("-");
-                    match kv.1 {
-                        IniEntry::Int(value) => { ui.label(format!("{:#010X}", value)); },
-                        IniEntry::AssetKey(value) => { ui.label(format!("{:#010X}", value)); },
-                        _ => { }
+            for value in ini.entries.iter() {
+                if let Some(v) = ui.horizontal(|ui| {
+                    match value {
+                        IniEntry::Int(key, value) => { 
+                            ui.label(format!("{} - {:#010X}", key, value));
+                            None
+                        },
+                        IniEntry::AssetKey(key, value) => {
+                            ui.label(format!("{} -", key));
+                            if ui.selectable_label(false, format!("{:#010X}", value)).clicked() {
+                                return Some(vec![*value]);
+                            }
+                            None
+                        },
+                        _ => { 
+                            ui.label("invalid entry type"); 
+                            None
+                        }
                     }
-                });
+                }).inner {
+                    return EditorResponse {
+                        open_new_tab: Some(v),
+                        ..Default::default()
+                    }
+                };
             }
         }
+
+        EditorResponse::default()
     }
 }

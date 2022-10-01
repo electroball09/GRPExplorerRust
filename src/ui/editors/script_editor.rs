@@ -1,4 +1,4 @@
-use super::Editor;
+use super::{Editor, EditorResponse};
 use crate::objects::*;
 
 pub struct ScriptEditor {
@@ -10,7 +10,7 @@ impl ScriptEditor {
 }
 
 impl Editor for ScriptEditor {
-    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Script(script) = &obj.archetype {
             let mut buf = script.buffer.clone();
             buf.pop(); //nul terminator
@@ -18,5 +18,7 @@ impl Editor for ScriptEditor {
             ui.code_editor(&mut script_string);
             //ui.text_edit_multiline(&mut script_string);
         }
+
+        EditorResponse::default()
     }
 }

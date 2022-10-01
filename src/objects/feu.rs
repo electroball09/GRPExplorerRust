@@ -24,7 +24,7 @@ impl Feu {
             buf[3] == 0x08
         }
 
-        let cursor_pos = cursor.position() as usize;
+        let mut cursor_pos = cursor.position() as usize;
         let mut found_uef = check_uef(&buf[cursor_pos..cursor_pos + 4]);
         let mut refs: Vec<String> = Vec::new();
 
@@ -36,7 +36,7 @@ impl Feu {
                 b = cursor.read_u8().unwrap();
             }
             refs.push(r);
-            let cursor_pos = cursor.position() as usize;
+            cursor_pos = cursor.position() as usize;
             found_uef = check_uef(&buf[cursor_pos..cursor_pos + 4]);
         }
 

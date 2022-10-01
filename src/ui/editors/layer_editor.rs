@@ -1,11 +1,11 @@
 use crate::objects::ObjectArchetype;
 
-use super::Editor;
+use super::{Editor, EditorResponse};
 
 pub struct LayerEditor;
 
 impl Editor for LayerEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Layer(layer) = &obj.archetype {
             ui.horizontal(|ui| {
                 ui.label("Layer Name:");
@@ -13,5 +13,7 @@ impl Editor for LayerEditor {
                 ui.text_edit_singleline(&mut name);
             });
         }
+
+        EditorResponse::default()
     }
 }

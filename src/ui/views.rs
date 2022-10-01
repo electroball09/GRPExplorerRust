@@ -183,7 +183,7 @@ impl FileEditorTabs {
 
 impl View for FileEditorTabs {
     fn draw(&mut self, _ui: &mut egui::Ui, ctx: &egui::Context) {
-        let mut open_new_tab: Option<u32> = None;
+        let mut open_new_tab: Option<Vec<u32>> = None;
         if let Some(bf) = self.bigfile.clone() {
             let mut r = bf.as_ref().borrow_mut();
             let mut bf = r.deref_mut();
@@ -253,7 +253,7 @@ impl View for FileEditorTabs {
                             for key in bf.object_table[&key].references.iter() {
                                 if bf.file_table.contains_key(&key) {
                                     if ui.selectable_label(false, format!("{:#010X}", key)).clicked() {
-                                        open_new_tab = Some(*key);
+                                        open_new_tab = Some(vec![*key]);
                                     }
                                 } else {
                                     ui.label(format!("{:#010X}", key));
@@ -263,12 +263,20 @@ impl View for FileEditorTabs {
                     });
                 egui::CentralPanel::default().show(ctx, |ui| {
                     let mut y = bf.object_table.get_mut(&key).unwrap();
-                    draw_editor_for_type(&bf.file_table[&key].object_type, &mut y, ui, ctx);
+                    let rsp = draw_editor_for_type(&bf.file_table[&key].object_type, &mut y, ui, ctx);
+                    if let Some(v) = rsp.open_new_tab {
+                        open_new_tab = Some(v);
+                    }
+                    if let Some(act) = rsp.perform_action {
+                        act(&bf);
+                    }
                 }); 
             }
         }
-        if let Some(key) = open_new_tab {
-            self.open_new_tab(key);
+        if let Some(v) = open_new_tab {
+            for key in &v {
+                self.open_new_tab(*key);
+            }
         }
     }
 }

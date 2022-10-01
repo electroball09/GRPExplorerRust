@@ -145,6 +145,6 @@ impl AIConstList {
     }
 
     pub fn unload(&mut self) {
-
+        self.root_node = ConstTreeNode::default();
     }
 }

@@ -2,12 +2,12 @@ use std::fs::File;
 
 use crate::objects::ObjectArchetype;
 use std::io::Write;
-use super::Editor;
+use super::{Editor, EditorResponse};
 
 pub struct FeuEditor;
 
 impl Editor for FeuEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Feu(feu) = &obj.archetype {
             if ui.button("Extract to SWF...").clicked() {
                 if let Some(path) = rfd::FileDialog::new().pick_folder() {
@@ -35,5 +35,7 @@ impl Editor for FeuEditor {
             ui.add_space(5.0);
             ui.label(format!("data len: {}", feu.feu_data.len()));
         }
+
+        EditorResponse::default()
     }
 }

@@ -4,13 +4,13 @@ use byteorder::{ReadBytesExt, LittleEndian};
 
 #[derive(Default)]
 pub struct YetiIni {
-    pub entries: HashMap<String, IniEntry>
+    pub entries: Vec<IniEntry>
 }
 
 pub enum IniEntry {
     Invalid,
-    Int(u32),
-    AssetKey(u32)
+    Int(String, u32),
+    AssetKey(String, u32)
 }
 
 impl YetiIni {
@@ -20,8 +20,8 @@ impl YetiIni {
         Ok(())
     }
 
-    fn load_from_reader(&self, reader: &mut impl Read) -> Result<HashMap<String, IniEntry>, String> {
-        let mut entries: HashMap<String, IniEntry> = HashMap::new();
+    fn load_from_reader(&self, reader: &mut impl Read) -> Result<Vec<IniEntry>, String> {
+        let mut entries: Vec<IniEntry> = Vec::new();
         let num_entries = reader.read_u32::<LittleEndian>().unwrap();
         let mut i = 0;
         while i < num_entries {
@@ -36,12 +36,12 @@ impl YetiIni {
 
             let key = String::from_utf8(v).unwrap();
             let value = match entry_type {
-                0 => IniEntry::Int(value),
-                1 => IniEntry::AssetKey(value),
+                0 => IniEntry::Int(key, value),
+                1 => IniEntry::AssetKey(key, value),
                 _ => IniEntry::Invalid
             };
 
-            entries.insert(key, value);
+            entries.push(value);
 
             i += 1;
         }
