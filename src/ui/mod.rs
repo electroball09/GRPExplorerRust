@@ -4,12 +4,16 @@ use std::collections::BTreeMap;
 use std::rc::Rc;
 
 use eframe::CreationContext;
+use egui::Color32;
 use font_loader::system_fonts;
 use crate::bigfile::io::*;
 use crate::FileDialog;
 use crate::Bigfile;
 
 use self::views::*;
+use self::views::side_panel::SidePanelView;
+use views::file_tree_view::FileTreeView;
+use views::editor_tabs_view::FileEditorTabs;
 
 pub mod views;
 pub mod editors;
@@ -18,7 +22,7 @@ pub type BfRef = Option<Rc<RefCell<Bigfile>>>;
 
 pub struct ExplorerApp {
     pub bigfile: BfRef,
-    ft_view: FileTreeView,
+    side_panel: views::side_panel::SidePanelView,
     fe_view: FileEditorTabs,
 }
 
@@ -47,9 +51,44 @@ impl ExplorerApp {
             families: m2
         });
 
+        let style = cc.egui_ctx.style().as_ref().clone();
+        let style = egui::Style {
+            visuals: egui::Visuals {
+                widgets: egui::style::Widgets {
+                    noninteractive: egui::style::WidgetVisuals {
+                        fg_stroke: egui::Stroke {
+                            color: Color32::from_rgb(170, 170, 170),
+                            ..style.visuals.widgets.noninteractive.fg_stroke
+                        },
+                        ..style.visuals.widgets.noninteractive
+                    },
+                    inactive: egui::style::WidgetVisuals {
+                        fg_stroke: egui::Stroke {
+                            color: Color32::from_rgb(220, 220, 220),
+                            ..style.visuals.widgets.inactive.fg_stroke
+                        },
+                        ..style.visuals.widgets.inactive
+                    },
+                    active: egui::style::WidgetVisuals {
+                        fg_stroke: egui::Stroke {
+                            color: Color32::from_rgb(100, 100, 100),
+                            ..style.visuals.widgets.active.fg_stroke
+                        },
+                        bg_fill: Color32::from_rgb(220, 220, 220),
+                        ..style.visuals.widgets.active
+                    },
+                    ..style.visuals.widgets
+                },
+                ..style.visuals
+            },
+            
+            ..style
+        };
+        cc.egui_ctx.set_style(style);
+
         ExplorerApp {
             bigfile: None,
-            ft_view: FileTreeView::new(None),
+            side_panel: SidePanelView::new(None),
             fe_view: FileEditorTabs::new(None),
         }
     }
@@ -67,7 +106,6 @@ impl eframe::App for ExplorerApp {
                         if ui.button("Open Bigfile...").clicked() {
                             let file = FileDialog::new()
                             .add_filter("bigfile", &["big"])
-                            //.set_directory("")
                             .pick_file()
                             .unwrap();
                 
@@ -77,20 +115,26 @@ impl eframe::App for ExplorerApp {
                 
                             self.bigfile.replace(Rc::new(RefCell::new(bigfile)));
                 
-                            self.ft_view = FileTreeView::new(self.bigfile.clone());
-                            self.fe_view = FileEditorTabs::new(self.bigfile.clone());
+                            self.side_panel.set_bigfile(self.bigfile.clone());
+                            self.fe_view.set_bigfile(self.bigfile.clone());
                         }
                     }
                     if ui.button("Quit").clicked() {
                         frame.close();
                     }
                 });
+                ui.separator();
+                ui.menu_button("Settings", |ui| {
+                    self.side_panel.settings_menu(ui, ctx);
+                    self.fe_view.settings_menu(ui, ctx);
+                });
+                ui.separator();
             });
         });
 
-        egui::SidePanel::left("folder_browser").min_width(400.0).max_width(400.0).resizable(false).show(ctx, |ui| {
-            self.ft_view.draw(ui, ctx);
-            if let Some(key) = self.ft_view.did_click_file() {
+        egui::SidePanel::left("folder_browser").min_width(50.0).default_width(400.0).max_width(800.0).show(ctx, |ui| {
+            self.side_panel.draw(ui, ctx);
+            if let Some(key) = self.side_panel.should_open_new_tab() {
                 self.fe_view.open_new_tab(key);
             }
         });

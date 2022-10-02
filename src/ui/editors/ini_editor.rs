@@ -1,9 +1,7 @@
 use super::*;
 use crate::objects::ini::*;
 
-pub struct IniEditor {
-
-}
+pub struct IniEditor;
 
 impl Editor for IniEditor {
     fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
@@ -23,7 +21,7 @@ impl Editor for IniEditor {
                             None
                         },
                         _ => { 
-                            ui.label("invalid entry type"); 
+                            ui.label("invalid entry type");
                             None
                         }
                     }

@@ -15,6 +15,7 @@ impl DynamicBank {
         self.bank_id = cursor.read_u8().unwrap();
         self.num_bank_entries = cursor.read_u8().unwrap();
         self.the_rest_of_the_data = buf[3..].to_vec();
+        
         Ok(())
     }
 

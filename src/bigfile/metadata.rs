@@ -63,43 +63,51 @@ impl SegmentHeader {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct BigfileHeader {
     pub version: u16,
     pub num_folders: u16,
     pub num_files: u32,
-    pub unk01: [u8; 30],
-    pub unk02: [u8; 30],
-    pub unk03: [u8; 30],
-    pub unk04: [u8; 30]
+    pub unk_01: [u8; 72],
+    pub load_priority: u32,
+    pub auto_activate: bool, 
+    pub unk_02: [u8; 3],
+    pub data_root: [u8; 40]
+}
+
+impl Default for BigfileHeader {
+    fn default() -> Self {
+        Self {
+            version: 0,
+            num_folders: 0,
+            num_files: 0,
+            unk_01: [0; 72],
+            load_priority: 0,
+            auto_activate: false,
+            unk_02: [0; 3],
+            data_root: [0; 40]
+        }
+    }
 }
 
 impl BigfileHeader {
     pub fn read_from(reader: &mut impl Read) -> Result<BigfileHeader, String> {
-        let mut header = BigfileHeader {
-            version: reader.read_u16::<LittleEndian>().unwrap(),
-            num_folders: reader.read_u16::<LittleEndian>().unwrap(),
-            num_files: reader.read_u32::<LittleEndian>().unwrap(),
-            unk01: [0; 30],
-            unk02: [0; 30],
-            unk03: [0; 30],
-            unk04: [0; 30]
-        };
-
-        if let Err(error) = reader.read(&mut header.unk01) {
-            return Err(error.to_string());
-        }
-        if let Err(error) = reader.read(&mut header.unk02) {
-            return Err(error.to_string());
-        }
-        if let Err(error) = reader.read(&mut header.unk03) {
-            return Err(error.to_string());
-        }
-        if let Err(error) = reader.read(&mut header.unk04) {
-            return Err(error.to_string());
-        }
-
+        let mut header = BigfileHeader::default();
+        header.version = reader.read_u16::<LittleEndian>().unwrap();
+        header.num_folders = reader.read_u16::<LittleEndian>().unwrap();
+        header.num_files = reader.read_u32::<LittleEndian>().unwrap();
+        reader.read(&mut header.unk_01).unwrap();
+        header.load_priority = reader.read_u32::<LittleEndian>().unwrap();
+        header.auto_activate = reader.read_u8().unwrap() != 0;
+        reader.read(&mut header.unk_02).unwrap();
+        reader.read(&mut header.data_root).unwrap();
+        
         Ok(header)
+    }
+
+    pub fn get_data_root(&self) -> &str {
+        let idx = self.data_root.iter().position(|b| *b == 0).unwrap();
+        std::str::from_utf8(&self.data_root[..idx]).unwrap()
     }
 }
 
@@ -149,7 +157,7 @@ impl FolderEntry {
 
     pub fn get_name(&self) -> &str {
         let idx = self.name.iter().position(|b| *b == 0).unwrap();
-        std::str::from_utf8(&self.name[..idx]).unwrap().trim()
+        std::str::from_utf8(&self.name[..idx]).unwrap()
     }
 }
 

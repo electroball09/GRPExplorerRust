@@ -41,9 +41,9 @@ pub enum ConstValue {
 impl Display for ConstValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Int(n, i) => write!(f, "{}: {}", n, i),
-            Self::Float(n, fl) => write!(f, "{}: {}", n, fl),
-            Self::Vec(n, v) => write!(f, "{}: {}", n, v)
+            Self::Int(n, i) => write!(f, "INT - {}: {}", n, i),
+            Self::Float(n, fl) => write!(f, "FLT - {}: {}", n, fl),
+            Self::Vec(n, v) => write!(f, "VEC - {}: {}", n, v)
         }
     }
 }

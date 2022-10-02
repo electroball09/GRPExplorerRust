@@ -2,8 +2,6 @@ use crate::objects::ObjectArchetype;
 
 use super::{Editor, EditorResponse};
 
-
-
 pub struct DbkEditor;
 
 impl Editor for DbkEditor {
