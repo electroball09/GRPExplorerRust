@@ -9,16 +9,16 @@ mod feu_editor;
 mod ai_const_editor;
 mod dbk_editor;
 
-pub use script_editor::*;
-pub use blank_editor::*;
-pub use ini_editor::*;
-pub use curve_editor::*;
-pub use otf_editor::*;
-pub use layer_editor::*;
-pub use gao_editor::*;
-pub use feu_editor::*;
-pub use ai_const_editor::*;
-pub use dbk_editor::*;
+use script_editor::*;
+use blank_editor::*;
+use ini_editor::*;
+use curve_editor::*;
+use otf_editor::*;
+use layer_editor::*;
+use gao_editor::*;
+use feu_editor::*;
+use ai_const_editor::*;
+use dbk_editor::*;
 use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::{metadata::ObjectType, Bigfile}};
 
 pub trait Editor {
@@ -48,7 +48,7 @@ pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mu
         ObjectType::zc_ => ScriptEditor::draw(obj, ui, ctx),
         ObjectType::ini => IniEditor::draw(obj, ui, ctx),
         ObjectType::cur => CurveEditor::draw(obj, ui, ctx),
-        ObjectType::otf => CurveEditor::draw(obj, ui, ctx),
+        ObjectType::otf => OtfEditor::draw(obj, ui, ctx),
         ObjectType::lay => LayerEditor::draw(obj, ui, ctx),
         ObjectType::gao => GameobjectEditor::draw(obj, ui, ctx),
         ObjectType::feu => FeuEditor::draw(obj, ui, ctx),

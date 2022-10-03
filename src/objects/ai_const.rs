@@ -2,6 +2,7 @@ use std::{io::{Cursor}, cmp::Ordering, fmt::{Display, Debug}};
 use xml::reader::{Error, ErrorKind, EventReader, XmlEvent};
 use byteorder::{ReadBytesExt, LittleEndian};
 use glam::*;
+use super::{ArchetypeImpl, LoadError};
 
 pub struct AIConstList {
     pub root_node: ConstTreeNode,
@@ -67,8 +68,8 @@ enum ReaderState {
     ReadVecZ(f32, f32)
 }
 
-impl AIConstList {
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
+impl ArchetypeImpl for AIConstList {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         let cursor = Cursor::new(buf);
         let reader = EventReader::new(cursor);
         let mut state = ReaderState::Begin;
@@ -144,7 +145,7 @@ impl AIConstList {
         Ok(())
     }
 
-    pub fn unload(&mut self) {
+    fn unload(&mut self) {
         self.root_node = ConstTreeNode::default();
     }
 }

@@ -1,6 +1,4 @@
-
-
-
+use super::{ArchetypeImpl, LoadError};
 
 #[derive(Default)]
 pub struct YetiScript {
@@ -9,13 +7,13 @@ pub struct YetiScript {
     pub buffer: Vec<u8>
 }
 
-impl YetiScript {
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
+impl ArchetypeImpl for YetiScript {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         self.buffer = buf.to_vec();
         Ok(())
     }
 
-    pub fn unload(&mut self) {
+    fn unload(&mut self) {
         self.buffer.clear();
     }
 }

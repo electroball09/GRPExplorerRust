@@ -132,7 +132,7 @@ impl eframe::App for ExplorerApp {
             });
         });
 
-        egui::SidePanel::left("folder_browser").min_width(50.0).default_width(400.0).max_width(800.0).show(ctx, |ui| {
+        egui::SidePanel::left("folder_browser").min_width(350.0).default_width(350.0).max_width(800.0).show(ctx, |ui| {
             self.side_panel.draw(ui, ctx);
             if let Some(key) = self.side_panel.should_open_new_tab() {
                 self.fe_view.open_new_tab(key);

@@ -3,6 +3,7 @@ use std::io::Cursor;
 use byteorder::{ReadBytesExt, LittleEndian};
 use glam::*;
 use bitflags::bitflags;
+use super::{ArchetypeImpl, LoadError};
 
 #[derive(Default)]
 pub struct GameObject {
@@ -52,44 +53,44 @@ bitflags! {
     }
 }
 
-impl GameObject {
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
+impl ArchetypeImpl for GameObject {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         let mut cursor = Cursor::new(buf);
 
-        self.zero = cursor.read_u32::<LittleEndian>().unwrap();
-        let flags = cursor.read_u32::<LittleEndian>().unwrap();
+        self.zero = cursor.read_u32::<LittleEndian>()?;
+        let flags = cursor.read_u32::<LittleEndian>()?;
         self.identity_flags = IdentityFlags::from_bits(flags).unwrap();
-        self.streaming_flags = cursor.read_u32::<LittleEndian>().unwrap();
-        self.flag_a = cursor.read_u8().unwrap();
-        self.flag_b = cursor.read_u8().unwrap();
-        self.flag_c = cursor.read_u8().unwrap();
+        self.streaming_flags = cursor.read_u32::<LittleEndian>()?;
+        self.flag_a = cursor.read_u8()?;
+        self.flag_b = cursor.read_u8()?;
+        self.flag_c = cursor.read_u8()?;
         self.matrix = Mat4 {
             x_axis: Vec4::new(
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
             ), y_axis: Vec4::new(
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
             ), z_axis: Vec4::new(
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
             ), w_axis: Vec4::new(
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
-                cursor.read_f32::<LittleEndian>().unwrap(),
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
+                cursor.read_f32::<LittleEndian>()?,
             ),
         };
         Ok(())
     }
 
-    pub fn unload(&mut self) {
+    fn unload(&mut self) {
 
     }
 }

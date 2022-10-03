@@ -8,7 +8,7 @@ use id_tree::InsertBehavior::*;
 use metadata::*;
 use io::*;
 
-use crate::objects::YetiObject;
+use crate::objects::{YetiObject, LoadError};
 
 pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
     match obj_type {
@@ -126,7 +126,7 @@ impl Bigfile {
         Ok(())
     }
 
-    pub fn load_file(&mut self, key: u32) -> Result<(), String> {
+    pub fn load_file(&mut self, key: u32) -> Result<(), LoadError> {
         let file = &self.file_table[&key];
         let obj = self.object_table.get_mut(&key).unwrap();
         if obj.is_loaded() { return Ok(()); }

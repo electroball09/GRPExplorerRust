@@ -38,6 +38,10 @@ impl SegmentHeader {
         Ok(header)
     }
 
+    pub fn sig_to_str(&self) -> &str {
+        std::str::from_utf8(&self.sig).unwrap()
+    }
+
     pub fn verify_integrity(&self) -> Result<(), &'static str> {
         if self.sig[0] != b'Y'
             || self.sig[1] != b'B'
@@ -105,7 +109,7 @@ impl BigfileHeader {
         Ok(header)
     }
 
-    pub fn get_data_root(&self) -> &str {
+    pub fn data_root_str(&self) -> &str {
         let idx = self.data_root.iter().position(|b| *b == 0).unwrap();
         std::str::from_utf8(&self.data_root[..idx]).unwrap()
     }

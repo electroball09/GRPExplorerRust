@@ -1,13 +1,14 @@
 use std::borrow::Cow;
 
 use egui::FontData;
+use super::{ArchetypeImpl, LoadError};
 
 pub struct Otf {
     pub font: Option<FontData>,
 }
 
-impl Otf {
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
+impl ArchetypeImpl for Otf {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         let mut v: Vec<u8> = vec![0; buf.len()];
         v.copy_from_slice(buf);
 
@@ -22,7 +23,7 @@ impl Otf {
         Ok(())
     }
 
-    pub fn unload(&mut self) {
+    fn unload(&mut self) {
         self.font = None
     }
 }

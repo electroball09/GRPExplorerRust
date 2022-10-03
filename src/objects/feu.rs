@@ -1,6 +1,7 @@
 use std::io::Cursor;
 use std::io::Seek;
 use byteorder::{ReadBytesExt, LittleEndian};
+use super::{ArchetypeImpl, LoadError};
 
 #[derive(Default)]
 pub struct Feu {
@@ -10,12 +11,12 @@ pub struct Feu {
     pub feu_data: Vec<u8>
 }
 
-impl Feu {
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
+impl ArchetypeImpl for Feu {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         let mut cursor = Cursor::new(buf);
 
-        self.unk_01 = cursor.read_u32::<LittleEndian>().unwrap();
-        self.unk_02 = cursor.read_u32::<LittleEndian>().unwrap();
+        self.unk_01 = cursor.read_u32::<LittleEndian>()?;
+        self.unk_02 = cursor.read_u32::<LittleEndian>()?;
 
         fn check_uef(buf: &[u8]) -> bool {
             buf[0] == b'U' &&
@@ -30,10 +31,10 @@ impl Feu {
 
         while !found_uef {
             let mut r = String::new();
-            let mut b = cursor.read_u8().unwrap();
+            let mut b = cursor.read_u8()?;
             while b != 0x00 {
                 r.push(b as char);
-                b = cursor.read_u8().unwrap();
+                b = cursor.read_u8()?;
             }
             refs.push(r);
             cursor_pos = cursor.position() as usize;
@@ -48,7 +49,7 @@ impl Feu {
         Ok(())
     }
 
-    pub fn unload(&mut self) {
+    fn unload(&mut self) {
         self.feu_data = Vec::new();
         self.feu_refs = Vec::new();
     }

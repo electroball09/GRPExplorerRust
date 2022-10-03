@@ -1,6 +1,7 @@
-use std::{collections::HashMap, io::{Read, Seek, Cursor}};
+use std::{collections::HashMap, io::{Read, Seek, Cursor}, string::FromUtf8Error};
 
 use byteorder::{ReadBytesExt, LittleEndian};
+use super::{ArchetypeImpl, LoadError};
 
 #[derive(Default)]
 pub struct YetiIni {
@@ -13,28 +14,31 @@ pub enum IniEntry {
     AssetKey(String, u32)
 }
 
-impl YetiIni {
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
-        let mut cursor = Cursor::new(buf);
-        self.entries = self.load_from_reader(&mut cursor)?;
-        Ok(())
+impl From<FromUtf8Error> for LoadError {
+    fn from(err: FromUtf8Error) -> Self {
+        Self {
+            msg: err.to_string(),
+            key: 0
+        }
     }
+}
 
-    fn load_from_reader(&self, reader: &mut impl Read) -> Result<Vec<IniEntry>, String> {
+impl YetiIni {
+    fn load_from_reader(&self, reader: &mut impl Read) -> Result<Vec<IniEntry>, LoadError> {
         let mut entries: Vec<IniEntry> = Vec::new();
-        let num_entries = reader.read_u32::<LittleEndian>().unwrap();
+        let num_entries = reader.read_u32::<LittleEndian>()?;
         let mut i = 0;
         while i < num_entries {
             let mut v: Vec<u8> = Vec::new();
-            let mut byte = reader.read_u8().unwrap();
+            let mut byte = reader.read_u8()?;
             while byte != 0 {
                 v.push(byte);
-                byte = reader.read_u8().unwrap();
+                byte = reader.read_u8()?;
             }
-            let entry_type = reader.read_u8().unwrap();
-            let value = reader.read_u32::<LittleEndian>().unwrap();
+            let entry_type = reader.read_u8()?;
+            let value = reader.read_u32::<LittleEndian>()?;
 
-            let key = String::from_utf8(v).unwrap();
+            let key = String::from_utf8(v)?;
             let value = match entry_type {
                 0 => IniEntry::Int(key, value),
                 1 => IniEntry::AssetKey(key, value),
@@ -49,7 +53,16 @@ impl YetiIni {
         Ok(entries)
     }
 
-    pub fn unload(&mut self) {
+}
+
+impl ArchetypeImpl for YetiIni {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+        let mut cursor = Cursor::new(buf);
+        self.entries = self.load_from_reader(&mut cursor)?;
+        Ok(())
+    }
+
+    fn unload(&mut self) {
         self.entries.clear();
         self.entries.shrink_to_fit();
     }

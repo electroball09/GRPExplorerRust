@@ -3,6 +3,7 @@ use std::io::{Read, Seek, Cursor};
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use num::FromPrimitive;
+use super::{ArchetypeImpl, LoadError};
 
 #[derive(Default)]
 pub struct YetiCurve {
@@ -39,10 +40,8 @@ pub struct FullCurve {
     pub points: Vec<CurvePoint>
 }
 
-impl YetiCurve {
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
-        //dbg!(&buf);
-
+impl ArchetypeImpl for YetiCurve {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         let mut cursor = Cursor::new(buf);
         let curve_type = FromPrimitive::from_i32(cursor.read_i32::<LittleEndian>().unwrap()).unwrap();
         
@@ -51,22 +50,30 @@ impl YetiCurve {
             2 => Self::load_simple_curve(&mut cursor),
             4 => Self::load_full_curve(&mut cursor),
             _ => {
-                println!("invalid curve type: {}", curve_type);
-                CurveType::Invalid
+                Err(format!("Invalid curve type: {}", curve_type).into())
             }
         };
 
-        self.curve = curve;
-
-        Ok(())
+        match curve {
+            Ok(cur) => {
+                self.curve = cur;
+                Ok(())
+            },
+            Err(error) => {
+                self.curve = CurveType::Invalid;
+                Err(error)
+            }
+        }
     }
 
-    pub fn unload(&mut self) {
+    fn unload(&mut self) {
         self.curve = CurveType::Invalid;
     }
+}
 
-    fn load_constant_curve(buf: &mut Cursor<&[u8]>) -> CurveType {
-        let y = buf.read_f32::<LittleEndian>().unwrap();
+impl YetiCurve {
+    fn load_constant_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, LoadError> {
+        let y = buf.read_f32::<LittleEndian>()?;
         let point = CurvePoint {
             flags: 0,
             x: 0.0,
@@ -74,19 +81,19 @@ impl YetiCurve {
             in_tangent: 0.0,
             out_tangent: 0.0
         };
-        CurveType::Constant(ConstantCurve { point })
+        Ok(CurveType::Constant(ConstantCurve { point }))
     }
 
-    fn load_simple_curve(buf: &mut Cursor<&[u8]>) -> CurveType {
-        let count = buf.read_u16::<LittleEndian>().unwrap();
+    fn load_simple_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, LoadError> {
+        let count = buf.read_u16::<LittleEndian>()?;
         let mut v: Vec<CurvePoint> = Vec::new();
 
         let mut i = 0;
         while i < count {
             let point = CurvePoint {
                 flags: 0,
-                x: buf.read_f32::<LittleEndian>().unwrap(),
-                y: buf.read_f32::<LittleEndian>().unwrap(),
+                x: buf.read_f32::<LittleEndian>()?,
+                y: buf.read_f32::<LittleEndian>()?,
                 in_tangent: 0.0,
                 out_tangent: 0.0
             };
@@ -95,32 +102,32 @@ impl YetiCurve {
             i += 1;
         }
 
-        CurveType::Simple(SimpleCurve { points: v })
+        Ok(CurveType::Simple(SimpleCurve { points: v }))
     }
 
-    fn load_full_curve(buf: &mut Cursor<&[u8]>) -> CurveType {
-        let count = buf.read_u16::<LittleEndian>().unwrap();
+    fn load_full_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, LoadError> {
+        let count = buf.read_u16::<LittleEndian>()?;
         let mut v: Vec<CurvePoint> = Vec::new();
 
-        let flags = buf.read_u8().unwrap();
+        let flags = buf.read_u8()?;
 
         let mut i = 0;
         while i < count {
             let point = CurvePoint {
-                flags: buf.read_u8().unwrap(),
-                x: buf.read_f32::<LittleEndian>().unwrap(),
-                y: buf.read_f32::<LittleEndian>().unwrap(),
-                in_tangent: buf.read_f32::<LittleEndian>().unwrap(),
-                out_tangent: buf.read_f32::<LittleEndian>().unwrap()
+                flags: buf.read_u8()?,
+                x: buf.read_f32::<LittleEndian>()?,
+                y: buf.read_f32::<LittleEndian>()?,
+                in_tangent: buf.read_f32::<LittleEndian>()?,
+                out_tangent: buf.read_f32::<LittleEndian>()?
             };
 
             v.push(point);
             i += 1;
         }
 
-        CurveType::Full(FullCurve {
+        Ok(CurveType::Full(FullCurve {
             points: v,
             flags
-        })
+        }))
     }
 }

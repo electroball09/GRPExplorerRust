@@ -8,7 +8,7 @@ pub mod feu;
 pub mod ai_const;
 pub mod dbk;
 
-use std::io::Cursor;
+use std::{io::Cursor, error::Error, fmt::Display};
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use yeti_script::YetiScript;
@@ -19,22 +19,77 @@ use crate::bigfile::metadata::{ObjectType, FileEntry};
 
 use self::{otf::Otf, layer::YetiLayer, gameobject::GameObject, feu::Feu, ai_const::AIConstList, dbk::DynamicBank};
 
+#[derive(Debug)]
+pub struct LoadError {
+    msg: String,
+    key: u32,
+}
+
+impl LoadError {
+    pub fn new(msg: String, key: u32) -> Self {
+        Self {
+            msg, key
+        }
+    }
+}
+
+impl Clone for LoadError {
+    fn clone(&self) -> Self {
+        Self {
+            msg: self.msg.clone(),
+            key: self.key
+        }
+    }
+}
+
+impl From<String> for LoadError {
+    fn from(msg: String) -> Self {
+        Self {
+            msg,
+            key: 0
+        }
+    }
+}
+
+impl From<std::io::Error> for LoadError {
+    fn from(e: std::io::Error) -> Self {
+        Self {
+            msg: e.to_string(),
+            key: 0
+        }
+    }
+}
+
+impl Display for LoadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
+
+impl Error for LoadError { 
+    fn description(&self) -> &str {
+        &self.msg
+    }
+}
+
 pub struct YetiObject {
-    loaded: bool,
+    load_refs: u32,
     key: u32,
     name: String,
     pub references: Vec<u32>,
     pub archetype: ObjectArchetype,
+    pub load_error: Option<LoadError>
 }
 
 impl Default for YetiObject {
     fn default() -> Self {
         Self {
-            loaded: false,
+            load_refs: 0,
             key: 0xFFFFFFFF,
             name: String::default(),
             references: Vec::new(),
-            archetype: ObjectArchetype::NoImpl
+            archetype: ObjectArchetype::NoImpl,
+            load_error: None
         }
     }
 }
@@ -65,7 +120,7 @@ impl YetiObject {
     }
 
     pub fn is_loaded(&self) -> bool {
-        self.loaded
+        self.load_refs > 0
     }
 
     pub fn get_key(&self) -> u32 {
@@ -76,7 +131,12 @@ impl YetiObject {
         &self.name
     }
 
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
+    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+        if self.is_loaded() {
+            self.load_refs += 1;
+            return Ok(());
+        }
+
         let mut cursor = Cursor::new(buf);
         let num_refs = cursor.read_u32::<LittleEndian>().unwrap();
         let mut refs: Vec<u32> = Vec::with_capacity(num_refs as usize);
@@ -88,18 +148,34 @@ impl YetiObject {
         }
         self.references = refs;
 
-        match self.archetype.load_from_buf(&buf[cursor.position() as usize..]) {
-            Ok(()) => { self.loaded = true; Ok(()) },
-            Err(error) => Err(error)
+        if let Err(error) = self.archetype.load_from_buf(&buf[cursor.position() as usize..]) {
+            self.archetype.unload();
+            self.load_error = Some(LoadError {
+                key: self.get_key(),
+                ..error
+            });
+            return Err(self.load_error.clone().unwrap())
         }
+
+        self.load_refs += 1;
+        self.load_error = None;
+        Ok(())
     }
 
     pub fn unload(&mut self) {
-        self.archetype.unload();
-        self.references.clear();
-        self.references.shrink_to(1);
-        self.loaded = false;
+        self.load_refs -= 1;
+
+        if self.load_refs == 0 {
+            self.archetype.unload();
+            self.references.clear();
+            self.references.shrink_to(1);
+        }
     }
+}
+
+trait ArchetypeImpl {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError>;
+    fn unload(&mut self);
 }
 
 pub enum ObjectArchetype {
@@ -116,7 +192,7 @@ pub enum ObjectArchetype {
 }
 
 impl ObjectArchetype {
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), String> {
+    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         match self {
             Self::Script(script) => script.load_from_buf(buf),
             Self::Ini(ini) => ini.load_from_buf(buf),
