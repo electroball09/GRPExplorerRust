@@ -1,5 +1,5 @@
 use super::*;
-use crate::objects::*;
+use crate::objects::ini::*;
 
 pub struct IniEditor;
 

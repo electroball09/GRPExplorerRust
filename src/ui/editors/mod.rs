@@ -9,6 +9,7 @@ mod feu_editor;
 mod ai_const_editor;
 mod dbk_editor;
 mod meshes_editor;
+mod texture_editor;
 
 use script_editor::*;
 use blank_editor::*;
@@ -21,6 +22,7 @@ use feu_editor::*;
 use ai_const_editor::*;
 use dbk_editor::*;
 use meshes_editor::*;
+use texture_editor::*;
 use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::{metadata::ObjectType, Bigfile}};
 
 pub trait Editor {
@@ -57,6 +59,8 @@ pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mu
         ObjectType::cst => AIConstEditor::draw(obj, ui, ctx),
         ObjectType::dbk => DbkEditor::draw(obj, ui, ctx),
         ObjectType::msd => MeshDataEditor::draw(obj, ui, ctx),
+        ObjectType::tga => TextureMetadataEditor::draw(obj, ui, ctx),
+        ObjectType::txd => TextureDataEditor::draw(obj, ui, ctx),
         _ => BlankEditor::draw(obj, ui, ctx)
     }
 }

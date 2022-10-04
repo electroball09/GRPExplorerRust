@@ -1,23 +1,25 @@
-mod yeti_script;
-mod ini;
-mod curve;
-mod otf;
-mod layer;
-mod gameobject;
-mod feu;
-mod ai_const;
-mod dbk;
-mod meshes;
-pub use yeti_script::*;
-pub use ini::*;
-pub use curve::*;
-pub use otf::*;
-pub use layer::*;
-pub use gameobject::*;
-pub use feu::*;
-pub use ai_const::*;
-pub use dbk::*;
-pub use meshes::*;
+pub mod yeti_script;
+pub mod ini;
+pub mod curve;
+pub mod otf;
+pub mod layer;
+pub mod gameobject;
+pub mod feu;
+pub mod ai_const;
+pub mod dbk;
+pub mod meshes;
+pub mod texture;
+use yeti_script::*;
+use ini::*;
+use curve::*;
+use otf::*;
+use layer::*;
+use gameobject::*;
+use feu::*;
+use ai_const::*;
+use dbk::*;
+use meshes::*;
+use texture::*;
 
 use std::{io::Cursor, error::Error, fmt::Display};
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -121,6 +123,8 @@ impl YetiObject {
             ObjectType::dbk => ObjectArchetype::Dbk(DynamicBank::default()),
             ObjectType::msh => ObjectArchetype::MeshMetadata(MeshMetadata::default()),
             ObjectType::msd => ObjectArchetype::MeshData(MeshData::default()),
+            ObjectType::tga => ObjectArchetype::TextureMetadata(TextureMetadata::default()),
+            ObjectType::txd => ObjectArchetype::TextureData(TextureData::default()),
             _ => ObjectArchetype::NoImpl
         }
     }
@@ -198,7 +202,9 @@ pub enum ObjectArchetype {
     ConstList(AIConstList),
     Dbk(DynamicBank),
     MeshData(MeshData),
-    MeshMetadata(MeshMetadata)
+    MeshMetadata(MeshMetadata),
+    TextureMetadata(TextureMetadata),
+    TextureData(TextureData),
 }
 
 impl ObjectArchetype {
@@ -215,6 +221,8 @@ impl ObjectArchetype {
             Self::Dbk(dbk) => dbk.load_from_buf(buf),
             Self::MeshData(msd) => msd.load_from_buf(buf),
             Self::MeshMetadata(msh) => msh.load_from_buf(buf),
+            Self::TextureData(txd) => txd.load_from_buf(buf),
+            Self::TextureMetadata(tga) => tga.load_from_buf(buf),
             Self::NoImpl => { Ok(()) }
         }
     }
@@ -232,6 +240,8 @@ impl ObjectArchetype {
             Self::Dbk(dbk) => dbk.unload(),
             Self::MeshData(msd) => msd.unload(),
             Self::MeshMetadata(msh) => msh.unload(),
+            Self::TextureData(txd) => txd.unload(),
+            Self::TextureMetadata(tga) => tga.unload(),
             Self::NoImpl => { }
         }
     }

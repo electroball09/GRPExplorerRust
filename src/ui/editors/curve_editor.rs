@@ -1,6 +1,6 @@
 use std::clone;
 
-use crate::objects::{CurveType, CurvePoint};
+use crate::objects::curve::{CurveType, CurvePoint};
 
 use super::*;
 
