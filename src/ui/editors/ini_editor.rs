@@ -26,10 +26,7 @@ impl Editor for IniEditor {
                         }
                     }
                 }).inner {
-                    return EditorResponse {
-                        open_new_tab: Some(v),
-                        ..Default::default()
-                    }
+                    return EditorResponse::OpenNewTabs(v);
                 };
             }
         }

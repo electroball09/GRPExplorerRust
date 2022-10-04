@@ -5,7 +5,7 @@ use egui::Ui;
 use crate::bigfile::{Bigfile, obj_type_to_name};
 use crate::bigfile::metadata::FileEntry;
 use crate::ui::*;
-use crate::ui::editors::draw_editor_for_type;
+use crate::ui::editors::{draw_editor_for_type, EditorResponse};
 
 pub struct FileEditorTabs {
     bigfile: BfRef,
@@ -175,10 +175,10 @@ impl View for FileEditorTabs {
                 egui::CentralPanel::default().show(ctx, |ui| {
                     let mut y = bf.object_table.get_mut(&key).unwrap();
                     let rsp = draw_editor_for_type(&bf.file_table[&key].object_type, &mut y, ui, ctx);
-                    if let Some(v) = rsp.open_new_tab {
-                        open_new_tab = Some(v);
-                    }
-                    if let Some(act) = rsp.perform_action {
+                    if let EditorResponse::OpenNewTabs(v) = &rsp {
+                        open_new_tab = Some(v.clone());
+                    } 
+                    if let EditorResponse::PerformAction(act) = rsp {
                         act(&bf);
                     }
                 }); 

@@ -33,21 +33,24 @@ pub trait PerformEditorAction {
     fn do_action(bf: &Bigfile);
 }
 
-pub struct EditorResponse {
-    pub open_new_tab: Option<Vec<u32>>,
-    pub perform_action: Option<Box<dyn FnOnce(&Bigfile) -> ()>>,
+pub enum EditorResponse {
+    None,
+    OpenNewTabs(Vec<u32>),
+    PerformAction(Box<dyn FnOnce(&Bigfile) -> ()>)
 }
 
 impl Default for EditorResponse {
     fn default() -> Self {
-        EditorResponse {
-            open_new_tab: None,
-            perform_action: None,
-        }
+        EditorResponse::None
     }
 }
 
 pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+    if let Some(err) = &obj.load_error {
+        ui.label(format!("ERR: {}", err));
+        return EditorResponse::default();
+    }
+
     match obj_type {
         ObjectType::zc_ => ScriptEditor::draw(obj, ui, ctx),
         ObjectType::ini => IniEditor::draw(obj, ui, ctx),
