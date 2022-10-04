@@ -1,6 +1,6 @@
 use std::clone;
 
-use crate::objects::curve::{CurveType, self};
+use crate::objects::{CurveType, CurvePoint};
 
 use super::*;
 
@@ -9,7 +9,7 @@ pub struct CurveEditor {
 }
 
 impl CurveEditor {
-    fn curve_line(point: &curve::CurvePoint, ui: &mut egui::Ui)
+    fn curve_line(point: &CurvePoint, ui: &mut egui::Ui)
     {
         ui.horizontal(|ui| {
             ui.label(format!("flags: {:#04X}  x: {}  y: {}  in: {}  out: {}", point.flags, point.x, point.y, point.in_tangent, point.out_tangent));

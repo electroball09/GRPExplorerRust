@@ -162,14 +162,14 @@ impl BigfileIO for BigfileIOPacked {
         }
 
         if entry.zip {
-            let compressed_size = self.file.read_i32::<LittleEndian>().unwrap();
-            let decompressed_size = self.file.read_i32::<LittleEndian>().unwrap();
+            let compressed_size = self.file.read_u32::<LittleEndian>().unwrap();
+            let decompressed_size = self.file.read_u32::<LittleEndian>().unwrap();
             //dbg!(&compressed_size);
             //dbg!(&decompressed_size);
 
             let mut v = vec![0; decompressed_size as usize];
             let mut decompress = ZlibDecoder::new(&mut self.file);
-            decompress.read(&mut v[..]).unwrap();
+            decompress.read_exact(&mut v[..]).unwrap();
             Ok(v)
         } else {
             let size = self.file.read_i32::<LittleEndian>().unwrap();
