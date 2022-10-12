@@ -1,4 +1,3 @@
-use super::View;
 use super::super::BfRef;
 
 pub struct BigfileMetadataView {
