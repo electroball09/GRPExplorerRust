@@ -2,11 +2,11 @@ use std::fs::File;
 
 use crate::objects::ObjectArchetype;
 use std::io::Write;
-use super::{Editor, EditorResponse};
+use super::{EditorImpl, EditorResponse};
 
 pub struct FeuEditor;
 
-impl Editor for FeuEditor {
+impl EditorImpl for FeuEditor {
     fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Feu(feu) = &obj.archetype {
             if ui.button("Extract to SWF...").clicked() {

@@ -1,6 +1,4 @@
 use super::*;
-use image::*;
-use squish::*;
 
 #[derive(Default, Debug)]
 pub enum TextureFormat {
@@ -77,7 +75,7 @@ impl ArchetypeImpl for TextureData {
         self.fmt_id = cursor.read_u8()?;
         self.format = TextureFormat::from_id(self.fmt_id);
 
-        self.texture_data = buf[9..].to_vec();
+        self.texture_data = buf[8..].to_vec();
 
         Ok(())
     }

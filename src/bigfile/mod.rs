@@ -3,7 +3,6 @@ pub mod io;
 
 use std::collections::HashMap;
 use id_tree::*;
-use id_tree::InsertBehavior::*;
 
 use metadata::*;
 use io::*;

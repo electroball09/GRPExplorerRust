@@ -1,4 +1,4 @@
-use std::fs::{File};
+use std::fs::File;
 use std::io::{Error, SeekFrom, Seek, Read};
 use std::collections::HashMap;
 use byteorder::{ReadBytesExt, LittleEndian};
@@ -22,13 +22,10 @@ pub fn seek_to_file_data(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_
     //println!("{}", &offset);
     seek_to_folder_table(reader, seg_header, bf_header)?;
     let folder_data_size = bf_header.num_folders as i64 * 64;
-    reader.seek(SeekFrom::Current(folder_data_size)).unwrap();
+    reader.seek(SeekFrom::Current(folder_data_size))?;
     let byte_pack_offset = 8 - ((reader.stream_position().unwrap()) % 8);
-    reader.seek(SeekFrom::Current(byte_pack_offset as i64)).unwrap();
-    //println!("{}", reader.stream_position().unwrap());
-    let r = reader.seek(SeekFrom::Current((offset as i64) * 8));
-    //println!("{}", reader.stream_position().unwrap());
-    r
+    reader.seek(SeekFrom::Current(byte_pack_offset as i64))?;
+    reader.seek(SeekFrom::Current((offset as i64) * 8))
 }
 
 pub trait BigfileIO {

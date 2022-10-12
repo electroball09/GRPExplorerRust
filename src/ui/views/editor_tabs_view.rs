@@ -178,8 +178,8 @@ impl View for FileEditorTabs {
                     if let EditorResponse::OpenNewTabs(v) = &rsp {
                         open_new_tab = Some(v.clone());
                     } 
-                    if let EditorResponse::PerformAction(act) = rsp {
-                        act(&bf);
+                    if let EditorResponse::PerformAction(key, act) = rsp {
+                        act(key, bf);
                     }
                 }); 
             }

@@ -1,5 +1,4 @@
-use core::panic;
-use std::io::{Read, Seek, Cursor};
+use std::io::{Cursor};
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use num::FromPrimitive;

@@ -1,6 +1,5 @@
 use std::{env};
 use bigfile::*;
-use bigfile::metadata::*;
 use rfd::FileDialog;
 
 use crate::ui::ExplorerApp;
@@ -8,6 +7,7 @@ use crate::ui::ExplorerApp;
 mod bigfile;
 mod ui;
 mod objects;
+mod util;
 #[macro_use] extern crate num_derive;
 extern crate strum_macros;
 

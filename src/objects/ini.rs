@@ -1,4 +1,4 @@
-use std::{collections::HashMap, io::{Read, Seek, Cursor}, string::FromUtf8Error};
+use std::{io::{Read, Cursor}, string::FromUtf8Error};
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use super::{ArchetypeImpl, LoadError};
@@ -16,10 +16,7 @@ pub enum IniEntry {
 
 impl From<FromUtf8Error> for LoadError {
     fn from(err: FromUtf8Error) -> Self {
-        Self {
-            msg: err.to_string(),
-            key: 0
-        }
+        Self::new(err.to_string(), 0)
     }
 }
 

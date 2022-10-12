@@ -1,5 +1,5 @@
 use super::*;
-use std::{ops::Deref};
+use std::ops::Deref;
 use egui::Ui;
 
 use crate::bigfile::Bigfile;
@@ -28,6 +28,7 @@ impl FileTreeView {
 
     fn draw_file_tree(&mut self, ui: &mut Ui, ctx: &eframe::egui::Context, debug_folders: bool, debug_files: bool) {
         fn draw_folder2(idx: &u16, bf: &Bigfile, ctx: &eframe::egui::Context, ui: &mut Ui, debug_folders: bool, debug_files: bool) -> Option<u32> {
+            if !bf.folder_table.contains_key(&idx) { return None; }
             let folder = bf.folder_table[&idx];
             let rsp = ui.collapsing(folder.get_name(), |ui| {
                 let mut child = folder.first_child;

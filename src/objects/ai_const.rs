@@ -1,6 +1,5 @@
-use std::{io::{Cursor}, cmp::Ordering, fmt::{Display, Debug}};
-use xml::reader::{Error, ErrorKind, EventReader, XmlEvent};
-use byteorder::{ReadBytesExt, LittleEndian};
+use std::{io::Cursor, cmp::Ordering, fmt::Display};
+use xml::reader::{EventReader, XmlEvent};
 use glam::*;
 use super::{ArchetypeImpl, LoadError};
 

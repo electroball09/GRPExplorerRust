@@ -1,10 +1,10 @@
 use crate::objects::ObjectArchetype;
 
-use super::{Editor, EditorResponse};
+use super::{EditorImpl, EditorResponse};
 
 pub struct LayerEditor;
 
-impl Editor for LayerEditor {
+impl EditorImpl for LayerEditor {
     fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Layer(layer) = &obj.archetype {
             ui.horizontal(|ui| {

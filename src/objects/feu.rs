@@ -1,5 +1,4 @@
 use std::io::Cursor;
-use std::io::Seek;
 use byteorder::{ReadBytesExt, LittleEndian};
 use super::{ArchetypeImpl, LoadError};
 

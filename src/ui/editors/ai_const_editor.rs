@@ -1,10 +1,10 @@
 use crate::objects::{ObjectArchetype, ai_const::ConstTreeNode};
 
-use super::{Editor, EditorResponse};
+use super::{EditorImpl, EditorResponse};
 
 pub struct AIConstEditor;
 
-impl Editor for AIConstEditor {
+impl EditorImpl for AIConstEditor {
     fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::ConstList(cst) = &obj.archetype {
             fn recurse(ui: &mut egui::Ui, node: &ConstTreeNode) {

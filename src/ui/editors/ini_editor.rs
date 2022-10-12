@@ -3,7 +3,7 @@ use crate::objects::ini::*;
 
 pub struct IniEditor;
 
-impl Editor for IniEditor {
+impl EditorImpl for IniEditor {
     fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Ini(ini) = &obj.archetype {
             for value in ini.entries.iter() {

@@ -21,62 +21,13 @@ use dbk::*;
 use meshes::*;
 use texture::*;
 
-use std::{io::Cursor, error::Error, fmt::Display};
+mod load_error;
+pub use load_error::*;
+
+use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::bigfile::metadata::{ObjectType, FileEntry};
 
-#[derive(Debug)]
-pub struct LoadError {
-    msg: String,
-    key: u32,
-}
-
-impl LoadError {
-    pub fn new(msg: String, key: u32) -> Self {
-        Self {
-            msg, key
-        }
-    }
-}
-
-impl Clone for LoadError {
-    fn clone(&self) -> Self {
-        Self {
-            msg: self.msg.clone(),
-            key: self.key
-        }
-    }
-}
-
-impl From<String> for LoadError {
-    fn from(msg: String) -> Self {
-        Self {
-            msg,
-            key: 0
-        }
-    }
-}
-
-impl From<std::io::Error> for LoadError {
-    fn from(e: std::io::Error) -> Self {
-        Self {
-            msg: format!("{}", e),
-            key: 0
-        }
-    }
-}
-
-impl Display for LoadError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.msg)
-    }
-}
-
-impl Error for LoadError { 
-    fn description(&self) -> &str {
-        &self.msg
-    }
-}
 
 pub struct YetiObject {
     load_refs: u32,
@@ -158,12 +109,10 @@ impl YetiObject {
         }
         self.references = refs;
 
-        if let Err(error) = self.archetype.load_from_buf(&buf[cursor.position() as usize..]) {
+        if let Err(mut error) = self.archetype.load_from_buf(&buf[cursor.position() as usize..]) {
             self.archetype.unload();
-            self.load_error = Some(LoadError {
-                key: self.get_key(),
-                ..error
-            });
+            error.set_key(self.get_key());
+            self.load_error = Some(error);
             return Err(self.load_error.clone().unwrap())
         }
 

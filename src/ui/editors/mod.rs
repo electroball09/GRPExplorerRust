@@ -25,7 +25,7 @@ use meshes_editor::*;
 use texture_editor::*;
 use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::{metadata::ObjectType, Bigfile}};
 
-pub trait Editor {
+trait EditorImpl {
     fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse;
 }
 
@@ -36,7 +36,7 @@ pub trait PerformEditorAction {
 pub enum EditorResponse {
     None,
     OpenNewTabs(Vec<u32>),
-    PerformAction(Box<dyn FnOnce(&Bigfile) -> ()>)
+    PerformAction(u32, Box<dyn FnOnce(u32, &mut Bigfile) -> ()>)
 }
 
 impl Default for EditorResponse {
