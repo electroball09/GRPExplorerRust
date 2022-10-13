@@ -63,6 +63,7 @@ impl Default for DdsHeader {
     }
 }
 
+#[allow(dead_code)]
 impl DdsHeader {
     pub fn dxt1(height: u32, width: u32) -> Self {
         Self {

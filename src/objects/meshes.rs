@@ -9,7 +9,7 @@ pub struct MeshMetadata {
 }
 
 impl ArchetypeImpl for MeshMetadata {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::LoadError> {
+    fn load_from_buf(&mut self, _buf: &[u8]) -> Result<(), super::LoadError> {
         Ok(())
     }
 

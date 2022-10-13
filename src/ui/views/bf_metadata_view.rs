@@ -13,7 +13,7 @@ impl BigfileMetadataView {
 }
 
 impl super::View for BigfileMetadataView {
-    fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         let bf = self.bigfile.clone().unwrap();
         let bf = bf.as_ref().borrow();
 
@@ -42,7 +42,7 @@ impl super::View for BigfileMetadataView {
         self.bigfile = bf;
     }
 
-    fn settings_menu(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn settings_menu(&mut self, _ui: &mut egui::Ui, _ctx: &egui::Context) {
         
     }
 }

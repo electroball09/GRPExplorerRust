@@ -12,7 +12,6 @@ use crate::Bigfile;
 
 use self::views::*;
 use self::views::side_panel::SidePanelView;
-use views::file_tree_view::FileTreeView;
 use views::editor_tabs_view::FileEditorTabs;
 
 pub mod views;

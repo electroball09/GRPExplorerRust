@@ -10,7 +10,7 @@ pub fn seek_to_bigfile_header(reader: &mut impl Seek, seg_header: &SegmentHeader
     reader.seek(SeekFrom::Start(seg_header.header_offset as u64))
 }
 
-pub fn seek_to_file_table(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<u64, Error> {
+pub fn seek_to_file_table(reader: &mut impl Seek, seg_header: &SegmentHeader, _bf_header: &BigfileHeader) -> Result<u64, Error> {
     reader.seek(SeekFrom::Start((seg_header.header_offset + 128) as u64))
 }
 
@@ -159,7 +159,7 @@ impl BigfileIO for BigfileIOPacked {
         }
 
         if entry.zip {
-            let compressed_size = self.file.read_u32::<LittleEndian>().unwrap();
+            let _compressed_size = self.file.read_u32::<LittleEndian>().unwrap();
             let decompressed_size = self.file.read_u32::<LittleEndian>().unwrap();
             //dbg!(&compressed_size);
             //dbg!(&decompressed_size);

@@ -83,7 +83,6 @@ pub struct Bigfile {
     pub object_table: HashMap<u32, YetiObject>,
     pub folder_table: HashMap<u16, FolderEntry>,
     pub io: Box<dyn BigfileIO>,
-    pub tree: Tree<u16>,
     pub file_list_map: HashMap<u16, Box<Vec<u32>>>,
     pub node_id_map: HashMap<u16, (NodeId, u16)>,
 }
@@ -103,7 +102,6 @@ impl Bigfile {
             file_table: HashMap::new(),
             object_table: HashMap::new(),
             folder_table: HashMap::new(),
-            tree: TreeBuilder::new().build(),
             file_list_map: HashMap::new(),
             node_id_map: HashMap::new()
         };

@@ -1,8 +1,13 @@
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::Write;
+use image::ColorType;
+
+use crate::objects;
+use crate::objects::{texture::TextureFormat};
 
 use crate::objects::YetiObject;
+use crate::util::dds_header::DdsHeader;
 
 pub fn pick_extract_folder() -> Option<PathBuf> {
     rfd::FileDialog::new().pick_folder()
@@ -18,8 +23,13 @@ pub fn pick_exp_path(obj: &YetiObject, ext: &str) -> Option<String> {
     Some(format!("{}\\{:#010X} {}{}", path, obj.get_key(), obj.get_name(), ext))
 }
 
-pub fn exp_feu(path: String, feu: &crate::objects::feu::Feu) {
+pub fn pick_exp_path_no_ext(obj: &YetiObject) -> Option<String> {
+    let path = pick_export_folder()?;
+    let path = path.to_str()?;
+    Some(format!("{}\\{:#010X} {}", path, obj.get_key(), obj.get_name()))
+}
 
+pub fn exp_feu(path: String, feu: &crate::objects::feu::Feu) {
     if let Ok(mut file) = File::create(&path) {
         println!("exporting feu to {}", &path);
         
@@ -28,8 +38,38 @@ pub fn exp_feu(path: String, feu: &crate::objects::feu::Feu) {
     }
 }
 
-pub fn exp_texture_as_png(path: String, obj: &YetiObject, tga: &crate::objects::texture::TextureMetadata, txd: &crate::objects::texture::TextureData) {
-    
+pub fn exp_texture(path_no_ext: String, tga: &objects::texture::TextureMetadata, txd: &objects::texture::TextureData) {
+    match tga.format {
+        TextureFormat::Dxt1 => {
+            if let Ok(mut file) = File::create(format!("{}.dds", path_no_ext)) {
+                let dds = DdsHeader::dxt1(tga.height.into(), tga.width.into());
+                dds.write_to(&mut file).unwrap();
+                file.write(&txd.texture_data[..]).unwrap();
+            }
+        },
+        TextureFormat::Dxt5 => {
+            if let Ok(mut file) = File::create(format!("{}.dds", path_no_ext)) {
+                let dds = DdsHeader::dxt5(tga.height.into(), tga.width.into());
+                dds.write_to(&mut file).unwrap();
+                file.write(&txd.texture_data[..]).unwrap();
+            }
+        },
+        TextureFormat::Rgba32 => {
+            let path = format!("{}.bmp", path_no_ext);
+            image::save_buffer(path, &txd.texture_data, tga.width as u32, tga.height as u32, ColorType::Rgba8).unwrap();
+        },
+        TextureFormat::Bgra32 => {
+            let path = format!("{}.bmp", path_no_ext);
+            image::save_buffer(path, &txd.texture_data, tga.width as u32, tga.height as u32, ColorType::Rgba8).unwrap();
+        },
+        TextureFormat::Gray => {
+            let path = format!("{}.bmp", path_no_ext);
+            image::save_buffer(path, &txd.texture_data, tga.width as u32, tga.height as u32, ColorType::L8).unwrap();
+        },
+        _ => {
+            println!("texture format export not supported!");
+        }
+    }
 }
 
 pub fn exp_msd_as_obj(path: String, msd: &crate::objects::meshes::MeshData) {

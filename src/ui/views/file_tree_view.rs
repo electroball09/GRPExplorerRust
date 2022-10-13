@@ -88,7 +88,7 @@ impl View for FileTreeView {
         });
     }
 
-    fn settings_menu(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn settings_menu(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         ui.menu_button("File Tree", |ui| {
             ui.checkbox(&mut self.debug_folders, "Folder Info");
             ui.checkbox(&mut self.debug_files, "File Info");

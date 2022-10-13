@@ -1,12 +1,8 @@
-use std::clone;
-
 use crate::objects::curve::{CurveType, CurvePoint};
 
 use super::*;
 
-pub struct CurveEditor {
-
-}
+pub struct CurveEditor;
 
 impl CurveEditor {
     fn curve_line(point: &CurvePoint, ui: &mut egui::Ui)
@@ -16,14 +12,14 @@ impl CurveEditor {
         });
     }
 
-    fn draw_constant_curve(curve: &mut CurveType, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw_constant_curve(curve: &mut CurveType, ui: &mut egui::Ui, _ctx: &egui::Context) {
         if let CurveType::Constant(curve) = curve {
             ui.label("constant curve");
             Self::curve_line(&curve.point, ui);
         }
     }
     
-    fn draw_simple_curve(curve: &mut CurveType, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw_simple_curve(curve: &mut CurveType, ui: &mut egui::Ui, _ctx: &egui::Context) {
         if let CurveType::Simple(curve) = curve {
             ui.label("simple curve");
             for point in curve.points.iter() {
@@ -32,7 +28,7 @@ impl CurveEditor {
         }
     }
     
-    fn draw_full_curve(curve: &mut CurveType, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw_full_curve(curve: &mut CurveType, ui: &mut egui::Ui, _ctx: &egui::Context) {
         if let CurveType::Full(curve) = curve {
             ui.label("full curve");
             ui.label(format!("flags: {:#010X}", curve.flags));

@@ -67,7 +67,7 @@ impl FileEditorTabs {
         }
     }
 
-    fn draw_file_metadata_view(file: &FileEntry, ui: &mut Ui, ctx: &eframe::egui::Context) {
+    fn draw_file_metadata_view(file: &FileEntry, ui: &mut Ui, _ctx: &eframe::egui::Context) {
         fn file_metadata_line(ui: &mut Ui, label: &str, value: &str) -> bool {
             ui.horizontal(|ui| {
                 ui.label(label);
@@ -194,7 +194,7 @@ impl View for FileEditorTabs {
         }
     }
 
-    fn settings_menu(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn settings_menu(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         let now = Instant::now();
         ui.menu_button("Stats", |ui| {
             ui.label(format!("ft: {} ms", (now - self.last_update).as_secs_f32() * 1000.0));

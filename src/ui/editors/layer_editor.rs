@@ -5,7 +5,7 @@ use super::{EditorImpl, EditorResponse};
 pub struct LayerEditor;
 
 impl EditorImpl for LayerEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Layer(layer) = &obj.archetype {
             ui.horizontal(|ui| {
                 ui.label("Layer Name:");

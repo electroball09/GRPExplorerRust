@@ -1,6 +1,4 @@
 
-use glam::{Mat4, Vec3, Quat};
-
 use crate::objects::ObjectArchetype;
 
 use super::{EditorImpl, EditorResponse};
@@ -8,7 +6,7 @@ use super::{EditorImpl, EditorResponse};
 pub struct GameobjectEditor;
 
 impl EditorImpl for GameobjectEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::GameObject(gao) = &obj.archetype {
             ui.label(format!("zero: {:#010X}", gao.zero));
             ui.label(format!("id flags: {:?}", gao.identity_flags));
