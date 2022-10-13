@@ -1,4 +1,4 @@
-use std::{env};
+use std::env;
 use bigfile::*;
 use rfd::FileDialog;
 
@@ -8,6 +8,7 @@ mod bigfile;
 mod ui;
 mod objects;
 mod util;
+mod export;
 #[macro_use] extern crate num_derive;
 extern crate strum_macros;
 
@@ -21,5 +22,5 @@ fn main() {
 
     env::set_var("RUST_BACKTRACE", "1");
 
-    eframe::run_native("test", eframe::NativeOptions::default(), Box::new(|cc| Box::new(ExplorerApp::new(cc))));
+    eframe::run_native("GRP Explorer", eframe::NativeOptions::default(), Box::new(|cc| Box::new(ExplorerApp::new(cc))));
 }

@@ -1,28 +1,12 @@
-use std::fs::File;
-
 use crate::objects::ObjectArchetype;
-use std::io::Write;
 use super::{EditorImpl, EditorResponse};
+use crate::export::*;
 
 pub struct FeuEditor;
 
 impl EditorImpl for FeuEditor {
     fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Feu(feu) = &obj.archetype {
-            if ui.button("Extract to SWF...").clicked() {
-                if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                    let mut path = String::from(path.to_str().unwrap());
-                    path += &format!("/{}.swf", obj.get_name());
-
-                    println!("extracting feu to {}", path);
-
-                    if let Ok(mut file) = File::create(path) {
-                        file.write(&[b'F', b'W', b'S']).unwrap();
-                        file.write(&feu.feu_data[3..]).unwrap();
-                    }
-                }
-            }
-    
             ui.label(format!("unk_01: {}", feu.unk_01));
             ui.label(format!("unk_02: {}", feu.unk_02));
             ui.add_space(5.0);
@@ -34,6 +18,17 @@ impl EditorImpl for FeuEditor {
             });
             ui.add_space(5.0);
             ui.label(format!("data len: {}", feu.feu_data.len()));
+
+            if ui.button("Export to SWF...").clicked() {
+                if let Some(path) = pick_exp_path(obj, ".swf") {
+                    exp_feu(path, &feu);
+                }
+            }
+            if ui.button("Export to FEU...").clicked() {
+                if let Some(path) = pick_exp_path(obj, ".feu") {
+                    exp_feu(path, &feu);
+                }
+            }
         }
 
         EditorResponse::default()

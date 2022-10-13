@@ -1,6 +1,7 @@
 use super::*;
 use std::ops::DerefMut;
 use egui::Ui;
+use std::time::Instant;
 
 use crate::bigfile::{Bigfile, obj_type_to_name};
 use crate::bigfile::metadata::FileEntry;
@@ -10,7 +11,9 @@ use crate::ui::editors::{draw_editor_for_type, EditorResponse};
 pub struct FileEditorTabs {
     bigfile: BfRef,
     editor_tabs: Vec<u32>,
-    open_tab: Option<u32>
+    open_tab: Option<u32>,
+    last_update: Instant,
+    num_frames: u32,
 }
 
 impl FileEditorTabs {
@@ -18,7 +21,9 @@ impl FileEditorTabs {
         FileEditorTabs {
             bigfile,
             editor_tabs: Vec::new(),
-            open_tab: None
+            open_tab: None,
+            last_update: Instant::now(),
+            num_frames: 0
         }
     }
 }
@@ -91,7 +96,7 @@ impl FileEditorTabs {
 
 impl View for FileEditorTabs {
     fn set_bigfile(&mut self, bf: crate::ui::BfRef) {
-        self.bigfile = bf.clone();
+        self.bigfile = bf;
     }
 
     fn draw(&mut self, _ui: &mut egui::Ui, ctx: &egui::Context) {
@@ -145,14 +150,12 @@ impl View for FileEditorTabs {
 
                         ui.horizontal(|ui| {
                             if ui.button("Extract...").clicked()  {
-                                let path = rfd::FileDialog::new()
-                                    .pick_folder()
-                                    .unwrap();
-
-                                let mut path = String::from(path.to_str().unwrap());
-                                path += &String::from(format!("/{:#010X} {}", key, String::from(bf.file_table[&key].get_name_ext())));
-
-                                bf.extract_file_to_path(&path, key).unwrap();
+                                if let Some(path) = crate::export::pick_extract_folder() {
+                                    let mut path = String::from(path.to_str().unwrap());
+                                    path += &String::from(format!("/{:#010X} {}", key, String::from(bf.file_table[&key].get_name_ext())));
+    
+                                    bf.extract_file_to_path(&path, key).unwrap();
+                                }
                             }
                         });
 
@@ -192,6 +195,12 @@ impl View for FileEditorTabs {
     }
 
     fn settings_menu(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        
+        let now = Instant::now();
+        ui.menu_button("Stats", |ui| {
+            ui.label(format!("ft: {} ms", (now - self.last_update).as_secs_f32() * 1000.0));
+            ui.label(format!("fr: {}", self.num_frames));
+        });
+        self.last_update = now;
+        self.num_frames += 1;
     }
 }

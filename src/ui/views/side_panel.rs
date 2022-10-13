@@ -32,11 +32,14 @@ impl SidePanelView {
 impl View for SidePanelView {
     fn set_bigfile(&mut self, bf: crate::ui::BfRef) {
         self.bigfile = bf;
-        self.ft_view.set_bigfile(self.bigfile.clone());
-        self.bf_view.set_bigfile(self.bigfile.clone());
+        if let Some(bf) = &self.bigfile {
+            self.ft_view.set_bigfile(Some(bf.clone()));
+            self.bf_view.set_bigfile(Some(bf.clone()));
+        }
     }
 
     fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+        if let None = self.bigfile { return; }
 
         ui.vertical(|ui| {
             ui.horizontal(|ui| {

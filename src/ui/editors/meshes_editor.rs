@@ -1,7 +1,5 @@
-use std::fs::File;
-use std::io::Write;
 use crate::objects::ObjectArchetype;
-
+use crate::export::*;
 use super::EditorResponse;
 
 
@@ -24,17 +22,8 @@ impl super::EditorImpl for MeshDataEditor {
             ui.label(format!("uniform scale: {}", msd.uniform_scale));
 
             if ui.button("Export to .obj...").clicked() {
-                if let Some(path) = rfd::FileDialog::new().pick_folder() {
-                    let path = format!("{}/{:#010X} {}.obj", path.to_str().unwrap(), obj.get_key(), obj.get_name());
-                    let mut file = File::create(path).unwrap();
-
-                    for vert in &msd.vertices {
-                        write!(file, "v {} {} {}\n", vert.pos.x, vert.pos.y, vert.pos.z).unwrap(); // swap y and z for coordinate correctness
-                    }
-
-                    for face in &msd.faces {
-                        write!(file, "f {} {} {}\n", face[0] + 1, face[1] + 1, face[2] + 1).unwrap();
-                    }
+                if let Some(path) = pick_exp_path(&obj, ".obj") {
+                    exp_msd_as_obj(path, &msd);
                 }
             }
         }
