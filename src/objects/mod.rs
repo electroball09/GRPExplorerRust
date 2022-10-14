@@ -9,6 +9,7 @@ pub mod ai_const;
 pub mod dbk;
 pub mod meshes;
 pub mod texture;
+pub mod sound;
 use yeti_script::*;
 use ini::*;
 use curve::*;
@@ -20,6 +21,7 @@ use ai_const::*;
 use dbk::*;
 use meshes::*;
 use texture::*;
+use sound::*;
 
 mod load_error;
 pub use load_error::*;
@@ -76,6 +78,7 @@ impl YetiObject {
             ObjectType::msd => ObjectArchetype::MeshData(MeshData::default()),
             ObjectType::tga => ObjectArchetype::TextureMetadata(TextureMetadata::default()),
             ObjectType::txd => ObjectArchetype::TextureData(TextureData::default()),
+            ObjectType::snk => ObjectArchetype::SoundBank(SoundBank::default()),
             _ => ObjectArchetype::NoImpl
         }
     }
@@ -154,6 +157,7 @@ pub enum ObjectArchetype {
     MeshMetadata(MeshMetadata),
     TextureMetadata(TextureMetadata),
     TextureData(TextureData),
+    SoundBank(SoundBank),
 }
 
 impl ObjectArchetype {
@@ -172,6 +176,7 @@ impl ObjectArchetype {
             Self::MeshMetadata(msh) => msh.load_from_buf(buf),
             Self::TextureData(txd) => txd.load_from_buf(buf),
             Self::TextureMetadata(tga) => tga.load_from_buf(buf),
+            Self::SoundBank(snk) => snk.load_from_buf(buf),
             Self::NoImpl => { Ok(()) }
         }
     }
@@ -191,6 +196,7 @@ impl ObjectArchetype {
             Self::MeshMetadata(msh) => msh.unload(),
             Self::TextureData(txd) => txd.unload(),
             Self::TextureMetadata(tga) => tga.unload(),
+            Self::SoundBank(snk) => snk.unload(),
             Self::NoImpl => { }
         }
     }
