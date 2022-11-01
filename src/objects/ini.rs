@@ -14,12 +14,6 @@ pub enum IniEntry {
     AssetKey(String, u32)
 }
 
-impl From<FromUtf8Error> for LoadError {
-    fn from(err: FromUtf8Error) -> Self {
-        Self::new(err.to_string(), 0)
-    }
-}
-
 impl YetiIni {
     fn load_from_reader(&self, reader: &mut impl Read) -> Result<Vec<IniEntry>, LoadError> {
         let mut entries: Vec<IniEntry> = Vec::new();

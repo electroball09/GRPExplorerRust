@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{error::Error, string::FromUtf8Error};
 use core::fmt::Display;
 
 #[derive(Debug)]
@@ -43,6 +43,12 @@ impl From<std::io::Error> for LoadError {
             msg: format!("{}", e),
             key: 0
         }
+    }
+}
+
+impl From<FromUtf8Error> for LoadError {
+    fn from(err: FromUtf8Error) -> Self {
+        Self::new(err.to_string(), 0)
     }
 }
 

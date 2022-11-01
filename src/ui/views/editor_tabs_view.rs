@@ -144,8 +144,8 @@ impl View for FileEditorTabs {
                 }
             });
             if let Some(key) = self.open_tab {
-                egui::SidePanel::left("file_entry_panel").default_width(200.0)
-                    .resizable(false).show(ctx, |ui| {
+                egui::SidePanel::left("file_entry_panel").default_width(200.0).max_width(600.0).min_width(200.0)
+                    .resizable(true).show(ctx, |ui| {
                         FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, ctx);
 
                         ui.horizontal(|ui| {
@@ -165,7 +165,7 @@ impl View for FileEditorTabs {
                         egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui| {
                             for key in bf.object_table[&key].references.iter() {
                                 if bf.file_table.contains_key(&key) {
-                                    let rsp = ui.selectable_label(false, format!("{:#010X}", key));
+                                    let rsp = ui.selectable_label(false, format!("{:#010X} {}", key, bf.file_table[&key].get_name_ext()));
                                     if rsp.clicked() {
                                         open_new_tab = Some(vec![*key]);
                                     }

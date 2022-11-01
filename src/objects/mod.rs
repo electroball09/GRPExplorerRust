@@ -10,6 +10,8 @@ pub mod dbk;
 pub mod meshes;
 pub mod texture;
 pub mod sound;
+pub mod material;
+pub mod shader;
 use yeti_script::*;
 use ini::*;
 use curve::*;
@@ -22,6 +24,8 @@ use dbk::*;
 use meshes::*;
 use texture::*;
 use sound::*;
+use material::*;
+use shader::*;
 
 mod load_error;
 pub use load_error::*;
@@ -79,6 +83,7 @@ impl YetiObject {
             ObjectType::tga => ObjectArchetype::TextureMetadata(TextureMetadata::default()),
             ObjectType::txd => ObjectArchetype::TextureData(TextureData::default()),
             ObjectType::snk => ObjectArchetype::SoundBank(SoundBank::default()),
+            ObjectType::shd => ObjectArchetype::ShaderGraph(VisualShader::default()),
             _ => ObjectArchetype::NoImpl
         }
     }
@@ -104,7 +109,6 @@ impl YetiObject {
         let mut cursor = Cursor::new(buf);
         let num_refs = cursor.read_u32::<LittleEndian>().unwrap();
         let mut refs: Vec<u32> = Vec::with_capacity(num_refs as usize);
-        //dbg!(num_refs);
         let mut i = 0;
         while i < num_refs {
             refs.push(cursor.read_u32::<LittleEndian>().unwrap());
@@ -158,6 +162,7 @@ pub enum ObjectArchetype {
     TextureMetadata(TextureMetadata),
     TextureData(TextureData),
     SoundBank(SoundBank),
+    ShaderGraph(VisualShader),
 }
 
 impl ObjectArchetype {
@@ -177,6 +182,7 @@ impl ObjectArchetype {
             Self::TextureData(txd) => txd.load_from_buf(buf),
             Self::TextureMetadata(tga) => tga.load_from_buf(buf),
             Self::SoundBank(snk) => snk.load_from_buf(buf),
+            Self::ShaderGraph(shd) => shd.load_from_buf(buf),
             Self::NoImpl => { Ok(()) }
         }
     }
@@ -197,6 +203,7 @@ impl ObjectArchetype {
             Self::TextureData(txd) => txd.unload(),
             Self::TextureMetadata(tga) => tga.unload(),
             Self::SoundBank(snk) => snk.unload(),
+            Self::ShaderGraph(shd) => shd.unload(),
             Self::NoImpl => { }
         }
     }
