@@ -1,3 +1,4 @@
+use super::tools::ToolsView;
 use super::{View, bf_metadata_view::BigfileMetadataView};
 use super::file_tree_view::FileTreeView;
 use super::super::BfRef;
@@ -6,12 +7,14 @@ pub struct SidePanelView {
     bigfile: BfRef,
     ft_view: FileTreeView,
     bf_view: BigfileMetadataView,
+    tl_view: ToolsView,
     state: SidePanelViewState
 }
 
 enum SidePanelViewState {
     FileTree,
-    BfMetadata
+    BfMetadata,
+    Tools
 }
 
 impl SidePanelView {
@@ -20,6 +23,7 @@ impl SidePanelView {
             bigfile: bf.clone(),
             ft_view: FileTreeView::new(bf.clone()),
             bf_view: BigfileMetadataView::new(bf.clone()),
+            tl_view: ToolsView::new(bf.clone()),
             state: SidePanelViewState::FileTree
         }
     }
@@ -35,6 +39,7 @@ impl View for SidePanelView {
         if let Some(bf) = &self.bigfile {
             self.ft_view.set_bigfile(Some(bf.clone()));
             self.bf_view.set_bigfile(Some(bf.clone()));
+            self.tl_view.set_bigfile(Some(bf.clone()));
         }
     }
 
@@ -47,8 +52,14 @@ impl View for SidePanelView {
                     self.state = SidePanelViewState::FileTree;
                     return;
                 }
+                ui.separator();
                 if ui.selectable_label(matches!(self.state, SidePanelViewState::BfMetadata), "Bigfile Metadata").clicked() {
                     self.state = SidePanelViewState::BfMetadata;
+                    return;
+                }
+                ui.separator();
+                if ui.selectable_label(matches!(self.state, SidePanelViewState::Tools), "Tools").clicked() {
+                    self.state = SidePanelViewState::Tools;
                     return;
                 }
             });
@@ -61,6 +72,9 @@ impl View for SidePanelView {
                 },
                 SidePanelViewState::BfMetadata => {
                     self.bf_view.draw(ui, ctx);
+                },
+                SidePanelViewState::Tools => {
+                    self.tl_view.draw(ui, ctx);
                 }
             }
         });
@@ -70,5 +84,6 @@ impl View for SidePanelView {
     fn settings_menu(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
         self.ft_view.settings_menu(ui, ctx);
         self.bf_view.settings_menu(ui, ctx);
+        self.tl_view.settings_menu(ui, ctx);
     }
 }

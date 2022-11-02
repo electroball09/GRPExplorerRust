@@ -6,7 +6,8 @@ pub struct ShaderGraphEditor;
 impl EditorImpl for ShaderGraphEditor {
     fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> super::EditorResponse {
         if let ObjectArchetype::ShaderGraph(shd) = &obj.archetype {
-            ui.label(format!("flags: {:#010X}", shd.flags));
+            ui.label(format!("version: {:#06X}", shd.version));
+            ui.label(format!("flags: {:#06X} {:#018b}", shd.flags, shd.flags));
 
             let mut i = 0;
             egui::ScrollArea::new([false, true]).auto_shrink([false, false]).show(ui, |ui| {
@@ -33,6 +34,6 @@ impl EditorImpl for ShaderGraphEditor {
             });
         }
 
-        EditorResponse::None
+        EditorResponse::default()
     }
 }

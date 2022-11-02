@@ -241,7 +241,7 @@ impl FileEntry {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, EnumString)]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, EnumString, PartialEq)]
 pub enum ObjectType {
     #[default]
     null = 0,

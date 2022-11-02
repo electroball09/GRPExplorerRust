@@ -4,7 +4,8 @@ use super::{ArchetypeImpl, LoadError};
 
 #[derive(Default)]
 pub struct VisualShader {
-    pub flags: u32,
+    pub version: u16,
+    pub flags: u16,
     pub graphs: Vec<ShaderGraph>,
 }
 
@@ -34,7 +35,8 @@ impl ArchetypeImpl for VisualShader {
     fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         let mut cursor = Cursor::new(buf);
 
-        self.flags = cursor.read_u32::<LittleEndian>()?;
+        self.version = cursor.read_u16::<LittleEndian>()?;
+        self.flags = cursor.read_u16::<LittleEndian>()?;
 
         cursor.seek(std::io::SeekFrom::Current(64))?;
         loop {
