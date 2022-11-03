@@ -1,5 +1,9 @@
+pub mod node_ids;
+
 use std::io::{Read, Seek, Cursor, SeekFrom};
 use byteorder::{ReadBytesExt, LittleEndian};
+use node_ids::*;
+
 use super::{ArchetypeImpl, LoadError};
 
 #[derive(Default)]
@@ -21,8 +25,8 @@ pub struct ShaderGraph {
 
 pub struct ShaderNode {
     id: String,
-    pub i1: u32,
-    pub i2: u32
+    pub node: ShaderNodeId,
+    pub unk_01: u32,
 }
 
 impl ShaderNode {
@@ -90,13 +94,26 @@ impl VisualShader {
         Ok(id)
     }
 
-    fn read_node(rdr: &mut impl Read) -> Result<ShaderNode, LoadError> {
+    fn read_node<T: Read + Seek>(rdr: &mut T) -> Result<ShaderNode, LoadError> {
         let id = Self::read_node_id(rdr)?;
+        let unk_01 = rdr.read_u32::<LittleEndian>()?;
+        //dbg!(rdr.stream_position()?);
+
+        let node_id: ShaderNodeId = match id.as_str() {
+            "eSID_Comment" => {
+                //println!("loading comment!");
+                ShaderNodeId::eSID_Comment(load_eSID_Comment(rdr)?)
+            },
+            _ => {
+                Self::seek_to_next_node(rdr);
+                ShaderNodeId::Invalid
+            }
+        };
 
         Ok(ShaderNode {
             id,
-            i1: rdr.read_u32::<LittleEndian>()?,
-            i2: rdr.read_u32::<LittleEndian>()?
+            unk_01,
+            node: node_id,
         })
     }
 
