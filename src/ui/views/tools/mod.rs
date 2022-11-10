@@ -2,8 +2,6 @@ use crate::{bigfile::{Bigfile, metadata::ObjectType}, objects::ObjectArchetype};
 use std::{fs::File, collections::HashSet, io::Write};
 use super::super::BfRef;
 
-type ToolCoroutine = Box<dyn FnMut(&mut Bigfile, Vec<u32>, u32) -> bool>;
-
 pub struct ToolsView {
     bigfile: BfRef,
 }
@@ -17,7 +15,7 @@ impl ToolsView {
 }
 
 impl super::View for ToolsView {
-    fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
         if ui.button("Export Shader Node IDs").clicked() {
             let bf = self.bigfile.clone().unwrap();
             let mut bf = bf.as_ref().borrow_mut();
@@ -27,10 +25,6 @@ impl super::View for ToolsView {
 
     fn set_bigfile(&mut self, bf: crate::ui::BfRef) {
         self.bigfile = bf;
-    }
-
-    fn settings_menu(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        
     }
 }
 

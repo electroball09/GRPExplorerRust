@@ -4,6 +4,7 @@ use std::io::{Read};
 use byteorder::{ReadBytesExt, LittleEndian};
 use chrono::NaiveDateTime;
 use num::FromPrimitive;
+use strum::AsRefStr;
 use strum_macros::EnumString;
 
 #[derive(Debug, Default)]
@@ -241,7 +242,7 @@ impl FileEntry {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, EnumString, PartialEq)]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, EnumString, PartialEq, Eq, AsRefStr)]
 pub enum ObjectType {
     #[default]
     null = 0,

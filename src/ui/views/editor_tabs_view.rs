@@ -2,7 +2,7 @@ use super::*;
 use std::ops::DerefMut;
 use egui::Ui;
 use std::time::Instant;
-
+use clipboard::*;
 use crate::bigfile::{Bigfile, obj_type_to_name};
 use crate::bigfile::metadata::FileEntry;
 use crate::ui::*;
@@ -71,7 +71,13 @@ impl FileEditorTabs {
         fn file_metadata_line(ui: &mut Ui, label: &str, value: &str) -> bool {
             ui.horizontal(|ui| {
                 ui.label(label);
-                ui.selectable_label(false, value).clicked()
+                let rsp = ui.selectable_label(false, value).on_hover_text("Click to copy");
+                if rsp.clicked() {
+                    let mut ctx: ClipboardContext = ClipboardProvider::new().unwrap();
+                    ctx.set_contents(String::from(value)).unwrap();
+                    return true;
+                }
+                false
             }).inner
         }
 

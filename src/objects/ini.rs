@@ -1,4 +1,4 @@
-use std::{io::{Read, Cursor}, string::FromUtf8Error};
+use std::io::{Read, Cursor};
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use super::{ArchetypeImpl, LoadError};
