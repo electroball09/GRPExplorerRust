@@ -103,11 +103,11 @@ impl super::View for SearchView {
                                 }
 
                                 if self.match_case {
-                                    if entry.1.get_name().contains(&self.query) {
+                                    if entry.1.get_name().contains(&self.query.trim_start_matches("\"").trim_end_matches("\"")) {
                                         return some;
                                     }
                                 } else {
-                                    if entry.1.get_name().to_ascii_lowercase().contains(&self.query.to_ascii_lowercase()) {
+                                    if entry.1.get_name().to_ascii_lowercase().contains(&self.query.trim_start_matches("\"").trim_end_matches("\"").to_ascii_lowercase()) {
                                         return some;
                                     }
                                 }
@@ -121,6 +121,17 @@ impl super::View for SearchView {
 
                     self.sort_results(&bf);
                 };
+
+                ui.small_button("?").on_hover_text(
+                    "Search will match on the following:\n\
+                    \tKey, Offset, Type, Name\n\
+                    \n\
+                    -File key/offset will match on values parseable as decimal or hexadecimal\n\
+                    -File type extension will match on values 3 characters long\n\
+                    \tExtension also matches if value starts with '.' (e.g. \".wor\")\n\
+                    -File name will match on ascii name without extension\n\
+                    \tTo match a value would qualify above, use double quotes (e.g. \"F2000\")"
+                );
             });
         });
 
@@ -181,23 +192,25 @@ impl super::View for SearchView {
 
         if !self.results.is_empty() {
             ui.add_space(2.0);
+
+            ui.push_id(self.page, |ui| {
+                egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui,|ui| {
+                    self.clicked_file = None;
     
-            egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui,|ui| {
-                self.clicked_file = None;
-
-                let first_ind = self.page * self.files_per_page;
-                let last_ind = usize::min(self.results.len(), (self.page + 1) * self.files_per_page);
-                let slice = &self.results[first_ind..last_ind];
-
-                for key in slice {
-                    let file = &bf.file_table[key];
-                    ui.horizontal(|ui| {
-                        ui.label(format!(".{:?} - {:#010X}", file.object_type, file.key));
-                        if ui.button(format!("{}", file.get_name())).clicked() {
-                            self.clicked_file = Some(*key);
-                        }
-                    });
-                }
+                    let first_ind = self.page * self.files_per_page;
+                    let last_ind = usize::min(self.results.len(), (self.page + 1) * self.files_per_page);
+                    let slice = &self.results[first_ind..last_ind];
+    
+                    for key in slice {
+                        let file = &bf.file_table[key];
+                        ui.horizontal(|ui| {
+                            ui.label(format!(".{:?} - {:#010X}", file.object_type, file.key));
+                            if ui.button(format!("{}", file.get_name())).clicked() {
+                                self.clicked_file = Some(*key);
+                            }
+                        });
+                    }
+                });
             });
         }
     }

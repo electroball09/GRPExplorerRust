@@ -15,16 +15,15 @@ impl ArchetypeImpl for DynamicBank {
 
         self.bank_id = cursor.read_u8()?;
         self.num_bank_entries = cursor.read_u8()?;
-        self.the_rest_of_the_data = buf[3..].to_vec();
+        if self.num_bank_entries > 0 {
+            self.the_rest_of_the_data = buf[3..].to_vec();
+        }
         
         Ok(())
     }
 
     fn unload(&mut self) {
-        self.bank_id = 0;
-        self.num_bank_entries = 0;
-        self.the_rest_of_the_data.clear();
-        self.the_rest_of_the_data.shrink_to(1);
+        let _ = std::mem::take(self);
     }
 }
 

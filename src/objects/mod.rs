@@ -1,31 +1,18 @@
-pub mod yeti_script;
-pub mod ini;
-pub mod curve;
-pub mod otf;
-pub mod layer;
-pub mod gameobject;
-pub mod feu;
-pub mod ai_const;
-pub mod dbk;
-pub mod meshes;
-pub mod texture;
-pub mod sound;
-pub mod material;
-pub mod shader;
-use yeti_script::*;
-use ini::*;
-use curve::*;
-use otf::*;
-use layer::*;
-use gameobject::*;
-use feu::*;
-use ai_const::*;
-use dbk::*;
-use meshes::*;
-use texture::*;
-use sound::*;
-//use material::*;
-use shader::*;
+pub mod yeti_script; use yeti_script::*;
+pub mod ini; use ini::*;
+pub mod curve; use curve::*;
+pub mod otf; use otf::*;
+pub mod layer; use layer::*;
+pub mod gameobject; use gameobject::*;
+pub mod feu; use feu::*;
+pub mod ai_const; use ai_const::*;
+pub mod dbk; use dbk::*;
+pub mod meshes; use meshes::*;
+pub mod texture; use texture::*;
+pub mod sound; use sound::*;
+pub mod material; use material::*;
+pub mod shader; use shader::*;
+pub mod skeleton; use skeleton::*;
 
 mod load_error;
 pub use load_error::*;
@@ -33,7 +20,6 @@ pub use load_error::*;
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::bigfile::metadata::{ObjectType, FileEntry};
-
 
 pub struct YetiObject {
     load_refs: u32,
@@ -84,6 +70,7 @@ impl YetiObject {
             ObjectType::txd => ObjectArchetype::TextureData(TextureData::default()),
             ObjectType::snk => ObjectArchetype::SoundBank(SoundBank::default()),
             ObjectType::shd => ObjectArchetype::ShaderGraph(VisualShader::default()),
+            ObjectType::ske => ObjectArchetype::Skeleton(Skeleton::default()),
             _ => ObjectArchetype::NoImpl
         }
     }
@@ -106,17 +93,10 @@ impl YetiObject {
             return Ok(());
         }
 
-        let mut cursor = Cursor::new(buf);
-        let num_refs = cursor.read_u32::<LittleEndian>().unwrap();
-        let mut refs: Vec<u32> = Vec::with_capacity(num_refs as usize);
-        let mut i = 0;
-        while i < num_refs {
-            refs.push(cursor.read_u32::<LittleEndian>().unwrap());
-            i += 1;
-        }
+        let (refs, buf) = crate::bigfile::io::parse_and_remove_refs(buf);
         self.references = refs;
 
-        if let Err(mut error) = self.archetype.load_from_buf(&buf[cursor.position() as usize..]) {
+        if let Err(mut error) = self.archetype.load_from_buf(buf) {
             self.archetype.unload();
             error.set_key(self.get_key());
             self.load_error = Some(error);
@@ -163,6 +143,7 @@ pub enum ObjectArchetype {
     TextureData(TextureData),
     SoundBank(SoundBank),
     ShaderGraph(VisualShader),
+    Skeleton(Skeleton),
 }
 
 impl ObjectArchetype {
@@ -183,6 +164,7 @@ impl ObjectArchetype {
             Self::TextureMetadata(tga) => tga.load_from_buf(buf),
             Self::SoundBank(snk) => snk.load_from_buf(buf),
             Self::ShaderGraph(shd) => shd.load_from_buf(buf),
+            Self::Skeleton(ske) => ske.load_from_buf(buf),
             Self::NoImpl => { Ok(()) }
         }
     }
@@ -204,6 +186,7 @@ impl ObjectArchetype {
             Self::TextureMetadata(tga) => tga.unload(),
             Self::SoundBank(snk) => snk.unload(),
             Self::ShaderGraph(shd) => shd.unload(),
+            Self::Skeleton(ske) => ske.unload(),
             Self::NoImpl => { }
         }
     }

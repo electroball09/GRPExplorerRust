@@ -67,7 +67,7 @@ impl View for SidePanelView {
                     self.state = SidePanelViewState::Search;
                 }
                 ui.separator();
-                if ui.selectable_label(matches!(self.state, SidePanelViewState::BfMetadata), "Bigfile Metadata").clicked() {
+                if ui.selectable_label(matches!(self.state, SidePanelViewState::BfMetadata), "Metadata").clicked() {
                     self.state = SidePanelViewState::BfMetadata;
                 }
                 ui.separator();

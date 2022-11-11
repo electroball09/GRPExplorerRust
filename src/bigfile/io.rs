@@ -1,6 +1,6 @@
 use std::fs::File;
-use std::io::{Error, SeekFrom, Seek, Read};
-use std::collections::HashMap;
+use std::io::{Error, SeekFrom, Seek, Read, Cursor};
+use std::collections::{HashMap, VecDeque};
 use byteorder::{ReadBytesExt, LittleEndian};
 use flate2::read::ZlibDecoder;
 
@@ -26,6 +26,19 @@ pub fn seek_to_file_data(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_
     let byte_pack_offset = 8 - ((reader.stream_position().unwrap()) % 8);
     reader.seek(SeekFrom::Current(byte_pack_offset as i64))?;
     reader.seek(SeekFrom::Current((offset as i64) * 8))
+}
+
+pub fn parse_and_remove_refs(buf: &[u8]) -> (Vec<u32>, &[u8]) {
+    let mut cursor = Cursor::new(&buf);
+    let num_refs = cursor.read_u32::<LittleEndian>().unwrap();
+    let mut refs: Vec<u32> = Vec::with_capacity(num_refs as usize);
+    let mut i = 0;
+    while i < num_refs {
+        refs.push(cursor.read_u32::<LittleEndian>().unwrap());
+        i += 1;
+    }
+    
+    (refs, &buf[4 + (4 * num_refs as usize)..])
 }
 
 pub trait BigfileIO {
