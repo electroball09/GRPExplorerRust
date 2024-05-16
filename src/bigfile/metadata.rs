@@ -1,3 +1,4 @@
+use std::fmt::Display;
 #[allow(dead_code)]
 
 use std::io::{Read};
@@ -17,6 +18,14 @@ pub struct SegmentHeader {
     pub unk03: u32,
     pub header_offset: u32,
     pub unk04: [u8; 28],
+}
+
+impl Display for SegmentHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+        "sig: {} | segment: {:#04X} | num_segments: {:#04X} | unk01: {:#06X} | unk02: {:#010X} | unk03: {:#010X} | header_offset: {}", 
+        self.sig_to_str(), self.segment, self.num_segments, self.unk01, self.unk02, self.unk03, self.header_offset)
+    }
 }
 
 impl SegmentHeader {
@@ -57,7 +66,7 @@ impl SegmentHeader {
         }
 
         if self.header_offset < 48 {
-            return Err("header offset too small! (<48)")
+            return Err("header offset too small! (<48)");
         }
 
         if self.header_offset > 163840 {
@@ -92,6 +101,14 @@ impl Default for BigfileHeader {
             unk_02: [0; 3],
             data_root: [0; 40]
         }
+    }
+}
+
+impl Display for BigfileHeader {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+        "version: {:#06X} | num_folders: {:#06X} | num_files: {:#010X} | load_prio: {} | auto_active: {} | data_root: {}",
+        self.version, self.num_folders, self.num_files, self.load_priority, self.auto_activate, self.data_root_str())
     }
 }
 
@@ -142,6 +159,14 @@ impl Default for FolderEntry {
             next_folder: 0,
             name: [0; 50]
         }
+    }
+}
+
+impl Display for FolderEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+        "index: {:#06X} | unk01: {:#06X} | unk02: {:#06X} | unk03: {:#06X} | unk04: {:#06X} | parent: {:#06X} | first_child: {:#06X} | next: {:#06X} | name: {}",
+        self.idx, self.unk01, self.unk02, self.unk03, self.unk04, self.parent_folder, self.first_child, self.next_folder, self.get_name())
     }
 }
 
@@ -205,6 +230,14 @@ impl Default for FileEntry {
     }
 }
 
+impl Display for FileEntry {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f,
+        "offset: {:#010X} | key: {:#010X} | unk01: {:#010X} | type: {:?} | parent_folder: {} | timestamp: {} | flags: {:#010X} | unk02: {:#010X} | unk03: {:#010X} | zip: {} | name: {}",
+        self.offset, self.key, self.unk01, self.object_type, self.parent_folder, self.timestamp, self.flags, self.unk02, self.unk03, self.zip, self.get_name())
+    }
+}
+
 impl FileEntry {
     pub fn read_from(reader: &mut impl Read) -> Result<FileEntry, String> {
         let mut entry = FileEntry::default();
@@ -213,7 +246,7 @@ impl FileEntry {
         entry.unk01 = reader.read_i32::<LittleEndian>().unwrap();
         entry.object_type = FromPrimitive::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
         entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
-        entry.timestamp = NaiveDateTime::from_timestamp(reader.read_i32::<LittleEndian>().unwrap() as i64, 0);
+        entry.timestamp = NaiveDateTime::from_timestamp_opt(reader.read_i32::<LittleEndian>().unwrap() as i64, 0).unwrap();
         entry.flags = reader.read_i32::<LittleEndian>().unwrap();
         entry.unk02 = reader.read_i32::<LittleEndian>().unwrap();
         reader.read(&mut entry.crc).unwrap();

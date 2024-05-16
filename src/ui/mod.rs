@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 use std::rc::Rc;
 
 use eframe::CreationContext;
@@ -9,6 +10,7 @@ use font_loader::system_fonts;
 use crate::bigfile::io::*;
 use crate::FileDialog;
 use crate::Bigfile;
+use log::*;
 
 use self::views::*;
 use self::views::side_panel::SidePanelView;
@@ -103,14 +105,34 @@ impl eframe::App for ExplorerApp {
                 ui.menu_button("File", |ui| {
                     if let None = &self.bigfile {
                         if ui.button("Open Bigfile...").clicked() {
-                            let file = FileDialog::new()
+                            info!("picking bigfile...");
+                            let file = match FileDialog::new()
                             .add_filter("bigfile", &["big"])
-                            .pick_file()
-                            .unwrap();
+                            .pick_file() {
+                                Some(f) => f,
+                                None => {
+                                    info!("bigfile picker cancelled");
+                                    return;
+                                }
+                            };
+
+                            let path = file.to_str().unwrap_or("invalid file path");
+
+                            info!("picked file {}", path);
+                            debug!("   {:?}", file);
                 
-                            let path = String::from(file.to_str().unwrap());
-                            let mut bigfile = Bigfile::new::<BigfileIOPacked>(path).expect("oh no why?");
-                            bigfile.load_metadata().expect("oh no!");
+                            let path = String::from(path);
+                            let mut bigfile = match Bigfile::new::<BigfileIOPacked>(path) {
+                                Ok(bf) => bf,
+                                Err(err) => {
+                                    error!("{}", &err);
+                                    return;
+                                }
+                            };
+
+                            if let Err(err) = bigfile.load_metadata() {
+                                error!("{}", &err);
+                            }
                 
                             self.bigfile.replace(Rc::new(RefCell::new(bigfile)));
                 

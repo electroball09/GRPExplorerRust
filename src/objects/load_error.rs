@@ -1,4 +1,4 @@
-use std::{error::Error, string::FromUtf8Error};
+use std::{error::Error, str::FromStr, string::FromUtf8Error};
 use core::fmt::Display;
 
 #[derive(Debug)]
@@ -32,6 +32,15 @@ impl From<String> for LoadError {
     fn from(msg: String) -> Self {
         Self {
             msg,
+            key: 0
+        }
+    }
+}
+
+impl From<&str> for LoadError {
+    fn from(value: &str) -> Self {
+        Self {
+            msg: String::from_str(value).unwrap(),
             key: 0
         }
     }

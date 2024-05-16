@@ -1,6 +1,7 @@
 use super::*;
 use std::ops::Deref;
 use egui::Ui;
+use log::*;
 
 use crate::bigfile::Bigfile;
 use crate::ui::*;
@@ -36,7 +37,13 @@ impl FileTreeView {
                     if let Some(key) = draw_folder2(&child, bf, ctx, ui, debug_folders, debug_files) {
                         return Some(key);
                     }
-                    child = bf.folder_table[&child].next_folder;
+                    child = match bf.folder_table.get(&child) {
+                        Some(fld) => fld.next_folder,
+                        None => {
+                            warn!("could not find folder with id {}", &child);
+                            0xFFFF
+                        }
+                    };
                 };
                 let mut opt: Option<u32> = None;
                 if let Some(v) = bf.file_list_map.get(&idx) {
@@ -46,7 +53,7 @@ impl FileTreeView {
                             ui.label(format!("{:?} -", file.object_type));
                             let btn = ui.button(file.get_name());
                             if btn.clicked() {
-                                println!("clicked file {}", file.get_name_ext());
+                                debug!("clicked file {}", file.get_name_ext());
                                 opt = Some(key.clone());
                             }
                             if debug_files {

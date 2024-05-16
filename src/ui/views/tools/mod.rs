@@ -1,6 +1,7 @@
 use crate::{bigfile::{Bigfile, metadata::ObjectType}, objects::ObjectArchetype};
 use std::{fs::File, collections::HashSet, io::Write};
 use super::super::BfRef;
+use log::*;
 
 pub struct ToolsView {
     bigfile: BfRef,
@@ -21,6 +22,11 @@ impl super::View for ToolsView {
             let mut bf = bf.as_ref().borrow_mut();
             export_shader_node_ids(&mut bf);
         }
+        if ui.button("Export Zones").clicked() {
+            let bf = self.bigfile.clone().unwrap();
+            let mut bf = bf.as_ref().borrow_mut();
+            export_zones(&mut bf);
+        }
     }
 
     fn set_bigfile(&mut self, bf: crate::ui::BfRef) {
@@ -28,13 +34,41 @@ impl super::View for ToolsView {
     }
 }
 
-pub fn export_shader_node_ids(bf: &mut Bigfile) {
+fn export_zones(bf: &mut Bigfile) {
+    let mut path = String::from(std::env::current_dir().unwrap().to_str().unwrap());
+    path += "\\zones.txt";
+
+    info!("exporting zones to {}", path);
+
+    if let Ok(mut file) = File::create(path) {
+        let keys: Vec<u32> = bf.file_table.iter()
+            .filter(|ent| ent.1.object_type == ObjectType::zon)
+            .map(|ent| *ent.0)
+            .collect();
+    
+        for key in &keys {
+            if let Ok(()) = bf.load_file(*key) {
+                if let ObjectArchetype::Zone(zon) = &bf.object_table[&key].archetype {
+                    writeln!(file, "{:#010X} - {} - {:?}", key, &bf.file_table[&key].get_name_ext(), zon).unwrap();
+                }
+            }
+            bf.unload_file(*key).unwrap();
+        }
+    }
+
+
+}
+
+fn export_shader_node_ids(bf: &mut Bigfile) {
     let mut path = String::from(std::env::current_dir().unwrap().to_str().unwrap());
     path += "\\shader_node_ids.txt";
 
-    println!("exporting shader node ids to {}", path);
+    info!("exporting shader node ids to {}", path);
 
-    let shd_keys: Vec<u32> = bf.file_table.iter().filter(|ent| ent.1.object_type == ObjectType::shd).map(|ent| *ent.0).collect();
+    let shd_keys: Vec<u32> = bf.file_table.iter()
+        .filter(|ent| ent.1.object_type == ObjectType::shd)
+        .map(|ent| *ent.0)
+        .collect();
     let mut ids: HashSet<String> = HashSet::new();
     for key in &shd_keys {
         if let Ok(()) = bf.load_file(*key) {
@@ -69,7 +103,7 @@ pub fn export_shader_node_ids(bf: &mut Bigfile) {
             }
         },
         Err(err) => {
-            println!("{}", err.to_string());
+            error!("{}", err.to_string());
         }
     };
 }

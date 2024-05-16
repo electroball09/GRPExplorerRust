@@ -13,6 +13,8 @@ mod texture_editor; use texture_editor::*;
 mod sound_editor; use sound_editor::*;
 mod shadergraph_editor; use shadergraph_editor::*;
 mod skeleton_editor; use skeleton_editor::*;
+mod eps_editor; use eps_editor::*;
+mod zone_editor; use zone_editor::*;
 
 use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::{metadata::ObjectType, Bigfile}};
 
@@ -54,6 +56,8 @@ pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mu
         ObjectType::snk => SnkEditor::draw(obj, ui, ctx),
         ObjectType::shd => ShaderGraphEditor::draw(obj, ui, ctx),
         ObjectType::ske => SkeletonEditor::draw(obj, ui, ctx),
+        ObjectType::eps => EditableParamStructEditor::draw(obj, ui, ctx),
+        ObjectType::zon => ZoneEditor::draw(obj, ui, ctx),
         _ => BlankEditor::draw(obj, ui, ctx)
     }
 }

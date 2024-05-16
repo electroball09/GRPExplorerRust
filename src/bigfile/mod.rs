@@ -1,6 +1,8 @@
 pub mod metadata;
 pub mod io;
 
+use log::*;
+
 use std::collections::HashMap;
 use id_tree::*;
 
@@ -109,18 +111,15 @@ impl Bigfile {
         Ok(bigfile)
     }
 
-    pub fn load_metadata(&mut self) -> Result<(), String> {
-        println!("loading metadata");
-        self.segment_header = match self.io.read_segment_header() {
-            Ok(header) => header,
-            Err(error) => return Err(String::from(error))
-        };
+    pub fn load_metadata(&mut self) -> Result<(), LoadError> {
+        info!("loading metadata");
+        self.segment_header = self.io.read_segment_header()?;
         self.bigfile_header = self.io.read_bigfile_header(&self.segment_header)?;
         self.file_table = self.io.read_file_table(&self.segment_header, &self.bigfile_header)?;
         self.object_table = self.build_archetype_table()?;
         self.folder_table = self.io.read_folder_table(&self.segment_header, &self.bigfile_header)?;
         self.build_file_tree()?;
-        println!("all metadata loaded");
+        info!("all metadata loaded");
         Ok(())
     }
 
@@ -182,45 +181,23 @@ impl Bigfile {
         let mut table = HashMap::<u32, YetiObject>::new();
         for kv in self.file_table.iter() {
             table.insert(*kv.0, YetiObject::from_file_entry(&self.file_table[kv.0]));
-            //table.insert(*kv.0, create_object_for_type(*kv.0, self.file_table[kv.0].get_name(), &kv.1.object_type));
         };
         Ok(table)
     }
 
     fn build_file_tree(&mut self) -> Result<(), String> {
-        //let mut tree = TreeBuilder::new().with_node_capacity(self.folder_table.len() + 1).build();
-
-        println!("building file lists");
+        info!("building file lists");
         let mut file_list_map: HashMap<u16, Box<Vec<u32>>> = HashMap::new();
         for file in self.file_table.values() {
             file_list_map.entry(file.parent_folder).or_insert(Box::new(Vec::with_capacity(1))).push(file.key);
         }
 
-        println!("sorting file lists");
+        info!("sorting file lists");
         for kv in file_list_map.iter_mut() {
             kv.1.sort_by(|a, b| self.file_table[a].get_name().cmp(self.file_table[b].get_name()));
         }
 
-        // println!("building tree");
-        // let root_id = tree.insert(Node::new(0), AsRoot).unwrap();
-        // let mut node_id_map: HashMap<u16, (NodeId, u16)> = HashMap::with_capacity(self.folder_table.len());
-        // for kv in self.folder_table.iter() {
-        //     node_id_map.insert(kv.0.clone(), (tree.insert(Node::new(kv.0.clone()), UnderNode(&root_id)).unwrap(), kv.1.parent_folder));
-        // }
-
-        // println!("organizing tree");
-
-        // for kv in node_id_map.iter() {
-        //     let mut node = &root_id;
-        //     if kv.1.1 != 65535 {
-        //         node = &node_id_map[&kv.1.1].0;
-        //     }
-        //     tree.move_node(&kv.1.0, MoveBehavior::ToParent(node)).unwrap();
-        // };
-
-        //self.tree = tree;
         self.file_list_map = file_list_map;
-        //self.node_id_map = node_id_map;
 
         Ok(())
     }

@@ -1,3 +1,4 @@
+use log::*;
 use std::{io::Cursor, cmp::Ordering, fmt::Display};
 use xml::reader::{EventReader, XmlEvent};
 use glam::*;
@@ -135,7 +136,7 @@ impl ArchetypeImpl for AIConstList {
                     }
                 },
                 Err(error) => {
-                    println!("{:?}", error);
+                    error!("{:?}", error);
                 },
                 _ => continue
             }

@@ -75,7 +75,7 @@ pub fn load_eSID_Comment<T: Read + Seek>(rdr: &mut T) -> Result<eSID_Comment, Lo
     rdr.seek(SeekFrom::Current(4 - rem as i64))?;
 
     let comment = String::from_utf8(v)?;
-    //println!("comment: {}", &comment);
+    //info!("comment: {}", &comment);
 
     Ok(eSID_Comment {
         comment,

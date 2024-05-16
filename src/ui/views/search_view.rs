@@ -63,11 +63,13 @@ impl super::View for SearchView {
 
         ui.vertical_centered_justified(|ui| {
             ui.horizontal(|ui| {
-                if ui.text_edit_singleline(&mut self.query).changed() {
+                let edit_rsp = ui.text_edit_singleline(&mut self.query);
+                if edit_rsp.changed() {
                     self.query_changed = true;
                 }
     
-                if ui.button("Search").clicked() && self.query_changed {
+                if (ui.button("Search").clicked() || edit_rsp.lost_focus())
+                         && self.query_changed {
                     self.page = 0;
                     self.query_changed = false;
 

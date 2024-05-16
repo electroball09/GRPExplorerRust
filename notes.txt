@@ -34,16 +34,24 @@
 MATH_cl_CurveObject
 AI_cl_Script
 HDR_cl_PostEffect
-ZON_cl_Mod
- capsule
- oriented box
- axis aligned box
- sphere
- ray
- point
- zone
+
 sub_8620B0
 sub_6A6080
 sub_8C7E00
 WAY_cl_Way
 SYN_cl
+
+ZON_cl_Zone*
+ Point - 0
+ Ray - 1
+ Sphere - 2
+ AABox - 3
+ OBox - 4
+ Capsule - 5
+ZON_cl_Mod_*
+ Ambient - 1
+ Fog - 2
+ PostFx - 3
+ SunLight - 4
+ Sector - 5
+ CharacterDiffuseMultiplier - 6

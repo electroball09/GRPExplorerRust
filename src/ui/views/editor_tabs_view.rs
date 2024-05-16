@@ -1,4 +1,5 @@
 use super::*;
+use log::*;
 use std::ops::DerefMut;
 use egui::Ui;
 use std::time::Instant;
@@ -33,7 +34,7 @@ impl FileEditorTabs {
         if !self.editor_tabs.contains(&key) {
             self.editor_tabs.push(key);
             if let Err(error) = self.bigfile.as_ref().unwrap().as_ref().borrow_mut().load_file(key) {
-                println!("{}", error);
+                error!("{}", error);
             }
         }
        self.set_open_tab(key);
@@ -43,7 +44,7 @@ impl FileEditorTabs {
         if self.editor_tabs.contains(&key) {
             self.open_tab = Some(key);
         } else {
-            println!("wtf couldn't find key for tab!");
+            error!("wtf couldn't find key for tab!");
         }
     }
 

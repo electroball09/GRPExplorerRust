@@ -1,3 +1,4 @@
+use log::*;
 use std::path::PathBuf;
 use std::fs::File;
 use std::io::Write;
@@ -31,7 +32,7 @@ pub fn pick_exp_path_no_ext(obj: &YetiObject) -> Option<String> {
 
 pub fn exp_feu(path: String, feu: &crate::objects::feu::Feu) {
     if let Ok(mut file) = File::create(&path) {
-        println!("exporting feu to {}", &path);
+        info!("exporting feu to {}", &path);
         
         file.write(&[b'F', b'W', b'S']).unwrap();
         file.write(&feu.feu_data[3..]).unwrap();
@@ -67,14 +68,14 @@ pub fn exp_texture(path_no_ext: String, tga: &objects::texture::TextureMetadata,
             image::save_buffer(path, &txd.texture_data, tga.width as u32, tga.height as u32, ColorType::L8).unwrap();
         },
         _ => {
-            println!("texture format export not supported!");
+            error!("texture format export not supported! ({:?})", &tga.format);
         }
     }
 }
 
 pub fn exp_msd_as_obj(path: String, msd: &crate::objects::meshes::MeshData) {
     if let Ok(mut file) = File::create(&path) {
-        println!("exporting mesh to {}", &path);
+        info!("exporting mesh to {}", &path);
 
         for vert in &msd.vertices {
             write!(file, "v {} {} {}\n", vert.pos.x, vert.pos.y, vert.pos.z).unwrap(); // swap y and z for coordinate correctness

@@ -13,9 +13,10 @@ pub mod sound; use sound::*;
 pub mod material; use material::*;
 pub mod shader; use shader::*;
 pub mod skeleton; use skeleton::*;
+pub mod eps; use eps::*;
+pub mod zone; use zone::*;
 
-mod load_error;
-pub use load_error::*;
+mod load_error; pub use load_error::*;
 
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -71,6 +72,8 @@ impl YetiObject {
             ObjectType::snk => ObjectArchetype::SoundBank(SoundBank::default()),
             ObjectType::shd => ObjectArchetype::ShaderGraph(VisualShader::default()),
             ObjectType::ske => ObjectArchetype::Skeleton(Skeleton::default()),
+            ObjectType::eps => ObjectArchetype::EditableParamStruct(EditableParamStruct::default()),
+            ObjectType::zon => ObjectArchetype::Zone(Zone::default()),
             _ => ObjectArchetype::NoImpl
         }
     }
@@ -144,6 +147,8 @@ pub enum ObjectArchetype {
     SoundBank(SoundBank),
     ShaderGraph(VisualShader),
     Skeleton(Skeleton),
+    EditableParamStruct(EditableParamStruct),
+    Zone(Zone),
 }
 
 impl ObjectArchetype {
@@ -165,6 +170,8 @@ impl ObjectArchetype {
             Self::SoundBank(snk) => snk.load_from_buf(buf),
             Self::ShaderGraph(shd) => shd.load_from_buf(buf),
             Self::Skeleton(ske) => ske.load_from_buf(buf),
+            Self::EditableParamStruct(eps) => eps.load_from_buf(buf),
+            Self::Zone(zon) => zon.load_from_buf(buf),
             Self::NoImpl => { Ok(()) }
         }
     }
@@ -187,6 +194,8 @@ impl ObjectArchetype {
             Self::SoundBank(snk) => snk.unload(),
             Self::ShaderGraph(shd) => shd.unload(),
             Self::Skeleton(ske) => ske.unload(),
+            Self::EditableParamStruct(eps) => eps.unload(),
+            Self::Zone(zon) => zon.unload(),
             Self::NoImpl => { }
         }
     }

@@ -97,11 +97,10 @@ impl VisualShader {
     fn read_node<T: Read + Seek>(rdr: &mut T) -> Result<ShaderNode, LoadError> {
         let id = Self::read_node_id(rdr)?;
         let unk_01 = rdr.read_u32::<LittleEndian>()?;
-        //dbg!(rdr.stream_position()?);
 
         let node_id: ShaderNodeId = match id.as_str() {
             "eSID_Comment" => {
-                //println!("loading comment!");
+                //info!("loading comment!");
                 ShaderNodeId::eSID_Comment(load_eSID_Comment(rdr)?)
             },
             _ => {

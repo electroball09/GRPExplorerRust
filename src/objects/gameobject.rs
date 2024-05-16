@@ -1,8 +1,9 @@
-use std::io::Cursor;
+use std::{io::Cursor, str::FromStr};
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use glam::*;
 use bitflags::bitflags;
+use log::warn;
 use super::{ArchetypeImpl, LoadError};
 
 #[derive(Default)]
@@ -19,6 +20,7 @@ pub struct GameObject {
 bitflags! {
     #[derive(Default)]
     pub struct IdentityFlags: u32 {
+        const ENTITY_FLAG            = 1 << 0;
         const HAS_ATTACHMENTS        = 1 << 1;
         const INITIAL_POS            = 1 << 2;
         const COLLISION_A            = 1 << 3;
@@ -58,6 +60,9 @@ impl ArchetypeImpl for GameObject {
         let mut cursor = Cursor::new(buf);
 
         self.zero = cursor.read_u32::<LittleEndian>()?;
+        if self.zero != 0{
+            return Err("GameObject sanity check was not zero!".into());
+        }
         let flags = cursor.read_u32::<LittleEndian>()?;
         self.identity_flags = IdentityFlags::from_bits(flags).unwrap();
         self.streaming_flags = cursor.read_u32::<LittleEndian>()?;

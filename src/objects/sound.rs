@@ -51,9 +51,7 @@ impl ArchetypeImpl for SoundBank {
     }
 
     fn unload(&mut self) {
-        self.entries.clear();
         self.entries.shrink_to(0);
-        self.numbers.clear();
         self.numbers.shrink_to(0);
     }
 }

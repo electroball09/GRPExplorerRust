@@ -1,6 +1,7 @@
+use log::*;
 use std::fs::File;
 use std::io::{Error, SeekFrom, Seek, Read, Cursor};
-use std::collections::{HashMap, VecDeque};
+use std::collections::{HashMap};
 use byteorder::{ReadBytesExt, LittleEndian};
 use flate2::read::ZlibDecoder;
 
@@ -19,7 +20,6 @@ pub fn seek_to_folder_table(reader: &mut impl Seek, seg_header: &SegmentHeader, 
 }
 
 pub fn seek_to_file_data(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_header: &BigfileHeader, offset: u32) -> Result<u64, Error> {
-    //println!("{}", &offset);
     seek_to_folder_table(reader, seg_header, bf_header)?;
     let folder_data_size = bf_header.num_folders as i64 * 64;
     reader.seek(SeekFrom::Current(folder_data_size))?;
@@ -76,36 +76,38 @@ impl BigfileIO for BigfileIOPacked {
     }
 
     fn read_segment_header(& mut self) -> Result<SegmentHeader,String> {
-        if let Err(_) = self.file.seek(SeekFrom::Start(0)) {
-            return Err(String::from("failed to seek to file start!"));
+        if let Err(err) = self.file.seek(SeekFrom::Start(0)) {
+            return Err(err.to_string());
         }
 
-        println!("loading segment header");
+        info!("loading segment header");
 
         let seg_header = match SegmentHeader::read_from(&mut self.file) {
             Ok(header) => header,
             Err(error) => return Err(error.to_string())
         };
 
+        trace!("{}", seg_header);
+
         Ok(seg_header)
     }
 
     fn read_bigfile_header(&mut self, seg_header: &SegmentHeader) -> Result<BigfileHeader, String> {
-        if let Err(_) = seek_to_bigfile_header(&mut self.file, seg_header) {
-            return Err(String::from("could not seek to bigfile header!"));
+        if let Err(err) = seek_to_bigfile_header(&mut self.file, seg_header) {
+            return Err(err.to_string());
         }
 
-        println!("loading bigfile header");
+        info!("loading bigfile header");
 
         BigfileHeader::read_from(&mut self.file)
     }
 
     fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u32, FileEntry>, String> {
-        if let Err(error) = seek_to_file_table(&mut self.file, seg_header, bf_header) {
-            return Err(error.to_string());
+        if let Err(err) = seek_to_file_table(&mut self.file, seg_header, bf_header) {
+            return Err(err.to_string());
         }
 
-        println!("loading file table, num_files={}", bf_header.num_files);
+        info!("loading file table, num_files={}", bf_header.num_files);
 
         let mut v = HashMap::with_capacity(bf_header.num_files as usize);
 
@@ -122,7 +124,7 @@ impl BigfileIO for BigfileIOPacked {
             }
 
             let entry = FileEntry::read_from(&mut slice)?;
-            // println!("{}", entry.get_name());
+            trace!("FILE ENTRY:   {}", entry);
             v.insert(entry.key, entry);
             i = i + 1;
         };
@@ -131,11 +133,11 @@ impl BigfileIO for BigfileIOPacked {
     }
 
     fn read_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u16, FolderEntry>, String> {
-        if let Err(error) = seek_to_folder_table(&mut self.file, seg_header, bf_header) {
-            return Err(error.to_string());
+        if let Err(err) = seek_to_folder_table(&mut self.file, seg_header, bf_header) {
+            return Err(err.to_string());
         }
 
-        println!("loading folder table, num_folders={}", bf_header.num_folders);
+        info!("loading folder table, num_folders={}", bf_header.num_folders);
 
         let mut v = HashMap::with_capacity(bf_header.num_folders as usize);
 
@@ -153,7 +155,7 @@ impl BigfileIO for BigfileIOPacked {
 
             let mut entry = FolderEntry::read_from(&mut slice)?;
             entry.idx = i;
-            // println!("{:?}", &entry);
+            trace!("FOLDER ENTRY:   {}", &entry);
             v.insert(i, entry);
             i = i + 1;
         }
@@ -163,7 +165,7 @@ impl BigfileIO for BigfileIOPacked {
 
     fn read_file(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader, entry: &FileEntry) -> Result<Vec<u8>, String> {
         if entry.offset == 0xFFFFFFFF {
-            println!("could not seek, offset is invalid");
+            info!("could not seek, offset is invalid");
             return Err(String::from("invalid offset"));
         }
 
@@ -174,8 +176,6 @@ impl BigfileIO for BigfileIOPacked {
         if entry.zip {
             let _compressed_size = self.file.read_u32::<LittleEndian>().unwrap();
             let decompressed_size = self.file.read_u32::<LittleEndian>().unwrap();
-            //dbg!(&compressed_size);
-            //dbg!(&decompressed_size);
 
             let mut v = vec![0; decompressed_size as usize];
             let mut decompress = ZlibDecoder::new(&mut self.file);
