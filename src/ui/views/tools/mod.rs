@@ -1,5 +1,5 @@
 use crate::{bigfile::{Bigfile, metadata::ObjectType}, objects::ObjectArchetype};
-use std::{fs::File, collections::HashSet, io::Write};
+use std::{fs::*, collections::HashSet, io::Write};
 use super::super::BfRef;
 use log::*;
 
@@ -34,9 +34,25 @@ impl super::View for ToolsView {
     }
 }
 
-fn export_zones(bf: &mut Bigfile) {
+fn make_path(file: &str) -> std::io::Result<String> {
     let mut path = String::from(std::env::current_dir().unwrap().to_str().unwrap());
-    path += "\\zones.txt";
+    path += "\\tool_output\\";
+
+    if let Err(_) = read_dir(&path) {
+        create_dir(&path)?;
+    }
+
+    Ok(path + file)
+}
+
+fn export_zones(bf: &mut Bigfile) {
+    let path = match make_path("zones.txt") {
+        Ok(p) => p,
+        Err(e) => {
+            error!("{}", e);
+            return;
+        }
+    };
 
     info!("exporting zones to {}", path);
 
@@ -60,8 +76,13 @@ fn export_zones(bf: &mut Bigfile) {
 }
 
 fn export_shader_node_ids(bf: &mut Bigfile) {
-    let mut path = String::from(std::env::current_dir().unwrap().to_str().unwrap());
-    path += "\\shader_node_ids.txt";
+    let path = match make_path("shader_node_ids.txt") {
+        Ok(p) => p,
+        Err(e) => {
+            error!("{}", e);
+            return;
+        }
+    };
 
     info!("exporting shader node ids to {}", path);
 

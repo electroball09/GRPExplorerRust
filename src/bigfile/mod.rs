@@ -4,7 +4,6 @@ pub mod io;
 use log::*;
 
 use std::collections::HashMap;
-use id_tree::*;
 
 use metadata::*;
 use io::*;
@@ -86,7 +85,6 @@ pub struct Bigfile {
     pub folder_table: HashMap<u16, FolderEntry>,
     pub io: Box<dyn BigfileIO>,
     pub file_list_map: HashMap<u16, Box<Vec<u32>>>,
-    pub node_id_map: HashMap<u16, (NodeId, u16)>,
 }
 
 impl Bigfile {
@@ -104,8 +102,7 @@ impl Bigfile {
             file_table: HashMap::new(),
             object_table: HashMap::new(),
             folder_table: HashMap::new(),
-            file_list_map: HashMap::new(),
-            node_id_map: HashMap::new()
+            file_list_map: HashMap::new()
         };
 
         Ok(bigfile)
@@ -151,7 +148,9 @@ impl Bigfile {
         buf.copy_from_slice(&bytes[..4]);
         let num_refs = i32::from_le_bytes(buf);
 
-        if let Err(error) = std::io::Write::write(&mut file, &bytes[(4 + (num_refs as usize) * 4)..]) {
+        let refs_len = 4 + (num_refs as usize) * 4;
+
+        if let Err(error) = std::io::Write::write(&mut file, &bytes[refs_len..]) {
             return Err(error.to_string());
         }
 
