@@ -41,7 +41,7 @@ pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mu
     }
     
     match obj_type {
-        ObjectType::zc_ => ScriptEditor::draw(obj, ui, ctx),
+        ObjectType::zc => ScriptEditor::draw(obj, ui, ctx),
         ObjectType::ini => IniEditor::draw(obj, ui, ctx),
         ObjectType::cur => CurveEditor::draw(obj, ui, ctx),
         ObjectType::otf => OtfEditor::draw(obj, ui, ctx),

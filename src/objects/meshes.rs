@@ -34,7 +34,7 @@ pub struct MeshData {
     pub pivot_offset: Vec3,
     pub uniform_scale: f32,
 
-    pub vertices: VertexData,
+    pub vertex_data: VertexData,
     pub faces: Vec<FaceData>
 }
 
@@ -119,8 +119,8 @@ impl ArchetypeImpl for MeshData {
             cursor.seek(SeekFrom::Current(20))?;
             i += 1;
         }
-        self.vertices = VertexData {
-            pos: pos,
+        self.vertex_data = VertexData {
+            pos,
             uv0: Some(uv0)
         };
 
@@ -139,7 +139,7 @@ impl ArchetypeImpl for MeshData {
     }
 
     fn unload(&mut self) {
-        self.vertices.clear_data();
+        self.vertex_data.clear_data();
         self.faces.clear();
         self.faces.shrink_to(1);
     }

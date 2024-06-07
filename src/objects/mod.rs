@@ -136,7 +136,7 @@ impl YetiObject {
 
     pub fn type_to_archetype(obj_type: &ObjectType) -> ObjectArchetype {
         match obj_type {
-            ObjectType::zc_ => ObjectArchetype::Script(YetiScript::default()),
+            ObjectType::zc => ObjectArchetype::Script(YetiScript::default()),
             ObjectType::ini => ObjectArchetype::Ini(YetiIni::default()),
             ObjectType::cur => ObjectArchetype::Curve(YetiCurve::default()),
             ObjectType::otf => ObjectArchetype::Otf(Otf::default()),

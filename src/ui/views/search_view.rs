@@ -67,8 +67,19 @@ impl super::View for SearchView {
                 if edit_rsp.changed() {
                     self.query_changed = true;
                 }
-    
-                if (ui.button("Search").clicked() || edit_rsp.lost_focus())
+
+                let search_rsp = ui.button("Search").on_hover_text(
+                    "Search will match on the following:\n\
+                    \tKey, Offset, Type, Name\n\
+                    \n\
+                    -File key/offset will match on values parseable as decimal or hexadecimal\n\
+                    -File type extension will match on values 3 characters long\n\
+                    \tExtension also matches if value starts with '.' (e.g. \".wor\")\n\
+                    -File name will match on ascii name without extension\n\
+                    \tTo match a value would qualify above, use double quotes (e.g. \"F2000\")"
+                );
+
+                if (search_rsp.clicked() || edit_rsp.lost_focus())
                          && self.query_changed {
                     self.page = 0;
                     self.query_changed = false;
@@ -123,17 +134,6 @@ impl super::View for SearchView {
 
                     self.sort_results(&bf);
                 };
-
-                ui.small_button("?").on_hover_text(
-                    "Search will match on the following:\n\
-                    \tKey, Offset, Type, Name\n\
-                    \n\
-                    -File key/offset will match on values parseable as decimal or hexadecimal\n\
-                    -File type extension will match on values 3 characters long\n\
-                    \tExtension also matches if value starts with '.' (e.g. \".wor\")\n\
-                    -File name will match on ascii name without extension\n\
-                    \tTo match a value would qualify above, use double quotes (e.g. \"F2000\")"
-                );
             });
         });
 
@@ -154,6 +154,8 @@ impl super::View for SearchView {
                 self.sort_results(&bf);
             }
             ui.separator();
+
+            
 
             if ui.checkbox(&mut self.match_case, "Match Case").changed() {
                 self.query_changed = true;

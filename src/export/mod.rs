@@ -77,11 +77,11 @@ pub fn exp_msd_as_obj(path: String, msd: &crate::objects::meshes::MeshData) {
     if let Ok(mut file) = File::create(&path) {
         info!("exporting mesh to {}", &path);
 
-        for vert in &msd.vertices.pos {
+        for vert in &msd.vertex_data.pos {
             write!(file, "v {} {} {}\n", vert.x, vert.y, vert.z).unwrap(); // swap y and z for coordinate correctness
         }
 
-        if let Some(uv0) = &msd.vertices.uv0 {
+        if let Some(uv0) = &msd.vertex_data.uv0 {
             for uv in uv0 {
                 write!(file, "vt {} {}\n", uv.x, uv.y).unwrap();
             }
