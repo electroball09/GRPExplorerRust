@@ -24,11 +24,11 @@ impl EditorImpl for FeuEditor {
                     exp_feu(path, &feu);
                 }
             }
-            if ui.button("Export to FEU...").clicked() {
-                if let Some(path) = pick_exp_path(obj, ".feu") {
-                    exp_feu(path, &feu);
-                }
-            }
+            // if ui.button("Export to FEU...").clicked() {
+            //     if let Some(path) = pick_exp_path(obj, ".feu") {
+            //         exp_feu(path, &feu);
+            //     }
+            // }
         }
 
         EditorResponse::default()

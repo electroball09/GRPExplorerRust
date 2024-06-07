@@ -71,8 +71,6 @@ fn export_zones(bf: &mut Bigfile) {
             bf.unload_file(*key).unwrap();
         }
     }
-
-
 }
 
 fn export_shader_node_ids(bf: &mut Bigfile) {

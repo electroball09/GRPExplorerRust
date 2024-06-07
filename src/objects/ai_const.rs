@@ -137,6 +137,7 @@ impl ArchetypeImpl for AIConstList {
                 },
                 Err(error) => {
                     error!("{:?}", error);
+                    return Err(error.into());
                 },
                 _ => continue
             }

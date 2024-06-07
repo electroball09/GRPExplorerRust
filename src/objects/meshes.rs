@@ -34,17 +34,36 @@ pub struct MeshData {
     pub pivot_offset: Vec3,
     pub uniform_scale: f32,
 
-    pub vertices: Vec<VertexData>,
-    pub faces: Vec<[u16; 3]>
+    pub vertices: VertexData,
+    pub faces: Vec<FaceData>
+}
+
+#[derive(Default)]
+pub struct FaceData {
+    pub f0: u16,
+    pub f1: u16,
+    pub f2: u16
 }
 
 #[derive(Default)]
 pub struct VertexData {
-    pub pos: Vec3,
+    pub pos: Vec<Vec3>,
+    pub uv0: Option<Vec<Vec2>>
+}
+
+impl VertexData {
+    pub fn clear_data(&mut self) {
+        self.pos.clear();
+        self.uv0 = None;
+    }
 }
 
 fn snorm16_to_float(v: i16) -> f32 {
     f32::max((v as f32) / 32767.0, -1.0)
+}
+
+fn uvi16_to_float(v: i16) -> f32 {
+    f32::from(v) / 1024.0
 }
 
 impl ArchetypeImpl for MeshData {
@@ -78,29 +97,41 @@ impl ArchetypeImpl for MeshData {
 
         cursor.seek(SeekFrom::Start((0x47 + self.data_offset) as u64))?;
 
-        self.vertices = Vec::with_capacity(self.num_vertices as usize);
+        let mut pos: Vec<Vec3> = Vec::with_capacity(self.num_vertices as usize);
+        let mut uv0: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
         let mut i = 0;
         while i < self.num_vertices {
-            self.vertices.push(VertexData {
-                pos: (Vec3::new(
+            pos.push(
+                (Vec3::new(
                     snorm16_to_float(cursor.read_i16::<LittleEndian>()?),
                     snorm16_to_float(cursor.read_i16::<LittleEndian>()?),
                     snorm16_to_float(cursor.read_i16::<LittleEndian>()?)
                 ) * snorm16_to_float(cursor.read_i16::<LittleEndian>()?)
                     * self.uniform_scale)
                     + self.pivot_offset
-            });
-            cursor.seek(SeekFrom::Current(24))?;
+                
+            );
+            uv0.push(
+                 Vec2::new(
+                uvi16_to_float(cursor.read_i16::<LittleEndian>()?),
+                uvi16_to_float(cursor.read_i16::<LittleEndian>()?),
+            ));
+            cursor.seek(SeekFrom::Current(20))?;
             i += 1;
         }
+        self.vertices = VertexData {
+            pos: pos,
+            uv0: Some(uv0)
+        };
 
         self.faces = Vec::with_capacity(self.num_indices as usize);
         let mut i2 = 0;
         while i2 < self.num_indices {
-            let a = cursor.read_u16::<LittleEndian>()?;
-            let b = cursor.read_u16::<LittleEndian>()?;
-            let c = cursor.read_u16::<LittleEndian>()?;
-            self.faces.push([a, b, c]);
+            self.faces.push(FaceData {
+                f0: cursor.read_u16::<LittleEndian>()?,
+                f1: cursor.read_u16::<LittleEndian>()?,
+                f2: cursor.read_u16::<LittleEndian>()?
+            });
             i2 += 3;
         }
 
@@ -108,8 +139,7 @@ impl ArchetypeImpl for MeshData {
     }
 
     fn unload(&mut self) {
-        self.vertices.clear();
-        self.vertices.shrink_to(1);
+        self.vertices.clear_data();
         self.faces.clear();
         self.faces.shrink_to(1);
     }

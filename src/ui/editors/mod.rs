@@ -58,6 +58,8 @@ pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mu
         ObjectType::ske => SkeletonEditor::draw(obj, ui, ctx),
         ObjectType::eps => EditableParamStructEditor::draw(obj, ui, ctx),
         ObjectType::zon => ZoneEditor::draw(obj, ui, ctx),
+        ObjectType::dbr => DbrEditor::draw(obj, ui, ctx),
+        ObjectType::epl => EditableParamsListEditor::draw(obj, ui, ctx),
         _ => BlankEditor::draw(obj, ui, ctx)
     }
 }

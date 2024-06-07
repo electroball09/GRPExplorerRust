@@ -1,6 +1,7 @@
 use std::io::{Cursor, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 use super::{ArchetypeImpl, LoadError};
+use crate::util::*;
 
 #[derive(Default)]
 pub struct EditableParamStruct {
@@ -27,14 +28,8 @@ impl ArchetypeImpl for EditableParamStruct {
 
         let mut i = 0;
         while i < self.num_entries {
-            let mut v: Vec<u8> = Vec::new();
-            let mut byte = cursor.read_u8()?;
-            while byte != 0 {
-                v.push(byte);
-                byte = cursor.read_u8()?;
-            }
             let s = StructEntry {
-                name: String::from_utf8(v)?,
+                name: read_nul_term_string(&mut cursor)?,
                 unk_01: cursor.read_u8()?,
                 data_offset: cursor.read_u32::<LittleEndian>()?,
             };

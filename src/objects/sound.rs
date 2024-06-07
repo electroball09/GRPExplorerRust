@@ -38,7 +38,7 @@ impl ArchetypeImpl for SoundBank {
         while num_snk > 0 {
             self.entries.push(SnkEntry {
                 id: cursor.read_u8()?,
-                name: read_nul_term_string(&mut cursor),
+                name: read_nul_term_string(&mut cursor)?,
                 m_offset: cursor.read_u32::<LittleEndian>()?,
                 m_len: cursor.read_u16::<LittleEndian>()?,
                 m_idk: cursor.read_u32::<LittleEndian>()?

@@ -14,3 +14,11 @@ impl EditorImpl for DbkEditor {
         EditorResponse::default()
     }
 }
+
+pub struct DbrEditor;
+
+impl EditorImpl for DbrEditor {
+    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+        EditorResponse::default()
+    }
+}

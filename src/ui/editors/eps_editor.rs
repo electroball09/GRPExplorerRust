@@ -20,3 +20,20 @@ impl EditorImpl for EditableParamStructEditor {
         EditorResponse::default()
     }
 }
+
+pub struct EditableParamsListEditor;
+
+impl EditorImpl for EditableParamsListEditor {
+    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+        if let ObjectArchetype::EditableParamsList(epl) = &obj.archetype {
+            ui.label(format!("num: {}", epl.names_list.len()));
+            let mut i = 0;
+            for name in &epl.names_list {
+                ui.label(format!("{} - {:#010X}", &name, obj.references[i]));
+                i += 1;
+            }
+        }
+
+        EditorResponse::default()
+    }
+}
