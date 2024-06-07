@@ -93,7 +93,7 @@ impl super::View for SearchView {
                         .filter_map(|entry| {
                             let some = Some(*entry.0);
 
-                            if self.query.starts_with('.') && self.query.len() == 4 {
+                            if self.query.starts_with('.') {
                                 if entry.1.object_type.as_ref().cmp(&self.query[1..]) == Ordering::Equal {
                                     return some;
                                 }
@@ -109,7 +109,7 @@ impl super::View for SearchView {
                                 }
                                 None
                             } else {
-                                if self.query.len() == 3 {
+                                if self.query.len() <= 6 {
                                     if matches!(entry.1.object_type.as_ref().cmp(&self.query), Ordering::Equal) {
                                         return some;
                                     }
@@ -155,7 +155,7 @@ impl super::View for SearchView {
             }
             ui.separator();
 
-            
+
 
             if ui.checkbox(&mut self.match_case, "Match Case").changed() {
                 self.query_changed = true;

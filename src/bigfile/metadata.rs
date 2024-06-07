@@ -258,7 +258,8 @@ impl FileEntry {
         let idx = entry.tmp_name_buf.iter().position(|b| *b == 0).unwrap();
         let ext = format!("{:?}", entry.object_type);
         entry.tmp_name_buf[idx] = b'.';
-        entry.tmp_name_buf[idx + 1..idx + 4].copy_from_slice(&ext.as_bytes()[..]);
+        let ext_bytes = ext.as_bytes();
+        entry.tmp_name_buf[idx + 1..idx + ext_bytes.len() + 1].copy_from_slice(&ext_bytes);
 
         Ok(entry)
     }
