@@ -1,16 +1,24 @@
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::path::PathBuf;
 use std::rc::Rc;
 
-use eframe::CreationContext;
 use egui::Color32;
 use font_loader::system_fonts;
 use crate::bigfile::io::*;
 use crate::FileDialog;
 use crate::Bigfile;
 use log::*;
+
+#[cfg(feature = "eframe")]
+pub mod init_eframe;
+#[cfg(feature = "eframe")]
+pub use init_eframe as explorer_init;
+
+#[cfg(feature = "miniquad")]
+pub mod init_mq;
+#[cfg(feature = "miniquad")]
+pub use init_mq as explorer_init;
 
 use self::views::*;
 use self::views::side_panel::SidePanelView;
@@ -27,8 +35,12 @@ pub struct ExplorerApp {
     fe_view: FileEditorTabs,
 }
 
+pub trait ExplorerAppImpl {
+    fn close();
+}
+
 impl ExplorerApp {
-    pub fn new(cc: &CreationContext<'_>) -> Self {
+    pub fn new(ctx: &egui::Context) -> Self {
         let prop = system_fonts::FontPropertyBuilder::new().family("Cascadia Mono").build();
         let (font, _) = system_fonts::get(&prop).unwrap();
 
@@ -47,12 +59,12 @@ impl ExplorerApp {
         m2.insert(egui::FontFamily::Monospace, vec![String::from("Cascadia Mono")]);
         m2.insert(egui::FontFamily::Proportional, vec![String::from("Cascadia Mono")]);
 
-        cc.egui_ctx.set_fonts(egui::FontDefinitions {
+        ctx.set_fonts(egui::FontDefinitions {
             font_data: m,
             families: m2
         });
 
-        let style = cc.egui_ctx.style().as_ref().clone();
+        let style = ctx.style().as_ref().clone();
         let style = egui::Style {
             visuals: egui::Visuals {
                 widgets: egui::style::Widgets {
@@ -85,21 +97,16 @@ impl ExplorerApp {
             
             ..style
         };
-        cc.egui_ctx.set_style(style);
+        ctx.set_style(style);
 
         ExplorerApp {
             bigfile: None,
             side_panel: SidePanelView::new(None),
-            fe_view: FileEditorTabs::new(None),
+            fe_view: FileEditorTabs::new(None)
         }
     }
-}
 
-impl eframe::App for ExplorerApp {
-    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
-
-        frame.set_window_size(egui::Vec2::new(1500.0, 800.0));
-
+    pub fn update(&mut self, ctx: &egui::Context) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
@@ -141,7 +148,7 @@ impl eframe::App for ExplorerApp {
                         }
                     }
                     if ui.button("Quit").clicked() {
-                        frame.close();
+                        //frame.close();
                     }
                 });
                 ui.separator();

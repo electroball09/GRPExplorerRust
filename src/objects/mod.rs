@@ -206,7 +206,7 @@ impl YetiObject {
     }
 }
 
-trait ArchetypeImpl {
+pub trait ArchetypeImpl {
     fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError>;
     fn unload(&mut self);
 }

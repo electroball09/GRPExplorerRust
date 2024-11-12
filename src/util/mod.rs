@@ -3,6 +3,7 @@ use byteorder::ReadBytesExt;
 
 pub mod dds_header;
 pub mod log_config;
+pub mod load_util;
 
 pub fn read_nul_term_string(rdr: &mut impl Read) -> std::io::Result<String> {
     let mut s = String::new();

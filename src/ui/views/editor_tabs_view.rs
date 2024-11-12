@@ -68,7 +68,7 @@ impl FileEditorTabs {
         }
     }
 
-    fn draw_file_metadata_view(file: &FileEntry, ui: &mut Ui, _ctx: &eframe::egui::Context) {
+    fn draw_file_metadata_view(file: &FileEntry, ui: &mut Ui, _ctx: &egui::Context) {
         fn file_metadata_line(ui: &mut Ui, label: &str, value: &str) -> bool {
             ui.horizontal(|ui| {
                 ui.label(label);

@@ -3,8 +3,8 @@ use std::{io::Cursor, str::FromStr};
 use byteorder::{ReadBytesExt, LittleEndian};
 use glam::*;
 use bitflags::bitflags;
-use log::warn;
 use super::{ArchetypeImpl, LoadError};
+use crate::util::load_util::*;
 
 #[derive(Default)]
 pub struct GameObject {
@@ -63,39 +63,18 @@ impl ArchetypeImpl for GameObject {
         if self.zero != 0{
             return Err("GameObject sanity check was not zero!".into());
         }
-        let flags = cursor.read_u32::<LittleEndian>()?;
-        self.identity_flags = IdentityFlags::from_bits(flags).unwrap();
+        self.identity_flags = IdentityFlags::from_bits(cursor.read_u32::<LittleEndian>()?).unwrap();
         self.streaming_flags = cursor.read_u32::<LittleEndian>()?;
         self.flag_a = cursor.read_u8()?;
         self.flag_b = cursor.read_u8()?;
         self.flag_c = cursor.read_u8()?;
-        self.matrix = Mat4 {
-            x_axis: Vec4::new(
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-            ), y_axis: Vec4::new(
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-            ), z_axis: Vec4::new(
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-            ), w_axis: Vec4::new(
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-                cursor.read_f32::<LittleEndian>()?,
-            ),
-        };
+        self.matrix = read_mat4(&mut cursor)?;
         Ok(())
     }
 
     fn unload(&mut self) {
-
+        *self = Self {
+            ..Default::default()
+        }
     }
 }

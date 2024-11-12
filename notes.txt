@@ -49,9 +49,9 @@ ZON_cl_Zone*
  OBox - 4
  Capsule - 5
 ZON_cl_Mod_*
- Ambient - 1
- Fog - 2
- PostFx - 3
- SunLight - 4
- Sector - 5
- CharacterDiffuseMultiplier - 6
+ Ambient - 1 - 0x231
+ Fog - 2 - 0x123
+ PostFx - 3 - ? maybe asset key
+ SunLight - 4 - possibly 36 bytes
+ Sector - 5 - ? no info
+ CharacterDiffuseMultiplier - 6 - ? possibly 1 float

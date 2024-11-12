@@ -1,10 +1,10 @@
 use std::env;
 use rfd::FileDialog;
 use log::*;
+use ui::explorer_init::*;
 
 use crate::bigfile::*;
 use crate::util::log_config::*;
-use crate::ui::ExplorerApp;
 
 mod bigfile;
 mod ui;
@@ -29,5 +29,5 @@ fn main() {
     info!("app initialized");
     debug!("args - {:?}", args);
 
-    eframe::run_native("GRP Explorer", eframe::NativeOptions::default(), Box::new(|cc| Box::new(ExplorerApp::new(cc))));
+    explorer_app_start();
 }

@@ -1,5 +1,5 @@
 use super::ArchetypeImpl;
-use std::io::{Cursor, Seek, SeekFrom};
+use std::io::{Cursor};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 #[derive(Default)]
@@ -73,6 +73,6 @@ impl ArchetypeImpl for Skeleton {
     }
 
     fn unload(&mut self) {
-        let _ = std::mem::take(self);
+        *self = Self::default()
     }
 }

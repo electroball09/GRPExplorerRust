@@ -1,4 +1,4 @@
-use std::io::{Cursor, Seek, SeekFrom};
+use std::{io::{Cursor, Seek, SeekFrom}};
 use byteorder::{LittleEndian, ReadBytesExt};
 use super::{ArchetypeImpl, LoadError};
 use crate::util::*;
@@ -38,8 +38,11 @@ impl ArchetypeImpl for EditableParamStruct {
         }
         Ok(())
     }
-
+    
     fn unload(&mut self) {
-        
+        *self = EditableParamStruct
+        {
+            ..Default::default()
+        };
     }
 }

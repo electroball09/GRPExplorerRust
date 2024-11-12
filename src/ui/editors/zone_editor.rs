@@ -1,5 +1,4 @@
 use super::*;
-use crate::objects::zone::*;
 
 pub struct ZoneEditor;
 

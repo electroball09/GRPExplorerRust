@@ -73,6 +73,7 @@ pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
         ObjectType::dtb => Some("Data Table"),
         ObjectType::otf => Some("OTF Font"),
         ObjectType::ttf => Some("TTF Font"),
+        ObjectType::zar => Some("Zone Array ?"),
         _ => None
     }
 }
