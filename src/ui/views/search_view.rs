@@ -1,7 +1,8 @@
-use std::{cmp::Ordering};
+use std::cmp::Ordering;
 use strum::{EnumString, AsRefStr};
 use crate::bigfile::Bigfile;
 use super::super::BfRef;
+use crate::egui as egui;
 
 pub struct SearchView {
     bigfile: BfRef,

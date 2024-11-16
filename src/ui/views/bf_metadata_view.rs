@@ -1,4 +1,5 @@
 use super::super::BfRef;
+use crate::egui as egui;
 
 pub struct BigfileMetadataView {
     bigfile: BfRef,

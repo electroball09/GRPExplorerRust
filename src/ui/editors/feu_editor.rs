@@ -1,6 +1,7 @@
 use crate::objects::ObjectArchetype;
 use super::{EditorImpl, EditorResponse};
 use crate::export::*;
+use super::*;
 
 pub struct FeuEditor;
 

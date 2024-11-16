@@ -3,7 +3,8 @@ use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
-use egui::Color32;
+use crate::egui as egui;
+use crate::ggl::ShaderCache;
 use font_loader::system_fonts;
 use crate::bigfile::io::*;
 use crate::FileDialog;
@@ -32,15 +33,23 @@ pub type BfRef = Option<Rc<RefCell<Bigfile>>>;
 pub struct ExplorerApp {
     pub bigfile: BfRef,
     side_panel: views::side_panel::SidePanelView,
-    fe_view: FileEditorTabs,
+    fe_view: FileEditorTabs, 
+    pub shader_cache: ShaderCache
 }
 
-pub trait ExplorerAppImpl {
-    fn close();
+impl Default for ExplorerApp {
+    fn default() -> Self {
+        Self {
+            bigfile: None,
+            side_panel: SidePanelView::new(None),
+            fe_view: FileEditorTabs::new(None),
+            shader_cache: ShaderCache::new()
+        }
+    }
 }
 
 impl ExplorerApp {
-    pub fn new(ctx: &egui::Context) -> Self {
+    pub fn init(ctx: &egui::Context) -> Self {
         let prop = system_fonts::FontPropertyBuilder::new().family("Cascadia Mono").build();
         let (font, _) = system_fonts::get(&prop).unwrap();
 
@@ -70,24 +79,24 @@ impl ExplorerApp {
                 widgets: egui::style::Widgets {
                     noninteractive: egui::style::WidgetVisuals {
                         fg_stroke: egui::Stroke {
-                            color: Color32::from_rgb(170, 170, 170),
+                            color: egui::Color32::from_rgb(170, 170, 170),
                             ..style.visuals.widgets.noninteractive.fg_stroke
                         },
                         ..style.visuals.widgets.noninteractive
                     },
                     inactive: egui::style::WidgetVisuals {
                         fg_stroke: egui::Stroke {
-                            color: Color32::from_rgb(220, 220, 220),
+                            color: egui::Color32::from_rgb(220, 220, 220),
                             ..style.visuals.widgets.inactive.fg_stroke
                         },
                         ..style.visuals.widgets.inactive
                     },
                     active: egui::style::WidgetVisuals {
                         fg_stroke: egui::Stroke {
-                            color: Color32::from_rgb(100, 100, 100),
+                            color: egui::Color32::from_rgb(100, 100, 100),
                             ..style.visuals.widgets.active.fg_stroke
                         },
-                        bg_fill: Color32::from_rgb(220, 220, 220),
+                        bg_fill: egui::Color32::from_rgb(220, 220, 220),
                         ..style.visuals.widgets.active
                     },
                     ..style.visuals.widgets
@@ -99,11 +108,7 @@ impl ExplorerApp {
         };
         ctx.set_style(style);
 
-        ExplorerApp {
-            bigfile: None,
-            side_panel: SidePanelView::new(None),
-            fe_view: FileEditorTabs::new(None)
-        }
+        ExplorerApp::default()
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
@@ -148,7 +153,7 @@ impl ExplorerApp {
                         }
                     }
                     if ui.button("Quit").clicked() {
-                        //frame.close();
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
                 });
                 ui.separator();

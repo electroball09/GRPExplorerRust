@@ -1,6 +1,6 @@
 use super::*;
 use std::ops::Deref;
-use egui::Ui;
+use crate::egui::Ui;
 use log::*;
 
 use crate::bigfile::Bigfile;

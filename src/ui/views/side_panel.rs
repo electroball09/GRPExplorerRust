@@ -3,6 +3,7 @@ use super::tools::ToolsView;
 use super::{View, bf_metadata_view::BigfileMetadataView};
 use super::file_tree_view::FileTreeView;
 use super::super::BfRef;
+use crate::egui as egui;
 
 pub struct SidePanelView {
     bigfile: BfRef,

@@ -11,8 +11,16 @@ mod ui;
 mod objects;
 mod util;
 mod export;
+mod ggl;
 #[macro_use] extern crate num_derive;
 extern crate strum_macros;
+
+#[cfg(feature = "eframe")]
+pub use eframe::egui as egui;
+#[cfg(feature = "eframe")]
+pub use eframe::glow as glow;
+#[cfg(feature = "miniquad")]
+pub use egui as egui;
 
 pub mod consts {
     pub const YETI_BIG: &str = "Yeti.big";
@@ -29,5 +37,7 @@ fn main() {
     info!("app initialized");
     debug!("args - {:?}", args);
 
-    explorer_app_start();
+    unsafe {
+        explorer_app_start();
+    }
 }

@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 
-use egui::FontData;
+use crate::egui as egui;
 use super::{ArchetypeImpl, LoadError};
 
 pub struct Otf {
-    pub font: Option<FontData>,
+    pub font: Option<egui::FontData>,
 }
 
 impl ArchetypeImpl for Otf {
@@ -14,7 +14,7 @@ impl ArchetypeImpl for Otf {
 
         let cow = Cow::Owned(v);
 
-        self.font = Some(FontData {
+        self.font = Some(egui::FontData {
             font: cow,
             index: 0,
             tweak: egui::FontTweak::default()

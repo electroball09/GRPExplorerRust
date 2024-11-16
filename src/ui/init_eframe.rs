@@ -1,17 +1,28 @@
 use crate::ui::*;
 
-pub fn explorer_app_start() {
+pub unsafe fn explorer_app_start() {
+    let native_options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size((1500.0, 800.0))
+            .with_resizable(false),
+        ..Default::default()
+    };
+
     eframe::run_native(
         "GRP Explorer", 
-        eframe::NativeOptions::default(), 
-        Box::new(|cc| Box::<ExplorerApp>::new(ExplorerApp::new(&cc.egui_ctx)))
-    )
+        native_options, 
+        Box::new(|cc| {
+            let mut app = ExplorerApp::init(&cc.egui_ctx);
+            if let Some(gl) = &cc.gl {
+                app.shader_cache.init(gl.clone());
+            }
+            Ok(Box::<ExplorerApp>::new(app))
+        })
+    ).unwrap();
 }
 
 impl eframe::App for ExplorerApp {
-    fn update(&mut self, ctx: &eframe::egui::Context, frame: &mut eframe::Frame) {
-        frame.set_window_size(egui::Vec2::new(1500.0, 800.0));
-
+    fn update(&mut self, ctx: &eframe::egui::Context, _frame: &mut eframe::Frame) {
         self.update(ctx);
     }
 }

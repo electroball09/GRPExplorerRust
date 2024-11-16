@@ -23,7 +23,7 @@ impl EditorImpl for EditableParamStructEditor {
 pub struct EditableParamsListEditor;
 
 impl EditorImpl for EditableParamsListEditor {
-    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::EditableParamsList(epl) = &obj.archetype {
             ui.label(format!("num: {}", epl.names_list.len()));
             let mut i = 0;

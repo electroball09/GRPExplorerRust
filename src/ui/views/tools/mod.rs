@@ -2,6 +2,7 @@ use crate::{bigfile::{Bigfile, metadata::ObjectType}, objects::ObjectArchetype};
 use std::{fs::*, collections::HashSet, io::Write};
 use super::super::BfRef;
 use log::*;
+use crate::egui as egui;
 
 pub struct ToolsView {
     bigfile: BfRef,

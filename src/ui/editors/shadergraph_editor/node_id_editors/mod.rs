@@ -1,6 +1,7 @@
 #![allow(non_snake_case, dead_code, unused_variables, unused_mut)]
 
 use crate::objects::shader::node_ids::*;
+use crate::egui as egui;
 
 
 pub fn draw_eSID_ADD(mut node:eSID_ADD, ui: &mut egui::Ui, _ctx: &egui::Context) -> ShaderNodeId {

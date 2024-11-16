@@ -1,4 +1,5 @@
 use crate::objects::ObjectArchetype;
+use super::*;
 
 use super::{EditorImpl, EditorResponse};
 
@@ -18,7 +19,7 @@ impl EditorImpl for DbkEditor {
 pub struct DbrEditor;
 
 impl EditorImpl for DbrEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+    fn draw(_obj: &mut crate::objects::YetiObject, _ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
         EditorResponse::default()
     }
 }

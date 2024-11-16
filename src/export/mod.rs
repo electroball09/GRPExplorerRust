@@ -5,7 +5,7 @@ use std::io::Write;
 use image::ColorType;
 
 use crate::objects;
-use crate::objects::{texture::TextureFormat};
+use crate::objects::texture::TextureFormat;
 
 use crate::objects::YetiObject;
 use crate::util::dds_header::DdsHeader;

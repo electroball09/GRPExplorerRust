@@ -1,7 +1,7 @@
 use super::*;
 use log::*;
 use std::ops::DerefMut;
-use egui::Ui;
+use crate::egui::Ui;
 use std::time::Instant;
 use clipboard::*;
 use crate::bigfile::{Bigfile, obj_type_to_name};

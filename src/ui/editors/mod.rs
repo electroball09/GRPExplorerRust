@@ -16,6 +16,8 @@ mod skeleton_editor; use skeleton_editor::*;
 mod eps_editor; use eps_editor::*;
 mod zone_editor; use zone_editor::*;
 
+pub use crate::egui as egui;
+
 use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::{metadata::ObjectType, Bigfile}};
 
 trait EditorImpl {
