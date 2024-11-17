@@ -1,7 +1,5 @@
 use std::borrow::Cow;
-use std::cell::RefCell;
 use std::collections::BTreeMap;
-use std::rc::Rc;
 
 use crate::egui as egui;
 use crate::ggl::ShaderCache;
@@ -28,10 +26,14 @@ use views::editor_tabs_view::FileEditorTabs;
 pub mod views;
 pub mod editors;
 
-pub type BfRef = Option<Rc<RefCell<Bigfile>>>;
+pub struct AppContext<'a> {
+    pub bigfile: Option<&'a mut Bigfile>,
+    pub shader_cache: &'a mut ShaderCache,
+    pub ctx: &'a egui::Context,
+}
 
 pub struct ExplorerApp {
-    pub bigfile: BfRef,
+    pub bigfile: Option<Bigfile>,
     side_panel: views::side_panel::SidePanelView,
     fe_view: FileEditorTabs, 
     pub shader_cache: ShaderCache
@@ -41,8 +43,8 @@ impl Default for ExplorerApp {
     fn default() -> Self {
         Self {
             bigfile: None,
-            side_panel: SidePanelView::new(None),
-            fe_view: FileEditorTabs::new(None),
+            side_panel: SidePanelView::new(),
+            fe_view: FileEditorTabs::new(),
             shader_cache: ShaderCache::new()
         }
     }
@@ -112,6 +114,19 @@ impl ExplorerApp {
     }
 
     pub fn update(&mut self, ctx: &egui::Context) {
+        macro_rules! app_context {
+            ($app:ident, $ctx:ident) => {
+                let mut $app = AppContext {
+                    ctx: $ctx,
+                    bigfile: match self.bigfile {
+                        Some(ref mut bf) => Some(bf),
+                        None => None
+                    },
+                    shader_cache: &mut self.shader_cache
+                };
+            }
+        }
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
@@ -146,10 +161,7 @@ impl ExplorerApp {
                                 error!("{}", &err);
                             }
                 
-                            self.bigfile.replace(Rc::new(RefCell::new(bigfile)));
-                
-                            self.side_panel.set_bigfile(self.bigfile.clone());
-                            self.fe_view.set_bigfile(self.bigfile.clone());
+                            self.bigfile = Some(bigfile);
                         }
                     }
                     if ui.button("Quit").clicked() {
@@ -158,22 +170,25 @@ impl ExplorerApp {
                 });
                 ui.separator();
                 ui.menu_button("Settings", |ui| {
-                    self.side_panel.settings_menu(ui, ctx);
-                    self.fe_view.settings_menu(ui, ctx);
+                    app_context!(app, ctx);
+                    self.side_panel.settings_menu(ui, &mut app);
+                    self.fe_view.settings_menu(ui, &mut app);
                 });
                 ui.separator();
             });
         });
 
         egui::SidePanel::left("folder_browser").min_width(350.0).default_width(350.0).max_width(800.0).show(ctx, |ui| {
-            self.side_panel.draw(ui, ctx);
+            app_context!(app, ctx);
+            self.side_panel.draw(ui, &mut app);
             if let Some(key) = self.side_panel.should_open_new_tab() {
-                self.fe_view.open_new_tab(key);
+                self.fe_view.open_new_tab(app.bigfile.unwrap(), key);
             }
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            self.fe_view.draw(ui, ctx);
+            app_context!(app, ctx);
+            self.fe_view.draw(ui, &mut app);
         });
     }
 }

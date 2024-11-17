@@ -1,8 +1,6 @@
 use super::*;
 use editors::{create_editor_for_type, EditorImpl};
 use log::*;
-use std::collections::HashMap;
-use std::ops::DerefMut;
 use crate::egui::Ui;
 use std::time::Instant;
 use clipboard::*;
@@ -17,7 +15,6 @@ struct EditorTab {
 }
 
 pub struct FileEditorTabs {
-    bigfile: BfRef,
     editor_tabs: Vec<EditorTab>,
     open_tab: Option<u32>,
     last_update: Instant,
@@ -25,9 +22,8 @@ pub struct FileEditorTabs {
 }
 
 impl FileEditorTabs {
-    pub fn new(bigfile: BfRef) -> Self {
+    pub fn new() -> Self {
         FileEditorTabs {
-            bigfile,
             editor_tabs: Vec::new(),
             open_tab: None,
             last_update: Instant::now(),
@@ -41,16 +37,13 @@ impl FileEditorTabs {
         self.editor_tabs.iter().position(|k| k.key == key)
     }
 
-    pub fn open_new_tab(&mut self, key: u32) {
+    pub fn open_new_tab(&mut self, bf: &Bigfile, key: u32) {
         if let None = self.find_tab(key) {
-            let editor = create_editor_for_type(&self.bigfile.as_ref().unwrap().as_ref().borrow_mut().file_table[&key].object_type);
+            let editor = create_editor_for_type(&bf.file_table[&key].object_type);
             self.editor_tabs.push(EditorTab {
                 key,
                 editor
             });
-            if let Err(error) = self.bigfile.as_ref().unwrap().as_ref().borrow_mut().load_file(key) {
-                error!("{}", error);
-            }
         }
        self.set_open_tab(key);
     }
@@ -117,16 +110,10 @@ impl FileEditorTabs {
 }
 
 impl View for FileEditorTabs {
-    fn set_bigfile(&mut self, bf: crate::ui::BfRef) {
-        self.bigfile = bf;
-    }
-
-    fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
         let mut open_new_tab: Option<Vec<u32>> = None;
-        if let Some(bf) = self.bigfile.clone() {
-            let mut r = bf.as_ref().borrow_mut();
-            let mut bf = r.deref_mut();
-            egui::TopBottomPanel::top("file_editor_tabs").show(ctx, |ui| {
+        if let Some(ref mut bf) = app.bigfile {
+            egui::TopBottomPanel::top("file_editor_tabs").show(app.ctx, |ui| {
                 ui.horizontal_wrapped(|ui| {
                     let mut new_open_tab: Option<u32> = None;
                     let mut close_tab: Option<u32> = None;
@@ -155,7 +142,7 @@ impl View for FileEditorTabs {
                         self.set_open_tab(key);
                     }
                     if let Some(key) = close_tab {
-                        self.close_tab(key, &mut bf);
+                        self.close_tab(key, bf);
                     }
                 });
                 if let Some(key) = self.open_tab {
@@ -168,8 +155,8 @@ impl View for FileEditorTabs {
             if let Some(key) = self.open_tab {
                 ui.push_id(key, |_ui| {
                     egui::SidePanel::left("file_entry_panel").default_width(200.0).max_width(600.0).min_width(200.0)
-                        .resizable(true).show(ctx, |ui| {
-                            FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, ctx);
+                        .resizable(true).show(app.ctx, |ui| {
+                            FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, app.ctx);
     
                             ui.horizontal(|ui| {
                                 if ui.button("Extract...").clicked()  {
@@ -198,13 +185,13 @@ impl View for FileEditorTabs {
                                 }
                             })
                         });
-                    egui::CentralPanel::default().show(ctx, |ui| {
+                    egui::CentralPanel::default().show(app.ctx, |ui| {
                         let mut y = bf.object_table.get_mut(&key).unwrap();
 
                         let mut rsp = EditorResponse::default();
                         for tab in self.editor_tabs.iter_mut() {
                             if tab.key == key {
-                                rsp = tab.editor.draw(&mut y, ui, ctx)
+                                rsp = tab.editor.draw(&mut y, ui, app.ctx)
                             }
                         }
 
@@ -219,13 +206,18 @@ impl View for FileEditorTabs {
             }
         }
         if let Some(v) = open_new_tab {
-            for key in &v {
-                self.open_new_tab(*key);
+            if let Some(ref mut bf) = app.bigfile {
+                for key in &v {
+                    self.open_new_tab(&bf, *key);
+                    if let Err(error) = bf.load_file(*key) {
+                        error!("{}", error);
+                    }
+                }
             }
         }
     }
 
-    fn settings_menu(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn settings_menu(&mut self, ui: &mut egui::Ui, _app: &mut AppContext) {
         let now = Instant::now();
         ui.menu_button("Stats", |ui| {
             ui.label(format!("ft: {} ms", (now - self.last_update).as_secs_f32() * 1000.0));

@@ -1,5 +1,4 @@
 use super::*;
-use std::ops::Deref;
 use crate::egui::Ui;
 use log::*;
 
@@ -7,16 +6,14 @@ use crate::bigfile::Bigfile;
 use crate::ui::*;
 
 pub struct FileTreeView {
-    bigfile: BfRef,
     debug_folders: bool,
     debug_files: bool,
     clicked_file: Option<u32>
 }
 
 impl FileTreeView {
-    pub fn new(bigfile: BfRef) -> Self {
+    pub fn new() -> Self {
         FileTreeView {
-            bigfile,
             debug_folders: false,
             debug_files: false,
             clicked_file: None
@@ -27,7 +24,7 @@ impl FileTreeView {
         self.clicked_file
     }
 
-    fn draw_file_tree(&mut self, ui: &mut Ui, ctx: &egui::Context, debug_folders: bool, debug_files: bool) {
+    fn draw_file_tree(&mut self, ui: &mut Ui, app: &mut AppContext, debug_folders: bool, debug_files: bool) {
         fn draw_folder2(idx: &u16, bf: &Bigfile, ctx: &egui::Context, ui: &mut Ui, debug_folders: bool, debug_files: bool) -> Option<u32> {
             if !bf.folder_table.contains_key(&idx) { return None; }
             let folder = bf.folder_table[&idx];
@@ -76,26 +73,20 @@ impl FileTreeView {
             rsp.body_returned?
         }
 
-        if let Some(bf) = self.bigfile.clone() {
-            let r = bf.as_ref().borrow();
-            let bf = r.deref();
-            self.clicked_file = draw_folder2(&0, &bf, ctx, ui, debug_folders, debug_files);
+        if let Some(ref mut bf) = app.bigfile {
+            self.clicked_file = draw_folder2(&0, &bf, app.ctx, ui, debug_folders, debug_files);
         }
     }
 }
 
 impl View for FileTreeView {
-    fn set_bigfile(&mut self, bf: crate::ui::BfRef) {
-        self.bigfile = bf.clone();
-    }
-
-    fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
+    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
         egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui|{
-            self.draw_file_tree(ui, ctx, self.debug_folders, self.debug_files);
+            self.draw_file_tree(ui, app, self.debug_folders, self.debug_files);
         });
     }
 
-    fn settings_menu(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn settings_menu(&mut self, ui: &mut egui::Ui, _app: &mut AppContext) {
         ui.menu_button("File Tree", |ui| {
             ui.checkbox(&mut self.debug_folders, "Folder Info");
             ui.checkbox(&mut self.debug_files, "File Info");

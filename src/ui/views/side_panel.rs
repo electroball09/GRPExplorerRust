@@ -2,11 +2,10 @@ use super::search_view::SearchView;
 use super::tools::ToolsView;
 use super::{View, bf_metadata_view::BigfileMetadataView};
 use super::file_tree_view::FileTreeView;
-use super::super::BfRef;
 use crate::egui as egui;
+use crate::ui::AppContext;
 
 pub struct SidePanelView {
-    bigfile: BfRef,
     ft_view: FileTreeView,
     bf_view: BigfileMetadataView,
     tl_view: ToolsView,
@@ -22,13 +21,12 @@ enum SidePanelViewState {
 }
 
 impl SidePanelView {
-    pub fn new(bf: BfRef) -> Self {
+    pub fn new() -> Self {
         Self {
-            bigfile: bf.clone(),
-            ft_view: FileTreeView::new(bf.clone()),
-            bf_view: BigfileMetadataView::new(bf.clone()),
-            tl_view: ToolsView::new(bf.clone()),
-            sr_view: SearchView::new(bf.clone()),
+            ft_view: FileTreeView::new(),
+            bf_view: BigfileMetadataView::new(),
+            tl_view: ToolsView::new(),
+            sr_view: SearchView::new(),
             state: SidePanelViewState::FileTree
         }
     }
@@ -45,18 +43,8 @@ impl SidePanelView {
 }
 
 impl View for SidePanelView {
-    fn set_bigfile(&mut self, bf: crate::ui::BfRef) {
-        self.bigfile = bf;
-        if let Some(bf) = &self.bigfile {
-            self.ft_view.set_bigfile(Some(bf.clone()));
-            self.bf_view.set_bigfile(Some(bf.clone()));
-            self.tl_view.set_bigfile(Some(bf.clone()));
-            self.sr_view.set_bigfile(Some(bf.clone()));
-        }
-    }
-
-    fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        if let None = self.bigfile { return; }
+    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+        if let None = app.bigfile { return; }
 
         ui.vertical(|ui| {
             ui.horizontal(|ui| {
@@ -80,19 +68,19 @@ impl View for SidePanelView {
             ui.add_space(4.0);
 
             match self.state {
-                SidePanelViewState::FileTree => self.ft_view.draw(ui, ctx),
-                SidePanelViewState::BfMetadata => self.bf_view.draw(ui, ctx),
-                SidePanelViewState::Tools => self.tl_view.draw(ui, ctx),
-                SidePanelViewState::Search => self.sr_view.draw(ui, ctx)
+                SidePanelViewState::FileTree    => self.ft_view.draw(ui, app),
+                SidePanelViewState::BfMetadata  => self.bf_view.draw(ui, app),
+                SidePanelViewState::Tools       => self.tl_view.draw(ui, app),
+                SidePanelViewState::Search      => self.sr_view.draw(ui, app)
             }
         });
 
     }
 
-    fn settings_menu(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) {
-        self.ft_view.settings_menu(ui, ctx);
-        self.bf_view.settings_menu(ui, ctx);
-        self.tl_view.settings_menu(ui, ctx);
-        self.sr_view.settings_menu(ui, ctx);
+    fn settings_menu(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+        self.ft_view.settings_menu(ui, app);
+        self.bf_view.settings_menu(ui, app);
+        self.tl_view.settings_menu(ui, app);
+        self.sr_view.settings_menu(ui, app);
     }
 }

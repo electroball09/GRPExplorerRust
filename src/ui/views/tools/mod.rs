@@ -1,37 +1,30 @@
-use crate::{bigfile::{Bigfile, metadata::ObjectType}, objects::ObjectArchetype};
+use crate::{bigfile::{metadata::ObjectType, Bigfile}, objects::ObjectArchetype, ui::AppContext};
 use std::{fs::*, collections::HashSet, io::Write};
-use super::super::BfRef;
 use log::*;
 use crate::egui as egui;
 
 pub struct ToolsView {
-    bigfile: BfRef,
+    
 }
 
 impl ToolsView {
-    pub fn new(bf: BfRef) -> Self {
+    pub fn new() -> Self {
         Self {
-            bigfile: bf,
+            
         }
     }
 }
 
 impl super::View for ToolsView {
-    fn draw(&mut self, ui: &mut egui::Ui, _ctx: &egui::Context) {
-        if ui.button("Export Shader Node IDs").clicked() {
-            let bf = self.bigfile.clone().unwrap();
-            let mut bf = bf.as_ref().borrow_mut();
-            export_shader_node_ids(&mut bf);
+    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+        if let Some(ref mut bf) = app.bigfile {
+            if ui.button("Export Shader Node IDs").clicked() {
+                export_shader_node_ids(bf);
+            }
+            if ui.button("Export Zones").clicked() {
+                export_zones(bf);
+            }
         }
-        if ui.button("Export Zones").clicked() {
-            let bf = self.bigfile.clone().unwrap();
-            let mut bf = bf.as_ref().borrow_mut();
-            export_zones(&mut bf);
-        }
-    }
-
-    fn set_bigfile(&mut self, bf: crate::ui::BfRef) {
-        self.bigfile = bf;
     }
 }
 

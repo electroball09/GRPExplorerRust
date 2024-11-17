@@ -5,10 +5,9 @@ pub mod bf_metadata_view;
 pub mod search_view;
 pub mod tools;
 
-use crate::egui as egui;
+use super::AppContext;
 
 pub trait View {
-    fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context);
-    fn settings_menu(&mut self, _ui: &mut egui::Ui, _ctx: &egui::Context) { }
-    fn set_bigfile(&mut self, bf: super::BfRef);
+    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext);
+    fn settings_menu(&mut self, _ui: &mut egui::Ui, _app: &mut AppContext) { }
 }
