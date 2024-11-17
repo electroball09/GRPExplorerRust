@@ -5,7 +5,7 @@ use super::EditorResponse;
 pub struct SkeletonEditor;
 
 impl super::EditorImpl for SkeletonEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::Skeleton(ske) = &obj.archetype {
             ui.label(format!("version: {:#04X}", ske.version));
             ui.label(format!("num_bones: {}", ske.num_bones));

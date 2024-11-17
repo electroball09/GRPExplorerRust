@@ -20,8 +20,8 @@ pub use crate::egui as egui;
 
 use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::{metadata::ObjectType, Bigfile}};
 
-trait EditorImpl {
-    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse;
+pub trait EditorImpl {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse;
 }
 
 pub enum EditorResponse {
@@ -36,32 +36,27 @@ impl Default for EditorResponse {
     }
 }
 
-pub fn draw_editor_for_type(obj_type: &ObjectType, obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
-    if let Some(err) = &obj.load_error {
-        ui.label(format!("ERR: {}", err));
-        return EditorResponse::default();
-    }
-    
+pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
     match obj_type {
-        ObjectType::zc => ScriptEditor::draw(obj, ui, ctx),
-        ObjectType::ini => IniEditor::draw(obj, ui, ctx),
-        ObjectType::cur => CurveEditor::draw(obj, ui, ctx),
-        ObjectType::otf => OtfEditor::draw(obj, ui, ctx),
-        ObjectType::lay => LayerEditor::draw(obj, ui, ctx),
-        ObjectType::gao => GameobjectEditor::draw(obj, ui, ctx),
-        ObjectType::feu => FeuEditor::draw(obj, ui, ctx),
-        ObjectType::cst => AIConstEditor::draw(obj, ui, ctx),
-        ObjectType::dbk => DbkEditor::draw(obj, ui, ctx),
-        ObjectType::msd => MeshDataEditor::draw(obj, ui, ctx),
-        ObjectType::tga => TextureMetadataEditor::draw(obj, ui, ctx),
-        ObjectType::txd => TextureDataEditor::draw(obj, ui, ctx),
-        ObjectType::snk => SnkEditor::draw(obj, ui, ctx),
-        ObjectType::shd => ShaderGraphEditor::draw(obj, ui, ctx),
-        ObjectType::ske => SkeletonEditor::draw(obj, ui, ctx),
-        ObjectType::eps => EditableParamStructEditor::draw(obj, ui, ctx),
-        ObjectType::zon => ZoneEditor::draw(obj, ui, ctx),
-        ObjectType::dbr => DbrEditor::draw(obj, ui, ctx),
-        ObjectType::epl => EditableParamsListEditor::draw(obj, ui, ctx),
-        _ => BlankEditor::draw(obj, ui, ctx)
+        ObjectType::zc  => Box::new(ScriptEditor { }),
+        ObjectType::ini => Box::new(IniEditor { }),
+        ObjectType::cur => Box::new(CurveEditor { }),
+        ObjectType::otf => Box::new(OtfEditor { }),
+        ObjectType::lay => Box::new(LayerEditor { }),
+        ObjectType::gao => Box::new(GameobjectEditor::default()),
+        ObjectType::feu => Box::new(FeuEditor { }),
+        ObjectType::cst => Box::new(AIConstEditor { }),
+        ObjectType::dbk => Box::new(DbkEditor { }),
+        ObjectType::msd => Box::new(MeshDataEditor { }),
+        ObjectType::tga => Box::new(TextureMetadataEditor { }),
+        ObjectType::txd => Box::new(TextureDataEditor { }),
+        ObjectType::snk => Box::new(SnkEditor { }),
+        ObjectType::shd => Box::new(ShaderGraphEditor { }),
+        ObjectType::ske => Box::new(SkeletonEditor { }),
+        ObjectType::eps => Box::new(EditableParamStructEditor { }),
+        ObjectType::zon => Box::new(ZoneEditor { }),
+        ObjectType::dbr => Box::new(DbrEditor { }),
+        ObjectType::epl => Box::new(EditableParamsListEditor { }),
+        _               => Box::new(BlankEditor { }),
     }
 }

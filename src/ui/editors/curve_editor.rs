@@ -41,7 +41,7 @@ impl CurveEditor {
 }
 
 impl EditorImpl for CurveEditor {
-    fn draw(obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
         ui.vertical(|ui| {
             if let ObjectArchetype::Curve(curve) = &mut obj.archetype {
                 match &mut curve.curve {

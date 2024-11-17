@@ -6,7 +6,7 @@ use super::EditorResponse;
 pub struct MeshDataEditor;
 
 impl super::EditorImpl for MeshDataEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> super::EditorResponse {
+    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> super::EditorResponse {
         if let ObjectArchetype::MeshData(msd) = &obj.archetype {
             ui.label(format!("unk_01: {}", msd.unk_01));
             ui.label(format!("unk_02: {}", msd.unk_02));

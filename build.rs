@@ -31,6 +31,7 @@ fn main() {
     fs::write(output_path, &sources).unwrap();
 
     println!("cargo::rerun-if-changed=build.rs");
+    println!("cargo::rerun-if-changed={}", source_dir.to_str().unwrap());
     for entry in fs::read_dir(&source_dir).unwrap() {
         println!("cargo::rerun-if-changed={}{}", &source_dir.to_str().unwrap(), &entry.unwrap().file_name().to_str().unwrap())
     }

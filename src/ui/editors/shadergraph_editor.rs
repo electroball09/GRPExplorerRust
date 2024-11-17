@@ -8,7 +8,7 @@ use node_id_editors::*;
 pub struct ShaderGraphEditor;
 
 impl EditorImpl for ShaderGraphEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> super::EditorResponse {
+    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> super::EditorResponse {
         if let ObjectArchetype::ShaderGraph(shd) = &mut obj.archetype {
             ui.label(format!("version: {:#06X}", shd.version));
             ui.label(format!("flags: {:#06X} {:#018b}", shd.flags, shd.flags));

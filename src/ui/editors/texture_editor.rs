@@ -7,7 +7,7 @@ use super::{EditorImpl, EditorResponse};
 pub struct TextureMetadataEditor;
 
 impl EditorImpl for TextureMetadataEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> super::EditorResponse {
+    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> super::EditorResponse {
         if let ObjectArchetype::TextureMetadata(tga) = &obj.archetype {
             ui.label(format!("width: {}", tga.width));
             ui.label(format!("height: {}", tga.height));
@@ -38,7 +38,7 @@ impl EditorImpl for TextureMetadataEditor {
 pub struct TextureDataEditor;
 
 impl EditorImpl for TextureDataEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
         if let ObjectArchetype::TextureData(txd) = &obj.archetype {
             ui.label(format!("unk_01: {:#010X}", txd.unk_01));
             ui.label(format!("format: {:?}", txd.format));

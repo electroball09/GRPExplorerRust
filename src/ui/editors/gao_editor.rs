@@ -3,10 +3,16 @@ use crate::objects::ObjectArchetype;
 
 use super::{EditorImpl, EditorResponse};
 
-pub struct GameobjectEditor;
+#[derive(Default)]
+pub struct GameobjectEditor {
+    counter: u32
+}
 
 impl EditorImpl for GameobjectEditor {
-    fn draw(obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+        self.counter += 1;
+        ui.label(format!("counter: {}", &self.counter));
+
         if let ObjectArchetype::GameObject(gao) = &obj.archetype {
             ui.label(format!("zero: {:#010X}", gao.zero));
             ui.label(format!("id flags: {:?}", gao.identity_flags));
