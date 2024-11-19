@@ -1,5 +1,4 @@
 use super::*;
-use super::{EditorImpl, EditorResponse};
 use crate::objects::{*, shader::node_ids::ShaderNodeId, shader::node_ids::ShaderNodeId::*};
 
 mod node_id_editors;
@@ -8,7 +7,7 @@ use node_id_editors::*;
 pub struct ShaderGraphEditor;
 
 impl EditorImpl for ShaderGraphEditor {
-    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> super::EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ectx: &mut EditorContext) {
         if let ObjectArchetype::ShaderGraph(shd) = &mut obj.archetype {
             ui.label(format!("version: {:#06X}", shd.version));
             ui.label(format!("flags: {:#06X} {:#018b}", shd.flags, shd.flags));
@@ -29,7 +28,7 @@ impl EditorImpl for ShaderGraphEditor {
                             ui.collapsing(format!("{:#010X} {}", j, node.get_id()), |ui| {
                                 ui.label(format!("unk_01: {:#010X} {:#034b}", node.unk_01, node.unk_01));
                                 let old_node = std::mem::replace(&mut node.node, ShaderNodeId::Invalid);
-                                node.node = draw_node_id_editor(old_node, ui, ctx);
+                                node.node = draw_node_id_editor(old_node, ui, ectx.ctx);
                             });
                             j += 1;
                         }
@@ -38,8 +37,6 @@ impl EditorImpl for ShaderGraphEditor {
                 }
             });
         }
-
-        EditorResponse::default()
     }
 }
 

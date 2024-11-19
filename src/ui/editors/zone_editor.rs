@@ -3,7 +3,7 @@ use super::*;
 pub struct ZoneEditor;
 
 impl EditorImpl for ZoneEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         if let ObjectArchetype::Zone(zone) = &obj.archetype {
             ui.label(format!("unk_01: {:#04X}", zone.unk_01));
             ui.label(format!("unk_02: {:#04X}", zone.unk_02));
@@ -12,7 +12,5 @@ impl EditorImpl for ZoneEditor {
             ui.label(format!("unk_05: {:#04X}", zone.unk_05));
             ui.label(format!("unk_06: {:#04X}", zone.unk_06));
         }
-
-        EditorResponse::default()
     }
 }

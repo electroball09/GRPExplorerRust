@@ -1,12 +1,11 @@
 use crate::objects::{ObjectArchetype, ai_const::ConstTreeNode};
 
-use super::{EditorImpl, EditorResponse};
 use super::*;
 
 pub struct AIConstEditor;
 
 impl EditorImpl for AIConstEditor {
-    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         if let ObjectArchetype::ConstList(cst) = &obj.archetype {
             fn recurse(ui: &mut egui::Ui, node: &ConstTreeNode) {
                 for sub in node.nodes.iter() {
@@ -23,7 +22,5 @@ impl EditorImpl for AIConstEditor {
                 recurse(ui, &cst.root_node);
             });
         }
-
-        EditorResponse::default()
     }
 }

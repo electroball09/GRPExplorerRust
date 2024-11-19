@@ -1,7 +1,8 @@
 use super::*;
-use editors::{create_editor_for_type, EditorImpl};
+use editors::{create_editor_for_type, EditorContext, EditorImpl};
 use log::*;
 use crate::egui::Ui;
+use crate::objects::YetiObject;
 use std::time::Instant;
 use clipboard::*;
 use crate::bigfile::{Bigfile, obj_type_to_name};
@@ -11,6 +12,7 @@ use crate::ui::editors::EditorResponse;
 
 struct EditorTab {
     key: u32,
+    name: String,
     editor: Box<dyn EditorImpl>,
 }
 
@@ -37,13 +39,17 @@ impl FileEditorTabs {
         self.editor_tabs.iter().position(|k| k.key == key)
     }
 
-    pub fn open_new_tab(&mut self, bf: &Bigfile, key: u32) {
+    pub fn open_new_tab(&mut self, bf: &mut Bigfile, key: u32) {
         if let None = self.find_tab(key) {
             let editor = create_editor_for_type(&bf.file_table[&key].object_type);
             self.editor_tabs.push(EditorTab {
                 key,
+                name: bf.file_table[&key].get_name_ext().to_string(),
                 editor
             });
+            if let Err(error) = bf.load_file(key) {
+                error!("{}", error);
+            }
         }
        self.set_open_tab(key);
     }
@@ -107,44 +113,36 @@ impl FileEditorTabs {
         file_metadata_line(ui, " unk03:", &format!("{:#010X}", file.unk03));
         file_metadata_line(ui, "   zip:", &format!("{}", file.zip));
     }
-}
 
-impl View for FileEditorTabs {
-    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
-        let mut open_new_tab: Option<Vec<u32>> = None;
-        if let Some(ref mut bf) = app.bigfile {
-            egui::TopBottomPanel::top("file_editor_tabs").show(app.ctx, |ui| {
-                ui.horizontal_wrapped(|ui| {
-                    let mut new_open_tab: Option<u32> = None;
-                    let mut close_tab: Option<u32> = None;
-                    for tab in self.editor_tabs.iter() {
-                        let open_tab_key = self.open_tab.expect("we have tabs, but none are open???");
-                        let rsp = match tab.key == open_tab_key {
-                            true => {
-                                ui.selectable_label(true, bf.file_table[&tab.key].get_name_ext())
-                            },
-                            false => {
-                                ui.selectable_label(false, bf.file_table[&tab.key].get_name_ext())
-                            }
-                        };
-                        if rsp.clicked() {
-                            new_open_tab = Some(tab.key);
+    fn draw_top_panel(&mut self, bf: &Bigfile, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
+        egui::TopBottomPanel::top("file_editor_tabs").show(ectx.ctx, |ui| {
+            let mut new_open_tab: Option<u32> = None;
+            ui.horizontal_wrapped(|ui| {
+                for tab in self.editor_tabs.iter() {
+                    let open_tab_key = self.open_tab.expect("we have tabs, but none are open???");
+                    let rsp = match tab.key == open_tab_key {
+                        true => {
+                            ui.selectable_label(true, &tab.name)
+                        },
+                        false => {
+                            ui.selectable_label(false, &tab.name)
                         }
-                        if rsp.middle_clicked() {
-                            close_tab = Some(tab.key);
-                        }
-                        if ui.selectable_label(false, "x").clicked() {
-                            close_tab = Some(tab.key);
-                        }
-                        ui.separator();
+                    };
+                    if rsp.clicked() {
+                        new_open_tab = Some(tab.key);
                     }
-                    if let Some(key) = new_open_tab {
-                        self.set_open_tab(key);
+                    if rsp.middle_clicked() || ui.selectable_label(false, "x").clicked() {
+                        ectx.respond(EditorResponse::CloseTab(tab.key));
                     }
-                    if let Some(key) = close_tab {
-                        self.close_tab(key, bf);
-                    }
-                });
+                    ui.separator();
+                }
+            });
+
+            if let Some(key) = new_open_tab {
+                self.set_open_tab(key);
+            }
+
+            ui.horizontal_wrapped(|ui| {
                 if let Some(key) = self.open_tab {
                     ui.separator();
                     let mut dir = bf.get_full_directory(bf.file_table[&key].parent_folder);
@@ -152,65 +150,87 @@ impl View for FileEditorTabs {
                     ui.label(dir);
                 }
             });
-            if let Some(key) = self.open_tab {
-                ui.push_id(key, |_ui| {
-                    egui::SidePanel::left("file_entry_panel").default_width(200.0).max_width(600.0).min_width(200.0)
-                        .resizable(true).show(app.ctx, |ui| {
-                            FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, app.ctx);
-    
-                            ui.horizontal(|ui| {
-                                if ui.button("Extract...").clicked()  {
-                                    if let Some(path) = crate::export::pick_extract_folder() {
-                                        let mut path = String::from(path.to_str().unwrap());
-                                        path += &String::from(format!("/{:#010X} {}", key, String::from(bf.file_table[&key].get_name_ext())));
-        
-                                        bf.extract_file_to_path(&path, key).unwrap();
-                                    }
-                                }
-                            });
-    
-                            ui.add_space(15.0);
-    
-                            ui.label(format!("references: {}", bf.object_table[&key].references.len()));
-                            egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui| {
-                                for key in bf.object_table[&key].references.iter() {
-                                    if bf.file_table.contains_key(&key) {
-                                        let rsp = ui.selectable_label(false, format!("{:#010X} {}", key, bf.file_table[&key].get_name_ext()));
-                                        if rsp.clicked() {
-                                            open_new_tab = Some(vec![*key]);
-                                        }
-                                    } else {
-                                        ui.label(format!("{:#010X}", key));
-                                    }
-                                }
-                            })
-                        });
-                    egui::CentralPanel::default().show(app.ctx, |ui| {
-                        let mut y = bf.object_table.get_mut(&key).unwrap();
+        });
+    }
 
-                        let mut rsp = EditorResponse::default();
-                        for tab in self.editor_tabs.iter_mut() {
-                            if tab.key == key {
-                                rsp = tab.editor.draw(&mut y, ui, app.ctx)
+    fn draw_central_panel(&mut self, yobj: &mut YetiObject, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
+        egui::CentralPanel::default().show(ectx.ctx, |ui| {
+            for tab in self.editor_tabs.iter_mut() {
+                if tab.key == yobj.get_key() {
+                    tab.editor.draw(yobj, ui, ectx);
+                }
+            }
+        }); 
+    }
+
+    fn draw_side_panel(&mut self, bf: &Bigfile, key: u32, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
+        egui::SidePanel::left("file_entry_panel").default_width(200.0).max_width(600.0).min_width(200.0)
+            .resizable(true).show(ectx.ctx, |ui| {
+                FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, ectx.ctx);
+
+                ui.horizontal(|ui| {
+                    if ui.button("Extract...").clicked()  {
+                        if let Some(path) = crate::export::pick_extract_folder() {
+                            let name = &self.editor_tabs[self.find_tab(key).unwrap()].name;
+                            let path = format!("{}\\{:#010X} {}", path.to_str().unwrap(), key, name);
+                            ectx.respond(EditorResponse::ExtractFile(key, path.to_string()))
+                        }
+                    }
+                });
+
+                ui.add_space(15.0);
+
+                ui.label(format!("references: {}", bf.object_table[&key].references.len()));
+                egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui| {
+                    for key in bf.object_table[&key].references.iter() {
+                        if bf.file_table.contains_key(&key) {
+                            let rsp = ui.selectable_label(false, format!("{:#010X} {}", key, bf.file_table[&key].get_name_ext()));
+                            if rsp.clicked() {
+                                ectx.respond(EditorResponse::OpenNewTab(*key));
                             }
+                        } else {
+                            ui.label(format!("{:#010X}", key));
                         }
-
-                        if let EditorResponse::OpenNewTabs(v) = &rsp {
-                            open_new_tab = Some(v.clone());
-                        } 
-                        if let EditorResponse::PerformAction(key, act) = rsp {
-                            act(key, bf);
-                        }
-                    }); 
+                    }
                 });
             }
-        }
-        if let Some(v) = open_new_tab {
-            if let Some(ref mut bf) = app.bigfile {
-                for key in &v {
-                    self.open_new_tab(&bf, *key);
-                    if let Err(error) = bf.load_file(*key) {
-                        error!("{}", error);
+        );
+    }
+}
+
+impl View for FileEditorTabs {
+    fn draw<'a>(&mut self, ui: &mut egui::Ui, app: &'a mut AppContext<'a>) {
+
+        let mut ectx = EditorContext {
+            shader_cache: app.shader_cache,
+            ctx: app.ctx,
+            responses: Vec::new()
+        };
+
+        if let Some(ref mut bf) = app.bigfile {
+            self.draw_top_panel(bf, ui, &mut ectx);
+    
+            if let Some(key) = self.open_tab {
+                ui.push_id(key, |ui| {
+                    self.draw_side_panel(bf, key, ui, &mut ectx);
+                    
+                    self.draw_central_panel(bf.object_table.get_mut(&key).unwrap(), ui, &mut ectx);
+                });
+            }
+            
+            for rsp in ectx.drain() {
+                match rsp {
+                    EditorResponse::OpenNewTab(key) => {
+                        self.open_new_tab(bf, key);
+                    },
+                    EditorResponse::CloseTab(key) => {
+                        self.close_tab(key, bf);
+                    },
+                    EditorResponse::PerformAction(key, act) => {
+                        act(key, bf);
+                    },
+                    EditorResponse::ExtractFile(key, path) => {
+                        bf.extract_file_to_path(&path, key).expect("could not extract file!");
                     }
                 }
             }

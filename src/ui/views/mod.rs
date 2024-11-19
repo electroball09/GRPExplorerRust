@@ -8,6 +8,6 @@ pub mod tools;
 use super::AppContext;
 
 pub trait View {
-    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext);
+    fn draw<'a>(&mut self, ui: &mut egui::Ui, app: &'a mut AppContext<'a>);
     fn settings_menu(&mut self, _ui: &mut egui::Ui, _app: &mut AppContext) { }
 }

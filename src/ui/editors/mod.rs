@@ -18,22 +18,12 @@ mod zone_editor; use zone_editor::*;
 
 pub use crate::egui as egui;
 
-use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::{metadata::ObjectType, Bigfile}};
+pub use super::{EditorContext, EditorResponse};
+
+use crate::{objects::{ObjectArchetype, YetiObject}, bigfile::metadata::ObjectType};
 
 pub trait EditorImpl {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse;
-}
-
-pub enum EditorResponse {
-    None,
-    OpenNewTabs(Vec<u32>),
-    PerformAction(u32, Box<dyn FnOnce(u32, &mut Bigfile) -> ()>)
-}
-
-impl Default for EditorResponse {
-    fn default() -> Self {
-        EditorResponse::None
-    }
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ectx: &mut EditorContext);
 }
 
 pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {

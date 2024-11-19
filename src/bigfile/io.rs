@@ -1,7 +1,7 @@
 use log::*;
 use std::fs::File;
 use std::io::{Error, SeekFrom, Seek, Read, Cursor};
-use std::collections::{HashMap};
+use std::collections::HashMap;
 use byteorder::{ReadBytesExt, LittleEndian};
 use flate2::read::ZlibDecoder;
 
@@ -41,6 +41,7 @@ pub fn parse_and_remove_refs(buf: &[u8]) -> (Vec<u32>, &[u8]) {
     (refs, &buf[4 + (4 * num_refs as usize)..])
 }
 
+#[allow(unused)]
 pub trait BigfileIO {
     fn create_from_path(path: &str) -> Result<Self, Error> where Self: Sized;
 

@@ -16,6 +16,6 @@ pub fn setup_log() -> Config {
     Config::builder()
         .appender(Appender::builder().build("stdout", Box::new(stdout)))
         .appender(Appender::builder().build("log_ap", Box::new(log_appender)))
-        .build(Root::builder().appender("stdout").appender("log_ap").build(LevelFilter::Debug))
+        .build(Root::builder().appender("stdout").appender("log_ap").build(LevelFilter::Info))
         .unwrap()
 }

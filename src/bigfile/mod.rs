@@ -81,7 +81,7 @@ pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
 pub struct Bigfile {
     pub segment_header: SegmentHeader,
     pub bigfile_header: BigfileHeader,
-    pub file_table: HashMap<u32,FileEntry>,
+    pub file_table: HashMap<u32, FileEntry>,
     pub object_table: HashMap<u32, YetiObject>,
     pub folder_table: HashMap<u16, FolderEntry>,
     pub io: Box<dyn BigfileIO>,

@@ -1,12 +1,10 @@
 use super::*;
 use crate::objects::ObjectArchetype;
 
-use super::{EditorResponse, EditorImpl};
-
 pub struct SnkEditor;
 
 impl EditorImpl for SnkEditor {
-    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         if let ObjectArchetype::SoundBank(snk) = &obj.archetype {
             ui.collapsing(format!("num nums: {}", snk.numbers.len()), |ui| {
                 for n in &snk.numbers {
@@ -37,7 +35,5 @@ impl EditorImpl for SnkEditor {
                 })
             });
         }
-
-        EditorResponse::default()
     }
 }

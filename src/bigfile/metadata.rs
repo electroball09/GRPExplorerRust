@@ -1,13 +1,14 @@
 use std::fmt::Display;
 #[allow(dead_code)]
 
-use std::io::{Read};
+use std::io::Read;
 use byteorder::{ReadBytesExt, LittleEndian};
-use chrono::NaiveDateTime;
+use chrono::{DateTime, Utc};
 use num::FromPrimitive;
 use strum::AsRefStr;
 use strum_macros::EnumString;
 
+#[allow(unused)]
 #[derive(Debug, Default)]
 pub struct SegmentHeader {
     pub sig: [u8; 4],
@@ -198,7 +199,7 @@ pub struct FileEntry {
     pub unk01: i32,
     pub object_type: ObjectType,
     pub parent_folder: u16,
-    pub timestamp: NaiveDateTime,
+    pub timestamp: DateTime<Utc>,
     pub flags: i32,
     pub unk02: i32,
     pub crc: [u8; 4],
@@ -217,7 +218,7 @@ impl Default for FileEntry {
             unk01: 0,
             object_type: ObjectType::null,
             parent_folder: 0,
-            timestamp: NaiveDateTime::default(),
+            timestamp: Default::default(),
             flags: 0,
             unk02: 0,
             crc: [0; 4],
@@ -246,7 +247,7 @@ impl FileEntry {
         entry.unk01 = reader.read_i32::<LittleEndian>().unwrap();
         entry.object_type = FromPrimitive::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
         entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
-        entry.timestamp = NaiveDateTime::from_timestamp_opt(reader.read_i32::<LittleEndian>().unwrap() as i64, 0).unwrap();
+        entry.timestamp = DateTime::from_timestamp(reader.read_i32::<LittleEndian>().unwrap() as i64, 0).unwrap(); //NaiveDateTime::from_timestamp(reader.read_i32::<LittleEndian>().unwrap() as i64, 0).unwrap();
         entry.flags = reader.read_i32::<LittleEndian>().unwrap();
         entry.unk02 = reader.read_i32::<LittleEndian>().unwrap();
         reader.read(&mut entry.crc).unwrap();

@@ -2,12 +2,10 @@ use super::*;
 use crate::objects::ObjectArchetype;
 use crate::export::*;
 
-use super::{EditorImpl, EditorResponse};
-
 pub struct TextureMetadataEditor;
 
 impl EditorImpl for TextureMetadataEditor {
-    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> super::EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ectx: &mut EditorContext) {
         if let ObjectArchetype::TextureMetadata(tga) = &obj.archetype {
             ui.label(format!("width: {}", tga.width));
             ui.label(format!("height: {}", tga.height));
@@ -15,7 +13,7 @@ impl EditorImpl for TextureMetadataEditor {
             ui.label(format!("fmt id: {:#04X}", tga.fmt_id));
 
             if ui.button("Export...").clicked() {
-                return EditorResponse::PerformAction(obj.get_key(), Box::new(|key, bf| {
+                ectx.respond(EditorResponse::PerformAction(obj.get_key(), Box::new(|key, bf| {
                     if let Some(path) = pick_exp_path_no_ext(&bf.object_table[&key]) {
                         let txd_key = bf.object_table[&key].references[0];
                         if let Ok(()) = bf.load_file(txd_key) {
@@ -27,18 +25,16 @@ impl EditorImpl for TextureMetadataEditor {
                         }
                         bf.unload_file(txd_key).unwrap();
                     }
-                }));
+                })));
             }
         }
-
-        EditorResponse::None
     }
 }
 
 pub struct TextureDataEditor;
 
 impl EditorImpl for TextureDataEditor {
-    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         if let ObjectArchetype::TextureData(txd) = &obj.archetype {
             ui.label(format!("unk_01: {:#010X}", txd.unk_01));
             ui.label(format!("format: {:?}", txd.format));
@@ -47,7 +43,5 @@ impl EditorImpl for TextureDataEditor {
             ui.label(format!("unk_03: {:#04X}", txd.unk_03));
             ui.label(format!("data_len: {}", txd.texture_data.len()));
         }
-
-        EditorResponse::None
     }
 }

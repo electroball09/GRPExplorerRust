@@ -1,11 +1,10 @@
 use super::*;
 use crate::objects::ObjectArchetype;
-use super::EditorResponse;
 
 pub struct SkeletonEditor;
 
 impl super::EditorImpl for SkeletonEditor {
-    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         if let ObjectArchetype::Skeleton(ske) = &obj.archetype {
             ui.label(format!("version: {:#04X}", ske.version));
             ui.label(format!("num_bones: {}", ske.num_bones));
@@ -31,7 +30,5 @@ impl super::EditorImpl for SkeletonEditor {
                 }
             });
         }
-
-        EditorResponse::default()
     }
 }

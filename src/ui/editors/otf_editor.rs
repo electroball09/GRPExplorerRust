@@ -1,16 +1,12 @@
 use super::*;
 use crate::objects::ObjectArchetype;
 
-use super::EditorResponse;
-
 pub struct OtfEditor;
 
 impl super::EditorImpl for OtfEditor {
-    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         if let ObjectArchetype::Otf(_otf) = &obj.archetype { 
             ui.label("Extract to view font");
         }
-
-        EditorResponse::default()
     }
 }

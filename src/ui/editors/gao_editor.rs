@@ -1,15 +1,13 @@
 use super::*;
 use crate::objects::ObjectArchetype;
 
-use super::{EditorImpl, EditorResponse};
-
 #[derive(Default)]
 pub struct GameobjectEditor {
     counter: u32
 }
 
 impl EditorImpl for GameobjectEditor {
-    fn draw(&mut self, obj: &mut crate::objects::YetiObject, ui: &mut egui::Ui, _ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         self.counter += 1;
         ui.label(format!("counter: {}", &self.counter));
 
@@ -25,7 +23,5 @@ impl EditorImpl for GameobjectEditor {
             ui.label(format!("rot: {}", rot));
             ui.label(format!("scl: {}", scale));
         }
-
-        EditorResponse::default()
     }
 }

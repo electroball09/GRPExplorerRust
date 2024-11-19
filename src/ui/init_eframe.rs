@@ -1,6 +1,8 @@
 use crate::ui::*;
 
 pub unsafe fn explorer_app_start() {
+    info!("initing eframe...");
+
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size((1500.0, 800.0))

@@ -12,14 +12,14 @@ impl CurveEditor {
         });
     }
 
-    fn draw_constant_curve(curve: &mut CurveType, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn draw_constant_curve(curve: &mut CurveType, ui: &mut egui::Ui) {
         if let CurveType::Constant(curve) = curve {
             ui.label("constant curve");
             Self::curve_line(&curve.point, ui);
         }
     }
     
-    fn draw_simple_curve(curve: &mut CurveType, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn draw_simple_curve(curve: &mut CurveType, ui: &mut egui::Ui) {
         if let CurveType::Simple(curve) = curve {
             ui.label("simple curve");
             for point in curve.points.iter() {
@@ -28,7 +28,7 @@ impl CurveEditor {
         }
     }
     
-    fn draw_full_curve(curve: &mut CurveType, ui: &mut egui::Ui, _ctx: &egui::Context) {
+    fn draw_full_curve(curve: &mut CurveType, ui: &mut egui::Ui) {
         if let CurveType::Full(curve) = curve {
             ui.label("full curve");
             ui.label(format!("flags: {:#010X}", curve.flags));
@@ -41,20 +41,18 @@ impl CurveEditor {
 }
 
 impl EditorImpl for CurveEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ctx: &egui::Context) -> EditorResponse {
+    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         ui.vertical(|ui| {
             if let ObjectArchetype::Curve(curve) = &mut obj.archetype {
                 match &mut curve.curve {
-                    CurveType::Constant(_cv) => Self::draw_constant_curve(&mut curve.curve, ui, ctx),
-                    CurveType::Simple(_cv) => Self::draw_simple_curve(&mut curve.curve, ui, ctx),
-                    CurveType::Full(_cv) => Self::draw_full_curve(&mut curve.curve, ui, ctx),
+                    CurveType::Constant(_cv) => Self::draw_constant_curve(&mut curve.curve, ui),
+                    CurveType::Simple(_cv) => Self::draw_simple_curve(&mut curve.curve, ui),
+                    CurveType::Full(_cv) => Self::draw_full_curve(&mut curve.curve, ui),
                     CurveType::Invalid => {
                         ui.label("invalid curve type");
                     }
                 }
             }
         });
-
-        EditorResponse::default()
     }
 }
