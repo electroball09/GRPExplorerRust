@@ -1,35 +1,41 @@
 use super::*;
-use crate::objects::ObjectArchetype;
+use crate::objects::{ObjectArchetype, SnkType};
 
 pub struct SnkEditor;
 
 impl EditorImpl for SnkEditor {
     fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
         if let ObjectArchetype::SoundBank(snk) = &obj.archetype {
-            ui.collapsing(format!("num nums: {}", snk.numbers.len()), |ui| {
-                for n in &snk.numbers {
-                    ui.label(format!("{:#010X}", *n));
-                }
-            });
-
-            ui.label(&snk.name);
-
-            let mut n: u64 = 0;
-            for ent in &snk.entries {
-                if ent.m_offset != 0xFFFFFFFF {
-                    n += ent.m_offset as u64;
+            match &snk.snk_type {
+                SnkType::Unknown(v) => {
+                    ui.label(format!("Unknown SnkType: {:#04X}, this probably means the bin_name is wrong!", v));
+                },
+                SnkType::Type0 => {
+                    ui.label("SnkType 0");
+                },
+                SnkType::Type1(v) => {
+                    ui.label(format!("SnkType 1: {:#010X}", v));
+                },
+                SnkType::Type2 => {
+                    ui.label("SnkType 2");
+                },
+                SnkType::Type3(v) => {
+                    ui.label(format!("SnkType 3: {:#010X}", v));
+                },
+                SnkType::Type8 => {
+                    ui.label("SnkType 8");
                 }
             }
-            ui.label(format!("predicted size: {} kb", n as f64 / 1024.0));
+
+            ui.label(format!("bin_name: {}", &snk.bin_name));
 
             ui.collapsing(format!("num entries: {}", snk.entries.len()), |ui| {
                 egui::ScrollArea::new([false, true]).auto_shrink([false, false]).show(ui, |ui| {
                     for ent in &snk.entries {
                         ui.collapsing(format!("{:#04X} {}", ent.id, &ent.name), |ui| {
                             ui.label(format!("id: {:#04X}", ent.id));
-                            ui.label(format!("offset?: {}", ent.m_offset));
-                            ui.label(format!("size?: {}", ent.m_len));
-                            ui.label(format!("idk?: {}", ent.m_idk));
+                            ui.label(format!("data: {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X}",
+                                    ent.unk00, ent.unk01, ent.unk02, ent.unk03, ent.unk04, ent.unk05, ent.unk06, ent.unk07, ent.unk08, ent.unk09));
                         });
                     }
                 })

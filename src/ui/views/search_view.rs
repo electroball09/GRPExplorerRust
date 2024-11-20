@@ -157,6 +157,16 @@ impl super::View for SearchView {
                     self.query_changed = true;
                 }
             });
+            ui.horizontal(|ui| {
+                if ui.button("Test load results").clicked() {
+                    for key in self.results.iter() {
+                        if let Err(error) = bf.load_file(*key) {
+                            log::error!("{:#010X} - {}", key, error);
+                        }
+                        let _ = bf.unload_file(*key);
+                    }
+                }
+            });
             ui.separator();
     
             ui.horizontal(|ui| {
