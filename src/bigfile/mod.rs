@@ -122,23 +122,41 @@ impl Bigfile {
         Ok(())
     }
 
-    pub fn load_file(&mut self, key: u32) -> Result<(), LoadError> {
+    pub fn load_file(&mut self, key: u32) -> Result<bool, LoadError> {
         if let Some(file) = self.file_table.get(&key) {
             let obj = self.object_table.get_mut(&key).unwrap();
-            if obj.is_loaded() { return Ok(()); }
+            if obj.is_loaded() { 
+                obj.add_ref();
+                return Ok(false); 
+            }
             
             let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, file)?;
     
-            return obj.load_from_buf(&bytes)
+            obj.load_from_buf(&bytes)?;
+
+            return Ok(true)
         } else {
             Err("file not found!".into())
         }
     }
 
     pub fn unload_file(&mut self, key: u32) -> Result<(), String> {
-        let obj = self.object_table.get_mut(&key).unwrap();
-        obj.unload();
-        Ok(())
+        if let Some(obj) = self.object_table.get_mut(&key) {
+            obj.unload();
+            Ok(())
+        } else {
+            Err("file not found!".into())
+        }
+    }
+
+    pub fn is_key_valid_to_load(&self, key: u32) -> bool {
+        if let Some(file) = self.file_table.get(&key) {
+            if file.offset != 0xFFFFFFFF {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     pub fn extract_file_to_path(&mut self, path: &str, key: u32) -> Result<(), String> {
@@ -179,6 +197,14 @@ impl Bigfile {
         }
 
         dir
+    }
+
+    pub fn log_loaded_objects(&self) {
+        for obj in self.object_table.values() {
+            if obj.is_loaded() {
+                info!("{} {:#010X}", obj.get_name(), obj.get_key());
+            }
+        }
     }
 
     fn build_archetype_table(&mut self) -> Result<HashMap<u32, YetiObject>, String> {

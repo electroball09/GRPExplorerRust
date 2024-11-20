@@ -9,6 +9,8 @@ pub enum TextureFormat {
     Dxt1,
     Bgra32,
     Rgba32,
+    UnusedX360_27,
+    UnusedX360_28,
 }
 
 impl TextureFormat {
@@ -21,7 +23,27 @@ impl TextureFormat {
             0x09 => TextureFormat::Dxt1,
             0x04 => TextureFormat::Bgra32,
             0x05 => TextureFormat::Rgba32,
+            0x27 => TextureFormat::UnusedX360_27,
+            0x28 => TextureFormat::UnusedX360_28,
             _ => TextureFormat::Unknown
+        }
+    }
+}
+
+pub enum TextureMetaType {
+    None,
+    Metadata(TextureMetadata),
+    Passthrough,
+}
+
+pub struct TextureMetadataObject {
+    pub meta: TextureMetaType,
+}
+
+impl Default for TextureMetadataObject {
+    fn default() -> Self {
+        Self { 
+            meta: TextureMetaType::None
         }
     }
 }
@@ -34,21 +56,29 @@ pub struct TextureMetadata {
     pub fmt_id: u8,
 }
 
-impl ArchetypeImpl for TextureMetadata {
+impl ArchetypeImpl for TextureMetadataObject {
     fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         if buf.len() < 6 {
-            //return Ok(());
-            return Err(String::from("small metadata").into());
+            self.meta = TextureMetaType::Passthrough;
+            return Ok(());
         }
+
+        let mut meta = TextureMetadata::default();
 
         let mut bytes: [u8; 2] = [0; 2];
         bytes.copy_from_slice(&buf[4..6]);
-        self.width = u16::from_le_bytes(bytes);
+        meta.width = u16::from_le_bytes(bytes);
         bytes.copy_from_slice(&buf[6..8]);
-        self.height = u16::from_le_bytes(bytes);
+        meta.height = u16::from_le_bytes(bytes);
 
-        self.fmt_id = buf[9];
-        self.format = TextureFormat::from_id(self.fmt_id);
+        meta.fmt_id = buf[9];
+        meta.format = TextureFormat::from_id(meta.fmt_id);
+
+        if let TextureFormat::Unknown = meta.format {
+            return Err(format!("unknown texture format: {:#04X}", meta.fmt_id).into());
+        }
+
+        self.meta = TextureMetaType::Metadata(meta);
 
         Ok(())
     }

@@ -38,7 +38,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::cst => Box::new(AIConstEditor { }),
         ObjectType::dbk => Box::new(DbkEditor { }),
         ObjectType::msd => Box::new(MeshDataEditor { }),
-        ObjectType::tga => Box::new(TextureMetadataEditor { }),
+        ObjectType::tga => Box::new(TextureMetadataEditor::default()),
         ObjectType::txd => Box::new(TextureDataEditor { }),
         ObjectType::snk => Box::new(SnkEditor { }),
         ObjectType::shd => Box::new(ShaderGraphEditor { }),

@@ -10,6 +10,7 @@ build-print = "0.1.1"
 byteorder = "1.4.3"
 eframe = { version = "0.29.1", optional = true }
 egui = "~0"
+egui_extras = "~0"
 num = "0.4"
 num-derive = "0.3"
 num-traits = "0.2"

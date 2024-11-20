@@ -57,7 +57,7 @@ fn export_zones(bf: &mut Bigfile) {
             .collect();
     
         for key in &keys {
-            if let Ok(()) = bf.load_file(*key) {
+            if let Ok(_) = bf.load_file(*key) {
                 if let ObjectArchetype::Zone(zon) = &bf.object_table[&key].archetype {
                     writeln!(file, "{:#010X} - {} - {:?}", key, &bf.file_table[&key].get_name_ext(), zon).unwrap();
                 }
@@ -84,7 +84,7 @@ fn export_shader_node_ids(bf: &mut Bigfile) {
         .collect();
     let mut ids: HashSet<String> = HashSet::new();
     for key in &shd_keys {
-        if let Ok(()) = bf.load_file(*key) {
+        if let Ok(_) = bf.load_file(*key) {
             if let ObjectArchetype::ShaderGraph(shd) = &bf.object_table[&key].archetype {
                 for graph in &shd.graphs {
                     for node in &graph.nodes {

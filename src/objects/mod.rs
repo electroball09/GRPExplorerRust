@@ -59,7 +59,7 @@ pub enum ObjectArchetype {
     Dbk(DynamicBank),
     MeshData(MeshData),
     MeshMetadata(MeshMetadata),
-    TextureMetadata(TextureMetadata),
+    TextureMetadata(TextureMetadataObject),
     TextureData(TextureData),
     SoundBank(SoundBank),
     ShaderGraph(VisualShader),
@@ -147,7 +147,7 @@ impl YetiObject {
             ObjectType::dbk => ObjectArchetype::Dbk(DynamicBank::default()),
             ObjectType::msh => ObjectArchetype::MeshMetadata(MeshMetadata::default()),
             ObjectType::msd => ObjectArchetype::MeshData(MeshData::default()),
-            ObjectType::tga => ObjectArchetype::TextureMetadata(TextureMetadata::default()),
+            ObjectType::tga => ObjectArchetype::TextureMetadata(TextureMetadataObject::default()),
             ObjectType::txd => ObjectArchetype::TextureData(TextureData::default()),
             ObjectType::snk => ObjectArchetype::SoundBank(SoundBank::default()),
             ObjectType::shd => ObjectArchetype::ShaderGraph(VisualShader::default()),
@@ -172,12 +172,11 @@ impl YetiObject {
         &self.name
     }
 
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
-        if self.is_loaded() {
-            self.load_refs += 1;
-            return Ok(());
-        }
+    pub fn add_ref(&mut self) {
+        self.load_refs += 1;
+    }
 
+    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         let (refs, buf) = crate::bigfile::io::parse_and_remove_refs(buf);
         self.references = refs;
 

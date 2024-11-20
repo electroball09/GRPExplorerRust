@@ -16,13 +16,13 @@ struct EditorTab {
     key: u32,
     name: String,
     editor: Box<dyn EditorImpl>,
+    load: BigfileLoad,
+    loaded: bool,
 }
 
 pub struct FileEditorTabs {
     editor_tabs: Vec<EditorTab>,
     open_tab: Option<u32>,
-    loads: Vec<BigfileLoad>,
-    load_statuses: HashMap<u32, String>,
 }
 
 impl FileEditorTabs {
@@ -30,8 +30,6 @@ impl FileEditorTabs {
         FileEditorTabs {
             editor_tabs: Vec::new(),
             open_tab: None,
-            loads: Vec::new(),
-            load_statuses: HashMap::new(),
         }
     }
 }
@@ -47,7 +45,9 @@ impl FileEditorTabs {
             self.editor_tabs.push(EditorTab {
                 key,
                 name: bf.file_table[&key].get_name_ext().to_string(),
-                editor
+                editor,
+                load: BigfileLoad::new(key),
+                loaded: false,
             });
             if let Err(error) = bf.load_file(key) {
                 error!("{}", error);
@@ -66,6 +66,7 @@ impl FileEditorTabs {
 
     pub fn close_tab(&mut self, key: u32, bf: &mut Bigfile) {
         if let Some(idx) = self.find_tab(key) {
+            self.editor_tabs.get_mut(idx).unwrap().load.unload_all(bf);
             self.editor_tabs.remove(idx);
 
             bf.unload_file(key).expect("failed to unload file");
@@ -179,14 +180,9 @@ impl FileEditorTabs {
                         }
                     }
 
-                    if self.load_statuses.contains_key(&key) {
-                        
-                        ui.label(format!("load: {}", self.load_statuses.get(&key).unwrap()));
-                    } else {
-                        if ui.button("Load tree...").clicked() {
-                            self.loads.push(BigfileLoad::new(key));
-                        }
-                    }
+                    let tab_idx = self.find_tab(key).unwrap();
+                    let tab: &mut EditorTab = self.editor_tabs.get_mut(tab_idx).unwrap();
+                    ui.label(format!("load: {}", tab.load.get_load_status()));
                 });
 
                 ui.add_space(15.0);
@@ -209,22 +205,15 @@ impl FileEditorTabs {
     }
 
     fn process_loads(&mut self, bf: &mut Bigfile) -> bool {
-        let mut to_remove = Vec::new();
-        let mut idx = 0;
-        for load in self.loads.iter_mut() {
-            if load.load_num(bf, 100) {
-                to_remove.push(idx);
+        for tab in self.editor_tabs.iter_mut() {
+            if !tab.loaded {
+                if tab.load.load_num(bf, 100) {
+                    tab.loaded = true;
+                }
+                return true;
             }
-            self.load_statuses.insert(load.get_initial_key(), load.get_load_status());
-            idx += 1;
         }
-
-        to_remove.reverse();
-        for idx in to_remove {
-            self.loads.remove(idx);
-        }
-
-        self.loads.len() > 0
+        return false;
     }
 }
 
@@ -272,7 +261,11 @@ impl View for FileEditorTabs {
         }
     }
 
-    fn settings_menu(&mut self, ui: &mut egui::Ui, _app: &mut AppContext) {
-        
+    fn settings_menu(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+        if ui.button("Log loaded objects...").clicked() {
+            if let Some(ref bf) = app.bigfile {
+                bf.log_loaded_objects();
+            }
+        }
     }
 }

@@ -42,11 +42,14 @@ impl BigfileLoad {
                     continue;
                 }
 
-                if let Err(error) = bf.load_file(key) {
-                    debug!("error loading key {:#010X}: {}", key, error);
-                } else {
-                    for subkey in &bf.object_table[&key].references {
-                        let _ = tmp_to_load.add(*subkey);
+                match bf.load_file(key) {
+                    Ok(_) => {
+                        for subkey in &bf.object_table[&key].references {
+                            let _ = tmp_to_load.add(*subkey);
+                        }
+                    },
+                    Err(error) => {
+                        error!("error loading key {:#010X}: {}", key, error);
                     }
                 }
 
@@ -62,9 +65,22 @@ impl BigfileLoad {
         };
 
         while let Ok(key) = tmp_to_load.remove() {
-            self.to_load.push(key);
+            if bf.is_key_valid_to_load(key) {
+                self.to_load.push(key);
+            }
         }
 
         return false;
+    }
+
+    pub fn unload_all(&mut self, bf: &mut Bigfile) {
+        for key in self.loaded.iter() {
+            let load = bf.is_key_valid_to_load(*key);
+            if load {
+                if let Err(error) = bf.unload_file(*key) {
+                    error!("{}", error);
+                }
+            }
+        }
     }
 }
