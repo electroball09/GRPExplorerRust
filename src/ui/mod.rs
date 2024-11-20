@@ -200,7 +200,7 @@ pub enum EditorResponse {
     OpenNewTab(u32),
     CloseTab(u32),
     ExtractFile(u32, String),
-    PerformAction(u32, Box<dyn FnOnce(u32, &mut Bigfile) -> ()>)
+    PerformAction(u32, Box<dyn FnOnce(u32, &mut Bigfile) -> ()>),
 }
 
 pub struct EditorContext<'a> {

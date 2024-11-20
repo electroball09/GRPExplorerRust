@@ -1,5 +1,6 @@
 pub mod metadata;
 pub mod io;
+pub mod loader;
 
 use log::*;
 
@@ -122,13 +123,16 @@ impl Bigfile {
     }
 
     pub fn load_file(&mut self, key: u32) -> Result<(), LoadError> {
-        let file = &self.file_table[&key];
-        let obj = self.object_table.get_mut(&key).unwrap();
-        if obj.is_loaded() { return Ok(()); }
-        
-        let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, file)?;
-
-        obj.load_from_buf(&bytes)
+        if let Some(file) = self.file_table.get(&key) {
+            let obj = self.object_table.get_mut(&key).unwrap();
+            if obj.is_loaded() { return Ok(()); }
+            
+            let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, file)?;
+    
+            return obj.load_from_buf(&bytes)
+        } else {
+            Err("file not found!".into())
+        }
     }
 
     pub fn unload_file(&mut self, key: u32) -> Result<(), String> {

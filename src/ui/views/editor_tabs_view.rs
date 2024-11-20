@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use super::*;
 use editors::{create_editor_for_type, EditorContext, EditorImpl};
 use log::*;
 use crate::egui::Ui;
+use crate::loader::BigfileLoad;
 use crate::objects::YetiObject;
-use std::time::Instant;
 use clipboard::*;
 use crate::bigfile::{Bigfile, obj_type_to_name};
 use crate::bigfile::metadata::FileEntry;
@@ -19,8 +21,8 @@ struct EditorTab {
 pub struct FileEditorTabs {
     editor_tabs: Vec<EditorTab>,
     open_tab: Option<u32>,
-    last_update: Instant,
-    num_frames: u32,
+    loads: Vec<BigfileLoad>,
+    load_statuses: HashMap<u32, String>,
 }
 
 impl FileEditorTabs {
@@ -28,8 +30,8 @@ impl FileEditorTabs {
         FileEditorTabs {
             editor_tabs: Vec::new(),
             open_tab: None,
-            last_update: Instant::now(),
-            num_frames: 0
+            loads: Vec::new(),
+            load_statuses: HashMap::new(),
         }
     }
 }
@@ -168,12 +170,21 @@ impl FileEditorTabs {
             .resizable(true).show(ectx.ctx, |ui| {
                 FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, ectx.ctx);
 
-                ui.horizontal(|ui| {
+                ui.horizontal_wrapped(|ui| {
                     if ui.button("Extract...").clicked()  {
                         if let Some(path) = crate::export::pick_extract_folder() {
                             let name = &self.editor_tabs[self.find_tab(key).unwrap()].name;
                             let path = format!("{}\\{:#010X} {}", path.to_str().unwrap(), key, name);
                             ectx.respond(EditorResponse::ExtractFile(key, path.to_string()))
+                        }
+                    }
+
+                    if self.load_statuses.contains_key(&key) {
+                        
+                        ui.label(format!("load: {}", self.load_statuses.get(&key).unwrap()));
+                    } else {
+                        if ui.button("Load tree...").clicked() {
+                            self.loads.push(BigfileLoad::new(key));
                         }
                     }
                 });
@@ -196,10 +207,34 @@ impl FileEditorTabs {
             }
         );
     }
+
+    fn process_loads(&mut self, bf: &mut Bigfile) -> bool {
+        let mut to_remove = Vec::new();
+        let mut idx = 0;
+        for load in self.loads.iter_mut() {
+            if load.load_num(bf, 100) {
+                to_remove.push(idx);
+            }
+            self.load_statuses.insert(load.get_initial_key(), load.get_load_status());
+            idx += 1;
+        }
+
+        to_remove.reverse();
+        for idx in to_remove {
+            self.loads.remove(idx);
+        }
+
+        self.loads.len() > 0
+    }
 }
 
 impl View for FileEditorTabs {
     fn draw<'a>(&mut self, ui: &mut egui::Ui, app: &'a mut AppContext<'a>) {
+        if let Some(ref mut bf) = app.bigfile {
+            if self.process_loads(bf) {
+                app.ctx.request_repaint();
+            }
+        }
 
         let mut ectx = EditorContext {
             shader_cache: app.shader_cache,
@@ -238,12 +273,6 @@ impl View for FileEditorTabs {
     }
 
     fn settings_menu(&mut self, ui: &mut egui::Ui, _app: &mut AppContext) {
-        let now = Instant::now();
-        ui.menu_button("Stats", |ui| {
-            ui.label(format!("ft: {} ms", (now - self.last_update).as_secs_f32() * 1000.0));
-            ui.label(format!("fr: {}", self.num_frames));
-        });
-        self.last_update = now;
-        self.num_frames += 1;
+        
     }
 }
