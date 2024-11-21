@@ -31,6 +31,7 @@ impl EditorImpl for TextureMetadataEditor {
         if let ObjectArchetype::TextureMetadata(tga) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             mtype = tga.meta;
         }
+        let mut image_rot_angle = 0.0;
         match mtype {
             TextureMetaType::None => {
                 ui.label("unloaded texture!");
@@ -81,6 +82,7 @@ impl EditorImpl for TextureMetadataEditor {
                                     let h: usize = meta.height.into();
                                     let mut buf: Vec<u8> = vec![0; w * h * 4];
                                     f.decompress(&txd.texture_data, w, h, &mut buf);
+                                    let buf: Vec<u8> = buf.chunks_exact(4).map(|x| [x[0], x[1], x[2], x[3]]).collect::<Vec<[u8; 4]>>().iter().flat_map(|x| *x).collect();
                                     v = Some(egui::ColorImage::from_rgba_premultiplied([w, h], &buf))
                                 }
                                 let _ = ectx.bf.unload_file(txd_key);
@@ -96,6 +98,7 @@ impl EditorImpl for TextureMetadataEditor {
                                     let h: usize = meta.height.into();
                                     let mut buf: Vec<u8> = vec![0; w * h * 4];
                                     f.decompress(&txd.texture_data, w, h, &mut buf);
+                                    let buf: Vec<u8> = buf.chunks_exact(4).map(|x| [x[0], x[1], x[2], x[3]]).collect::<Vec<[u8; 4]>>().iter().flat_map(|x| *x).collect();
                                     v = Some(egui::ColorImage::from_rgba_premultiplied([w, h], &buf))
                                 }
                                 let _ = ectx.bf.unload_file(txd_key);

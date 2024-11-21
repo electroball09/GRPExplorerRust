@@ -30,9 +30,10 @@ impl FileTreeView {
             let folder = bf.folder_table[&idx];
             let rsp = ui.collapsing(folder.get_name(), |ui| {
                 let mut child = folder.first_child;
+                let mut opt: Option<u32> = None;
                 while child != 0xFFFF {
                     if let Some(key) = draw_folder2(&child, bf, ctx, ui, debug_folders, debug_files) {
-                        return Some(key);
+                       opt = Some(key);
                     }
                     child = match bf.folder_table.get(&child) {
                         Some(fld) => fld.next_folder,
@@ -42,7 +43,6 @@ impl FileTreeView {
                         }
                     };
                 };
-                let mut opt: Option<u32> = None;
                 if let Some(v) = bf.file_list_map.get(&idx) {
                     for key in v.iter() {
                         let file = &bf.file_table[key];
