@@ -1877,6 +1877,7 @@ dependencies = [
  "rfd",
  "strum",
  "strum_macros",
+ "texpresso",
  "xml-rs",
 ]
 
@@ -2336,6 +2337,12 @@ dependencies = [
  "cfg-if",
  "windows-targets 0.52.6",
 ]
+
+[[package]]
+name = "libm"
+version = "0.2.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8355be11b20d696c8f18f6cc018c4e372165b1fa8126cef092399c9951984ffa"
 
 [[package]]
 name = "libredox"
@@ -3850,6 +3857,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "06794f8f6c5c898b3275aebefa6b8a1cb24cd2c6c79397ab15774837a0bc5755"
 dependencies = [
  "winapi-util",
+]
+
+[[package]]
+name = "texpresso"
+version = "2.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8277e703c934b9693d0773d5749faacc6366b3d81d012da556a4cfd4ab87f336"
+dependencies = [
+ "libm",
 ]
 
 [[package]]

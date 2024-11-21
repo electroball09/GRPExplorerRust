@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 pub enum TextureFormat {
     #[default]
     Unknown,
@@ -30,6 +30,7 @@ impl TextureFormat {
     }
 }
 
+#[derive(Clone, Copy)]
 pub enum TextureMetaType {
     None,
     Metadata(TextureMetadata),
@@ -48,7 +49,7 @@ impl Default for TextureMetadataObject {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 pub struct TextureMetadata {
     pub width: u16,
     pub height: u16,
