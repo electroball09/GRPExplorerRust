@@ -55,7 +55,7 @@ impl SearchView {
 }
 
 impl super::View for SearchView {
-    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+    fn draw(&mut self, ui: &mut egui::Ui, mut app: AppContext) {
         if let Some(ref mut bf) = app.bigfile {
             ui.vertical_centered_justified(|ui| {
                 ui.horizontal(|ui| {

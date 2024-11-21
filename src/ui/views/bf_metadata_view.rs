@@ -13,7 +13,7 @@ impl BigfileMetadataView {
 }
 
 impl super::View for BigfileMetadataView {
-    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+    fn draw(&mut self, ui: &mut egui::Ui, mut app: AppContext<'_>) {
         if let Some(ref mut bf) = app.bigfile {
             ui.label("segment header");
             ui.indent("seg_header", |ui| {

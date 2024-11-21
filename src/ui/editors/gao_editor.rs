@@ -3,15 +3,13 @@ use crate::objects::ObjectArchetype;
 
 #[derive(Default)]
 pub struct GameobjectEditor {
-    counter: u32
+    
 }
 
 impl EditorImpl for GameobjectEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
-        self.counter += 1;
-        ui.label(format!("counter: {}", &self.counter));
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
 
-        if let ObjectArchetype::GameObject(gao) = &obj.archetype {
+        if let ObjectArchetype::GameObject(gao) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             ui.label(format!("zero: {:#010X}", gao.zero));
             ui.label(format!("id flags: {:?}", gao.identity_flags));
             ui.label(format!("str flags: {}", gao.streaming_flags));

@@ -180,7 +180,7 @@ impl ExplorerApp {
 
         egui::SidePanel::left("folder_browser").min_width(350.0).default_width(350.0).max_width(800.0).show(ctx, |ui| {
             app_context!(app, ctx);
-            self.side_panel.draw(ui, &mut app);
+            self.side_panel.draw(ui, app);
         });
         
         if let Some(key) = self.side_panel.should_open_new_tab() {
@@ -191,19 +191,20 @@ impl ExplorerApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             app_context!(app, ctx);
-            self.fe_view.draw(ui, &mut app);
+            self.fe_view.draw(ui, app);
         });
     }
 }
 
 pub enum EditorResponse {
+    None,
     OpenNewTab(u32),
     CloseTab(u32),
     ExtractFile(u32, String),
-    PerformAction(u32, Box<dyn FnOnce(u32, &mut Bigfile) -> ()>),
 }
 
 pub struct EditorContext<'a> {
+    pub bf: &'a mut Bigfile,
     pub shader_cache: &'a mut ShaderCache,
     pub ctx: &'a egui::Context,
     responses: Vec<EditorResponse>,
@@ -216,5 +217,9 @@ impl EditorContext<'_> {
 
     pub fn drain(&mut self) -> std::vec::Drain<'_, EditorResponse> {
         self.responses.drain(..)
+    }
+
+    pub fn num_responses(&self) -> usize {
+        self.responses.len()
     }
 }

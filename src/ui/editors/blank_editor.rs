@@ -3,8 +3,8 @@ use super::*;
 pub struct BlankEditor;
 
 impl EditorImpl for BlankEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
-        match &obj.archetype {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        match &ectx.bf.object_table.get(&key).unwrap().archetype {
             ObjectArchetype::NoImpl => {
                 ui.label("no object implementation yet!");
             },

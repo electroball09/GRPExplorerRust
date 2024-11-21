@@ -5,7 +5,8 @@ use super::*;
 pub struct FeuEditor;
 
 impl EditorImpl for FeuEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        let obj = &ectx.bf.object_table.get(&key).unwrap();
         if let ObjectArchetype::Feu(feu) = &obj.archetype {
             ui.label(format!("unk_01: {}", feu.unk_01));
             ui.label(format!("unk_02: {}", feu.unk_02));

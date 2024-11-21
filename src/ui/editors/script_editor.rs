@@ -4,8 +4,8 @@ use crate::objects::*;
 pub struct ScriptEditor;
 
 impl EditorImpl for ScriptEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
-        if let ObjectArchetype::Script(script) = &obj.archetype {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        if let ObjectArchetype::Script(script) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             let mut buf = script.buffer.clone();
             buf.pop(); //nul terminator
             let mut script_string = String::from_utf8(buf).unwrap();

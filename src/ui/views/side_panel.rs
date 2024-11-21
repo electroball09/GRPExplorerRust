@@ -43,7 +43,7 @@ impl SidePanelView {
 }
 
 impl View for SidePanelView {
-    fn draw<'a>(&mut self, ui: &mut egui::Ui, app: &'a mut AppContext<'a>) {
+    fn draw<'a>(&mut self, ui: &mut egui::Ui, app: AppContext) {
         if let None = app.bigfile { return; }
 
         ui.vertical(|ui| {

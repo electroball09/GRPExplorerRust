@@ -4,31 +4,33 @@ use crate::objects::ini::*;
 pub struct IniEditor;
 
 impl EditorImpl for IniEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ectx: &mut EditorContext) {
-        if let ObjectArchetype::Ini(ini) = &obj.archetype {
-            for value in ini.entries.iter() {
-                if let Some(v) = ui.horizontal(|ui| {
-                    match value {
-                        IniEntry::Int(key, value) => { 
-                            ui.label(format!("{} - {:#010X}", key, value));
-                            None
-                        },
-                        IniEntry::AssetKey(key, value) => {
-                            ui.label(format!("{} -", key));
-                            if ui.selectable_label(false, format!("{:#010X}", value)).clicked() {
-                                return Some(*value);
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        if let Some(v) = match &ectx.bf.object_table.get(&key).unwrap().archetype {
+            ObjectArchetype::Ini(ini) => {
+                let mut open_tab = None;
+                for value in ini.entries.iter() {
+                    ui.horizontal(|ui| {
+                        match value {
+                            IniEntry::Int(key, value) => { 
+                                ui.label(format!("{} - {:#010X}", key, value));
+                            },
+                            IniEntry::AssetKey(key, value) => {
+                                ui.label(format!("{} -", key));
+                                if ui.selectable_label(false, format!("{:#010X}", value)).clicked() {
+                                    open_tab = Some(*value);
+                                }
+                            },
+                            _ => { 
+                                ui.label("invalid entry type");
                             }
-                            None
-                        },
-                        _ => { 
-                            ui.label("invalid entry type");
-                            None
                         }
-                    }
-                }).inner {
-                    ectx.respond(EditorResponse::OpenNewTab(v));
-                };
-            }
+                    });
+                }
+                open_tab
+            },
+            _ => { None }
+        } {
+            ectx.respond(EditorResponse::OpenNewTab(v));
         }
     }
 }

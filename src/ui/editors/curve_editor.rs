@@ -41,18 +41,16 @@ impl CurveEditor {
 }
 
 impl EditorImpl for CurveEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
-        ui.vertical(|ui| {
-            if let ObjectArchetype::Curve(curve) = &mut obj.archetype {
-                match &mut curve.curve {
-                    CurveType::Constant(_cv) => Self::draw_constant_curve(&mut curve.curve, ui),
-                    CurveType::Simple(_cv) => Self::draw_simple_curve(&mut curve.curve, ui),
-                    CurveType::Full(_cv) => Self::draw_full_curve(&mut curve.curve, ui),
-                    CurveType::Invalid => {
-                        ui.label("invalid curve type");
-                    }
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        if let ObjectArchetype::Curve(ref mut curve) = &mut ectx.bf.object_table.get_mut(&key).unwrap().archetype {
+            match &mut curve.curve {
+                CurveType::Constant(_cv) => Self::draw_constant_curve(&mut curve.curve, ui),
+                CurveType::Simple(_cv) => Self::draw_simple_curve(&mut curve.curve, ui),
+                CurveType::Full(_cv) => Self::draw_full_curve(&mut curve.curve, ui),
+                CurveType::Invalid => {
+                    ui.label("invalid curve type");
                 }
             }
-        });
+        }
     }
 }

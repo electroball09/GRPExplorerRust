@@ -4,8 +4,8 @@ use crate::objects::{ObjectArchetype, SnkType};
 pub struct SnkEditor;
 
 impl EditorImpl for SnkEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
-        if let ObjectArchetype::SoundBank(snk) = &obj.archetype {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        if let ObjectArchetype::SoundBank(snk) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             match &snk.snk_type {
                 SnkType::Unknown(v) => {
                     ui.label(format!("Unknown SnkType: {:#04X}, this probably means the bin_name is wrong!", v));

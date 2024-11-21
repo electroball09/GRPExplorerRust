@@ -5,7 +5,8 @@ use crate::export::*;
 pub struct MeshDataEditor;
 
 impl super::EditorImpl for MeshDataEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        let obj = &ectx.bf.object_table.get(&key).unwrap();
         if let ObjectArchetype::MeshData(msd) = &obj.archetype {
             ui.label(format!("unk_01: {}", msd.unk_01));
             ui.label(format!("unk_02: {}", msd.unk_02));

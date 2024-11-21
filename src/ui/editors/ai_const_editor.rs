@@ -5,8 +5,8 @@ use super::*;
 pub struct AIConstEditor;
 
 impl EditorImpl for AIConstEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
-        if let ObjectArchetype::ConstList(cst) = &obj.archetype {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        if let ObjectArchetype::ConstList(cst) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             fn recurse(ui: &mut egui::Ui, node: &ConstTreeNode) {
                 for sub in node.nodes.iter() {
                     ui.collapsing(sub.get_name(), |ui| {

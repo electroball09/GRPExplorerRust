@@ -1,11 +1,8 @@
-use std::collections::HashMap;
-
 use super::*;
 use editors::{create_editor_for_type, EditorContext, EditorImpl};
 use log::*;
 use crate::egui::Ui;
 use crate::loader::BigfileLoad;
-use crate::objects::YetiObject;
 use clipboard::*;
 use crate::bigfile::{Bigfile, obj_type_to_name};
 use crate::bigfile::metadata::FileEntry;
@@ -117,7 +114,7 @@ impl FileEditorTabs {
         file_metadata_line(ui, "   zip:", &format!("{}", file.zip));
     }
 
-    fn draw_top_panel(&mut self, bf: &Bigfile, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
+    fn draw_top_panel(&mut self, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
         egui::TopBottomPanel::top("file_editor_tabs").show(ectx.ctx, |ui| {
             let mut new_open_tab: Option<u32> = None;
             ui.horizontal_wrapped(|ui| {
@@ -148,58 +145,72 @@ impl FileEditorTabs {
             ui.horizontal_wrapped(|ui| {
                 if let Some(key) = self.open_tab {
                     ui.separator();
-                    let mut dir = bf.get_full_directory(bf.file_table[&key].parent_folder);
-                    dir += bf.file_table[&key].get_name_ext();
+                    let mut dir = ectx.bf.get_full_directory(ectx.bf.file_table[&key].parent_folder);
+                    dir += ectx.bf.file_table[&key].get_name_ext();
                     ui.label(dir);
                 }
             });
         });
     }
 
-    fn draw_central_panel(&mut self, yobj: &mut YetiObject, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
+    fn draw_central_panel(&mut self, key: u32, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
         egui::CentralPanel::default().show(ectx.ctx, |ui| {
             for tab in self.editor_tabs.iter_mut() {
-                if tab.key == yobj.get_key() {
-                    tab.editor.draw(yobj, ui, ectx);
+                if tab.key == key {
+                    tab.editor.draw(key, ui, ectx);
                 }
             }
         }); 
     }
 
-    fn draw_side_panel(&mut self, bf: &Bigfile, key: u32, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
+    fn draw_side_panel(&mut self, key: u32, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
         egui::SidePanel::left("file_entry_panel").default_width(200.0).max_width(600.0).min_width(200.0)
             .resizable(true).show(ectx.ctx, |ui| {
-                FileEditorTabs::draw_file_metadata_view(&bf.file_table[&key], ui, ectx.ctx);
 
-                ui.horizontal_wrapped(|ui| {
+                FileEditorTabs::draw_file_metadata_view(&ectx.bf.file_table[&key], ui, ectx.ctx);
+
+                match ui.horizontal_wrapped(|ui| {
                     if ui.button("Extract...").clicked()  {
                         if let Some(path) = crate::export::pick_extract_folder() {
                             let name = &self.editor_tabs[self.find_tab(key).unwrap()].name;
                             let path = format!("{}\\{:#010X} {}", path.to_str().unwrap(), key, name);
-                            ectx.respond(EditorResponse::ExtractFile(key, path.to_string()))
+                            return EditorResponse::ExtractFile(key, path.to_string());
                         }
                     }
 
                     let tab_idx = self.find_tab(key).unwrap();
                     let tab: &mut EditorTab = self.editor_tabs.get_mut(tab_idx).unwrap();
                     ui.label(format!("load: {}", tab.load.get_load_status()));
-                });
+
+                    EditorResponse::None
+                }).inner {
+                    EditorResponse::None => { },
+                    rsp => ectx.respond(rsp)
+                };
 
                 ui.add_space(15.0);
 
+                let bf: &Bigfile = ectx.bf;
+
                 ui.label(format!("references: {}", bf.object_table[&key].references.len()));
-                egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui| {
+                let rsp = egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui| {
                     for key in bf.object_table[&key].references.iter() {
                         if bf.file_table.contains_key(&key) {
                             let rsp = ui.selectable_label(false, format!("{:#010X} {}", key, bf.file_table[&key].get_name_ext()));
                             if rsp.clicked() {
-                                ectx.respond(EditorResponse::OpenNewTab(*key));
+                                return EditorResponse::OpenNewTab(*key);
                             }
                         } else {
                             ui.label(format!("{:#010X}", key));
                         }
                     }
-                });
+                    EditorResponse::None
+                }).inner;
+
+                match rsp {
+                    EditorResponse::None => { },
+                    rsp => ectx.respond(rsp)
+                }
             }
         );
     }
@@ -218,44 +229,50 @@ impl FileEditorTabs {
 }
 
 impl View for FileEditorTabs {
-    fn draw<'a>(&mut self, ui: &mut egui::Ui, app: &'a mut AppContext<'a>) {
+    fn draw<'a>(&mut self, ui: &mut egui::Ui, mut app: AppContext) {
         if let Some(ref mut bf) = app.bigfile {
             if self.process_loads(bf) {
                 app.ctx.request_repaint();
             }
+        } else {
+            return;
         }
 
         let mut ectx = EditorContext {
+            bf: app.bigfile.unwrap(),
             shader_cache: app.shader_cache,
             ctx: app.ctx,
             responses: Vec::new()
         };
 
-        if let Some(ref mut bf) = app.bigfile {
-            self.draw_top_panel(bf, ui, &mut ectx);
-    
-            if let Some(key) = self.open_tab {
-                ui.push_id(key, |ui| {
-                    self.draw_side_panel(bf, key, ui, &mut ectx);
-                    
-                    self.draw_central_panel(bf.object_table.get_mut(&key).unwrap(), ui, &mut ectx);
-                });
-            }
-            
-            for rsp in ectx.drain() {
-                match rsp {
-                    EditorResponse::OpenNewTab(key) => {
-                        self.open_new_tab(bf, key);
-                    },
-                    EditorResponse::CloseTab(key) => {
-                        self.close_tab(key, bf);
-                    },
-                    EditorResponse::PerformAction(key, act) => {
-                        act(key, bf);
-                    },
-                    EditorResponse::ExtractFile(key, path) => {
-                        bf.extract_file_to_path(&path, key).expect("could not extract file!");
-                    }
+        self.draw_top_panel(ui, &mut ectx);
+
+        if let Some(key) = self.open_tab {
+            ui.push_id(key, |ui| {
+                self.draw_side_panel(key, ui, &mut ectx);
+                
+                self.draw_central_panel(key, ui, &mut ectx);
+            });
+        }
+        
+        let mut responses = Vec::with_capacity(ectx.num_responses());
+        for rsp in ectx.drain() {
+            responses.push(rsp);
+        }
+
+        for rsp in responses {
+            match rsp {
+                EditorResponse::None => {
+                    warn!("received None response from an editor!");
+                }
+                EditorResponse::OpenNewTab(key) => {
+                    self.open_new_tab(ectx.bf, key);
+                },
+                EditorResponse::CloseTab(key) => {
+                    self.close_tab(key, ectx.bf);
+                },
+                EditorResponse::ExtractFile(key, path) => {
+                    ectx.bf.extract_file_to_path(&path, key).expect("could not extract file!");
                 }
             }
         }

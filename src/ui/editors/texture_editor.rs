@@ -17,7 +17,8 @@ impl Default for TextureMetadataEditor<'_> {
 }
 
 impl EditorImpl for TextureMetadataEditor<'_> {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        let obj = &ectx.bf.object_table.get(&key).unwrap();
         if let ObjectArchetype::TextureMetadata(tga) = &obj.archetype {
             match &tga.meta {
                 TextureMetaType::None => {
@@ -33,19 +34,18 @@ impl EditorImpl for TextureMetadataEditor<'_> {
                     ui.label(format!("fmt id: {:#04X}", meta.fmt_id));
         
                     if ui.button("Export...").clicked() {
-                        ectx.respond(EditorResponse::PerformAction(obj.get_key(), Box::new(|key, bf| {
-                            if let Some(path) = pick_exp_path_no_ext(&bf.object_table[&key]) {
-                                let txd_key = bf.object_table[&key].references[0];
-                                if let Ok(_) = bf.load_file(txd_key) {
-                                    if let ObjectArchetype::TextureMetadata(tga) = &bf.object_table[&key].archetype {
-                                        if let ObjectArchetype::TextureData(txd) = &bf.object_table[&txd_key].archetype {
-                                            exp_texture(path, &tga, &txd);
-                                        }
+                        let key = obj.get_key();
+                        if let Some(path) = pick_exp_path_no_ext(&ectx.bf.object_table[&key]) {
+                            let txd_key = ectx.bf.object_table[&key].references[0];
+                            if let Ok(_) = ectx.bf.load_file(txd_key) {
+                                if let ObjectArchetype::TextureMetadata(tga) = &ectx.bf.object_table[&key].archetype {
+                                    if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
+                                        exp_texture(path, &tga, &txd);
                                     }
                                 }
-                                bf.unload_file(txd_key).unwrap();
                             }
-                        })));
+                            ectx.bf.unload_file(txd_key).unwrap();
+                        }
                     }
                 }
             }
@@ -56,8 +56,8 @@ impl EditorImpl for TextureMetadataEditor<'_> {
 pub struct TextureDataEditor;
 
 impl EditorImpl for TextureDataEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
-        if let ObjectArchetype::TextureData(txd) = &obj.archetype {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             ui.label(format!("unk_01: {:#010X}", txd.unk_01));
             ui.label(format!("format: {:?}", txd.format));
             ui.label(format!("fmt_id: {:#04X}", txd.fmt_id));

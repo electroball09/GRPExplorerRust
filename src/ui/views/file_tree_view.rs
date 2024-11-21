@@ -80,9 +80,9 @@ impl FileTreeView {
 }
 
 impl View for FileTreeView {
-    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+    fn draw(&mut self, ui: &mut egui::Ui, mut app: AppContext) {
         egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui|{
-            self.draw_file_tree(ui, app, self.debug_folders, self.debug_files);
+            self.draw_file_tree(ui, &mut app, self.debug_folders, self.debug_files);
         });
     }
 

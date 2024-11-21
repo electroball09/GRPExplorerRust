@@ -16,7 +16,7 @@ impl ToolsView {
 }
 
 impl super::View for ToolsView {
-    fn draw(&mut self, ui: &mut egui::Ui, app: &mut AppContext) {
+    fn draw(&mut self, ui: &mut egui::Ui, mut app: AppContext) {
         if let Some(ref mut bf) = app.bigfile {
             if ui.button("Export Shader Node IDs").clicked() {
                 export_shader_node_ids(bf);

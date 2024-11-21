@@ -4,8 +4,8 @@ use crate::objects::ObjectArchetype;
 pub struct SkeletonEditor;
 
 impl super::EditorImpl for SkeletonEditor {
-    fn draw(&mut self, obj: &mut YetiObject, ui: &mut egui::Ui, _ectx: &mut EditorContext) {
-        if let ObjectArchetype::Skeleton(ske) = &obj.archetype {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        if let ObjectArchetype::Skeleton(ske) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             ui.label(format!("version: {:#04X}", ske.version));
             ui.label(format!("num_bones: {}", ske.num_bones));
             ui.label(format!("unk_01: {:#04X}", ske.unk_01));
