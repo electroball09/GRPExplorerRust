@@ -24,6 +24,7 @@ use crate::{objects::ObjectArchetype, bigfile::metadata::ObjectType};
 
 pub trait EditorImpl {
     fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext);
+    fn unload(&mut self) { }
 }
 
 pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
