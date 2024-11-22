@@ -6,7 +6,6 @@ use queues::{IsQueue, Queue};
 use super::*;
 
 pub struct BigfileLoad {
-    initial_key: u32,
     loaded: HashSet<u32>,
     to_load: Vec<u32>,
 }
@@ -14,14 +13,9 @@ pub struct BigfileLoad {
 impl BigfileLoad {
     pub fn new(initial_key: u32) -> Self {
         Self {
-            initial_key,
             loaded: HashSet::new(),
             to_load: vec![initial_key],
         }
-    }
-
-    pub fn get_initial_key(&self) -> u32 {
-        self.initial_key
     }
 
     pub fn get_load_status(&self) -> String {
@@ -41,15 +35,17 @@ impl BigfileLoad {
                 if self.loaded.contains(&key) {
                     continue;
                 }
-
-                match bf.load_file(key) {
-                    Ok(_) => {
-                        for subkey in &bf.object_table[&key].references {
-                            let _ = tmp_to_load.add(*subkey);
+                
+                if bf.is_key_valid_to_load(key) {
+                    match bf.load_file(key) {
+                        Ok(_) => {
+                            for subkey in &bf.object_table[&key].references {
+                                let _ = tmp_to_load.add(*subkey);
+                            }
+                        },
+                        Err(error) => {
+                            error!("error loading key {:#010X}: {}", key, error);
                         }
-                    },
-                    Err(error) => {
-                        error!("error loading key {:#010X}: {}", key, error);
                     }
                 }
 

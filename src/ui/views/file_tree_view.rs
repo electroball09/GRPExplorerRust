@@ -74,7 +74,8 @@ impl FileTreeView {
         }
 
         if let Some(ref mut bf) = app.bigfile {
-            self.clicked_file = draw_folder2(&0, &bf, app.ctx, ui, debug_folders, debug_files);
+            //folder id 0x0002 is the Data/ folder
+            self.clicked_file = draw_folder2(&2, &bf, app.ctx, ui, debug_folders, debug_files);
         }
     }
 }

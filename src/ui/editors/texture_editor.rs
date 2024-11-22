@@ -1,5 +1,3 @@
-use std::ops::RangeInclusive;
-
 use egui::Widget;
 
 use super::*;
@@ -34,10 +32,6 @@ impl TextureMetadataEditor {
 }
 
 impl EditorImpl for TextureMetadataEditor {
-    fn unload(&mut self) {
-        
-    }
-
     fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
         let mut mtype = TextureMetaType::None;
         if let ObjectArchetype::TextureMetadata(tga) = &ectx.bf.object_table.get(&key).unwrap().archetype {
@@ -124,7 +118,7 @@ impl EditorImpl for TextureMetadataEditor {
                     }
                 }
                 
-                egui::SidePanel::new(egui::panel::Side::Left, "tex_panel").resizable(false).show_inside(ui, |ui| {
+                egui::SidePanel::left("tex_panel").resizable(false).exact_width(100.0).show_inside(ui, |ui| {
                     ui.label(format!("width: {}", meta.width));
                     ui.label(format!("height: {}", meta.height));
                     ui.label(format!("format: {:?}", meta.format));
@@ -163,9 +157,9 @@ impl EditorImpl for TextureMetadataEditor {
                                 });
                                 if let Some(delta) = delta {
                                     let mut zoom = self.zoom;
-                                    zoom += delta.y * 0.5;
-                                    zoom *= 2.0;
-                                    zoom = zoom.floor() / 2.0;
+                                    zoom += delta.y * 0.1;
+                                    zoom *= 10.0;
+                                    zoom = zoom.floor() / 10.0;
                                     self.zoom = zoom;
                                 }
                             }
