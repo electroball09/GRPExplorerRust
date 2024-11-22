@@ -1,15 +1,23 @@
+use std::ops::RangeInclusive;
+
+use egui::Widget;
+
 use super::*;
 use crate::objects::{ObjectArchetype, TextureFormat, TextureMetaType};
 use crate::export::*;
 
 pub struct TextureMetadataEditor {
     texture: Option<egui::TextureHandle>,
+    tex_size: egui::Vec2,
+    zoom: f32,
 }
 
 impl Default for TextureMetadataEditor {
     fn default() -> Self {
         Self { 
-            texture: None
+            texture: None,
+            tex_size: [100.0, 100.0].into(),
+            zoom: 1.0,
         }
     }
 }
@@ -43,108 +51,133 @@ impl EditorImpl for TextureMetadataEditor {
                 ui.label("this texture is a passthrough, you can export the texture by using one of the references on the left");
             },
             TextureMetaType::Metadata(meta) => {
-                ui.horizontal(|ui| {
-                    let txd_key = ectx.bf.object_table[&key].references[0];
-                    if let None = self.texture {
-                        if let Some(data) = match meta.format {
-                            TextureFormat::Bgra32 => {
-                                let mut v = None;
-                                if let Ok(_) = ectx.bf.load_file(txd_key) {
-                                    if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
-                                        v = Some(TextureMetadataEditor::from_brga([meta.width.into(), meta.height.into()], &txd.texture_data))
-                                    }
-                                    let _ = ectx.bf.unload_file(txd_key);
+                let txd_key = ectx.bf.object_table[&key].references[0];
+                if let None = self.texture {
+                    if let Some(data) = match meta.format {
+                        TextureFormat::Bgra32 => {
+                            let mut v = None;
+                            if let Ok(_) = ectx.bf.load_file(txd_key) {
+                                if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
+                                    v = Some(TextureMetadataEditor::from_brga([meta.width.into(), meta.height.into()], &txd.texture_data))
                                 }
-                                v
-                            },
-                            TextureFormat::Rgba32 => {
-                                let mut v = None;
-                                if let Ok(_) = ectx.bf.load_file(txd_key) {
-                                    if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
-                                        v = Some(egui::ColorImage::from_rgba_premultiplied([meta.width.into(), meta.height.into()], &txd.texture_data))
-                                    }
-                                    let _ = ectx.bf.unload_file(txd_key);
+                                let _ = ectx.bf.unload_file(txd_key);
+                            }
+                            v
+                        },
+                        TextureFormat::Rgba32 => {
+                            let mut v = None;
+                            if let Ok(_) = ectx.bf.load_file(txd_key) {
+                                if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
+                                    v = Some(egui::ColorImage::from_rgba_premultiplied([meta.width.into(), meta.height.into()], &txd.texture_data))
                                 }
-                                v
-                            },
-                            // TextureFormat::Gray => {
-                            //     let mut v = None;
-                            //     if let Ok(_) = ectx.bf.load_file(txd_key) {
-                            //         if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
-                            //             v = Some(egui::ColorImage::from_gray([meta.width.into(), meta.height.into()], &txd.texture_data))
-                            //         }
-                            //         let _ = ectx.bf.unload_file(txd_key);
-                            //     }
-                            //     v
-                            // },
-                            TextureFormat::Dxt1 => {
-                                let mut v = None;
-                                if let Ok(_) = ectx.bf.load_file(txd_key) {
-                                    if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
-                                        let f = texpresso::Format::Bc1;
-                                        let w: usize = meta.width.into();
-                                        let h: usize = meta.height.into();
-                                        let mut buf: Vec<u8> = vec![0; w * h * 4];
-                                        f.decompress(&txd.texture_data, w, h, &mut buf);
-                                        let buf: Vec<u8> = buf.chunks_exact(4).map(|x| [x[0], x[1], x[2], x[3]]).collect::<Vec<[u8; 4]>>().iter().flat_map(|x| *x).collect();
-                                        v = Some(egui::ColorImage::from_rgba_premultiplied([w, h], &buf))
-                                    }
-                                    let _ = ectx.bf.unload_file(txd_key);
+                                let _ = ectx.bf.unload_file(txd_key);
+                            }
+                            v
+                        },
+                        // TextureFormat::Gray => {
+                        //     let mut v = None;
+                        //     if let Ok(_) = ectx.bf.load_file(txd_key) {
+                        //         if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
+                        //             v = Some(egui::ColorImage::from_gray([meta.width.into(), meta.height.into()], &txd.texture_data))
+                        //         }
+                        //         let _ = ectx.bf.unload_file(txd_key);
+                        //     }
+                        //     v
+                        // },
+                        TextureFormat::Dxt1 => {
+                            let mut v = None;
+                            if let Ok(_) = ectx.bf.load_file(txd_key) {
+                                if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
+                                    let f = texpresso::Format::Bc1;
+                                    let w: usize = meta.width.into();
+                                    let h: usize = meta.height.into();
+                                    let mut buf: Vec<u8> = vec![0; w * h * 4];
+                                    f.decompress(&txd.texture_data, w, h, &mut buf);
+                                    let buf: Vec<u8> = buf.chunks_exact(4).map(|x| [x[0], x[1], x[2], x[3]]).collect::<Vec<[u8; 4]>>().iter().flat_map(|x| *x).collect();
+                                    v = Some(egui::ColorImage::from_rgba_premultiplied([w, h], &buf))
                                 }
-                                v
-                            },
-                            TextureFormat::Dxt5 => {
-                                let mut v = None;
-                                if let Ok(_) = ectx.bf.load_file(txd_key) {
-                                    if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
-                                        let f = texpresso::Format::Bc3;
-                                        let w: usize = meta.width.into();
-                                        let h: usize = meta.height.into();
-                                        let mut buf: Vec<u8> = vec![0; w * h * 4];
-                                        f.decompress(&txd.texture_data, w, h, &mut buf);
-                                        let buf: Vec<u8> = buf.chunks_exact(4).map(|x| [x[0], x[1], x[2], x[3]]).collect::<Vec<[u8; 4]>>().iter().flat_map(|x| *x).collect();
-                                        v = Some(egui::ColorImage::from_rgba_premultiplied([w, h], &buf))
-                                    }
-                                    let _ = ectx.bf.unload_file(txd_key);
+                                let _ = ectx.bf.unload_file(txd_key);
+                            }
+                            v
+                        },
+                        TextureFormat::Dxt5 => {
+                            let mut v = None;
+                            if let Ok(_) = ectx.bf.load_file(txd_key) {
+                                if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
+                                    let f = texpresso::Format::Bc3;
+                                    let w: usize = meta.width.into();
+                                    let h: usize = meta.height.into();
+                                    let mut buf: Vec<u8> = vec![0; w * h * 4];
+                                    f.decompress(&txd.texture_data, w, h, &mut buf);
+                                    let buf: Vec<u8> = buf.chunks_exact(4).map(|x| [x[0], x[1], x[2], x[3]]).collect::<Vec<[u8; 4]>>().iter().flat_map(|x| *x).collect();
+                                    v = Some(egui::ColorImage::from_rgba_premultiplied([w, h], &buf))
                                 }
-                                v
-                            },
-                            _ => { None }
-                        } {
-                            let tex = ectx.ctx.load_texture(format!("{:#010X}", key), data, Default::default());
-                            self.texture = Some(tex);
+                                let _ = ectx.bf.unload_file(txd_key);
+                            }
+                            v
+                        },
+                        _ => { None }
+                    } {
+                        let tex = ectx.ctx.load_texture(format!("{:#010X}", key), data, Default::default());
+                        self.texture = Some(tex);
+                        self.tex_size = [meta.width as f32, meta.height as f32].into();
+                    }
+                }
+                
+                egui::SidePanel::new(egui::panel::Side::Left, "tex_panel").resizable(false).show_inside(ui, |ui| {
+                    ui.label(format!("width: {}", meta.width));
+                    ui.label(format!("height: {}", meta.height));
+                    ui.label(format!("format: {:?}", meta.format));
+                    ui.label(format!("fmt id: {:#04X}", meta.fmt_id));
+        
+                    if ui.button("Export...").clicked() {
+                        let obj = &ectx.bf.object_table.get(&key).unwrap();
+                        let key = obj.get_key();
+                        if let Some(path) = pick_exp_path_no_ext(&ectx.bf.object_table[&key]) {
+                            let txd_key = ectx.bf.object_table[&key].references[0];
+                            if let Ok(_) = ectx.bf.load_file(txd_key) {
+                                if let ObjectArchetype::TextureMetadata(tga) = &ectx.bf.object_table[&key].archetype {
+                                    if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
+                                        exp_texture(path, &tga, &txd);
+                                    }
+                                }
+                            }
+                            ectx.bf.unload_file(txd_key).unwrap();
                         }
                     }
-
-                    ui.vertical(|ui| {
-                        ui.label(format!("width: {}", meta.width));
-                        ui.label(format!("height: {}", meta.height));
-                        ui.label(format!("format: {:?}", meta.format));
-                        ui.label(format!("fmt id: {:#04X}", meta.fmt_id));
-            
-                        if ui.button("Export...").clicked() {
-                            let obj = &ectx.bf.object_table.get(&key).unwrap();
-                            let key = obj.get_key();
-                            if let Some(path) = pick_exp_path_no_ext(&ectx.bf.object_table[&key]) {
-                                let txd_key = ectx.bf.object_table[&key].references[0];
-                                if let Ok(_) = ectx.bf.load_file(txd_key) {
-                                    if let ObjectArchetype::TextureMetadata(tga) = &ectx.bf.object_table[&key].archetype {
-                                        if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
-                                            exp_texture(path, &tga, &txd);
-                                        }
-                                    }
-                                }
-                                ectx.bf.unload_file(txd_key).unwrap();
-                            }
-                        }
-                    });
-    
+                });
+                egui::CentralPanel::default().show_inside(ui, |ui| {
                     if let Some(tex) = &self.texture {
-                        ui.separator();
-                        egui::Widget::ui(egui::Image::new(tex).max_size([500.0, 500.0].into()), ui);
+                        ui.centered_and_justified(|ui| {
+                            let rsp = egui::Widget::ui(egui::Image::new(tex).fit_to_exact_size(self.tex_size * self.zoom), ui);
+                            if rsp.hovered() {
+                                let delta = ui.input(|i| {
+                                    i.events.iter().find_map(|e| match e {
+                                        egui::Event::MouseWheel {
+                                            unit: _,
+                                            delta,
+                                            modifiers: _,
+                                        } => Some(*delta),
+                                        _ => None,
+                                    })
+                                });
+                                if let Some(delta) = delta {
+                                    let mut zoom = self.zoom;
+                                    zoom += delta.y * 0.5;
+                                    zoom *= 2.0;
+                                    zoom = zoom.floor() / 2.0;
+                                    self.zoom = zoom;
+                                }
+                            }
+                        });
                     } else {
                         ui.label("texture not loaded or wrong texture format!");
                     }
+                });
+                egui::TopBottomPanel::bottom("tex_controls").exact_height(50.0).show_inside(ui, |ui| {
+                    ui.centered_and_justified(|ui| {
+                        egui::Slider::new(&mut self.zoom, 0.1..=4.0).ui(ui);
+                    });
                 });
             }
         }

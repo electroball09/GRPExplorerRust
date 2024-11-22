@@ -166,7 +166,7 @@ impl BigfileIO for BigfileIOPacked {
 
     fn read_file(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader, entry: &FileEntry) -> Result<Vec<u8>, String> {
         if entry.offset == 0xFFFFFFFF {
-            warn!("could not seek, offset is invalid");
+            //warn!("could not seek, offset is invalid");
             return Err(String::from("invalid offset"));
         }
 

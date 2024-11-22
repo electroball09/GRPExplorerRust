@@ -19,11 +19,19 @@ impl super::EditorImpl for SkeletonEditor {
                         ui.label(format!("unk_02: {:#04X}", bone.unk_02));
                         ui.label(format!("unk_03: {:#04X}", bone.unk_03));
                         ui.collapsing("Floats", |ui| {
-                            let mut j = 0;
-                            while j < 48 {
-                                ui.label(format!("{}: {}", j, bone.floats[j]));
-                                j += 1;
+                            for chunk in bone.floats.chunks_exact(4) {
+                                ui.horizontal(|ui| {
+                                    ui.label(format!("{:10.5}", chunk[0]));
+                                    ui.label(format!("{:10.5}", chunk[1]));
+                                    ui.label(format!("{:10.5}", chunk[2]));
+                                    ui.label(format!("{:10.5}", chunk[3]));
+                                });
                             }
+                            // let mut j = 0;
+                            // while j < 48 {
+                            //     ui.label(format!("{}: {}", j, bone.floats[j]));
+                            //     j += 1;
+                            // }
                         });
                     });
                     i += 1;
