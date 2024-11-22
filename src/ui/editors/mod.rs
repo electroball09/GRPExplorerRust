@@ -15,6 +15,7 @@ mod shadergraph_editor; use shadergraph_editor::*;
 mod skeleton_editor; use skeleton_editor::*;
 mod eps_editor; use eps_editor::*;
 mod zone_editor; use zone_editor::*;
+mod dtb_editor; use dtb_editor::*;
 
 pub use crate::egui as egui;
 
@@ -47,6 +48,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::zon => Box::new(ZoneEditor { }),
         ObjectType::dbr => Box::new(DbrEditor { }),
         ObjectType::epl => Box::new(EditableParamsListEditor { }),
+        ObjectType::dtb => Box::new(DataTableEditor { }),
         _               => Box::new(BlankEditor { }),
     }
 }

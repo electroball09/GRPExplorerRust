@@ -17,6 +17,7 @@ pub mod shader;      pub use shader::*;
 pub mod skeleton;    pub use skeleton::*;
 pub mod eps;         pub use eps::*;
 pub mod zone;        pub use zone::*;
+pub mod dtb;         pub use dtb::*;
 
 mod load_error; pub use load_error::*;
 
@@ -68,6 +69,7 @@ pub enum ObjectArchetype {
     Zone(Zone),
     EditableParamsList(EditableParamsList),
     Dbr(Dbr),
+    DataTable(DataTable),
 }
 
 impl ObjectArchetype {
@@ -93,6 +95,7 @@ impl ObjectArchetype {
             Self::Zone(zon) => zon.load_from_buf(buf),
             Self::EditableParamsList(epl) => epl.load_from_buf(buf),
             Self::Dbr(dbr) => dbr.load_from_buf(buf),
+            Self::DataTable(dtb) => dtb.load_from_buf(buf),
             Self::NoImpl => { Ok(()) }
         }
     }
@@ -119,6 +122,7 @@ impl ObjectArchetype {
             Self::Zone(zon) => zon.unload(),
             Self::EditableParamsList(epl) => epl.unload(),
             Self::Dbr(dbr) => dbr.unload(),
+            Self::DataTable(dtb) => dtb.unload(),
             Self::NoImpl => { }
         }
     }
@@ -156,6 +160,7 @@ impl YetiObject {
             ObjectType::zon => ObjectArchetype::Zone(Zone::default()),
             ObjectType::epl => ObjectArchetype::EditableParamsList(EditableParamsList::default()),
             ObjectType::dbr => ObjectArchetype::Dbr(Dbr::default()),
+            ObjectType::dtb => ObjectArchetype::DataTable(DataTable::default()),
             _ => ObjectArchetype::NoImpl
         }
     }
