@@ -1,6 +1,6 @@
 #![allow(non_snake_case, dead_code, unused_variables, unused_mut)]
 
-use crate::objects::shader::node_ids::*;
+use crate::objects::node_ids::*;
 use crate::egui as egui;
 
 

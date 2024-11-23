@@ -5,7 +5,7 @@ use std::io::Write;
 use image::ColorType;
 
 use crate::objects::{self, TextureMetaType};
-use crate::objects::texture::TextureFormat;
+use crate::objects::TextureFormat;
 
 use crate::objects::YetiObject;
 use crate::util::dds_header::DdsHeader;
@@ -30,7 +30,7 @@ pub fn pick_exp_path_no_ext(obj: &YetiObject) -> Option<String> {
     Some(format!("{}\\{:#010X} {}", path, obj.get_key(), obj.get_name()))
 }
 
-pub fn exp_feu(path: String, feu: &crate::objects::feu::Feu) {
+pub fn exp_feu(path: String, feu: &crate::objects::Feu) {
     if let Ok(mut file) = File::create(&path) {
         info!("exporting feu to {}", &path);
         
@@ -39,7 +39,7 @@ pub fn exp_feu(path: String, feu: &crate::objects::feu::Feu) {
     }
 }
 
-pub fn exp_texture(path_no_ext: String, tga: &objects::texture::TextureMetadataObject, txd: &objects::texture::TextureData) {
+pub fn exp_texture(path_no_ext: String, tga: &objects::TextureMetadataObject, txd: &objects::TextureData) {
     if let TextureMetaType::Metadata(ref meta) = tga.meta {
         match meta.format {
             TextureFormat::Dxt1 => {
@@ -75,7 +75,7 @@ pub fn exp_texture(path_no_ext: String, tga: &objects::texture::TextureMetadataO
     }
 }
 
-pub fn exp_msd_as_obj(path: String, msd: &crate::objects::meshes::MeshData) {
+pub fn exp_msd_as_obj(path: String, msd: &crate::objects::MeshData) {
     if let Ok(mut file) = File::create(&path) {
         info!("exporting mesh to {}", &path);
 

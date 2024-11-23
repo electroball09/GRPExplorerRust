@@ -1,4 +1,4 @@
-use crate::objects::{ObjectArchetype, ai_const::ConstTreeNode};
+use crate::objects::{ObjectArchetype, ConstTreeNode};
 
 use super::*;
 

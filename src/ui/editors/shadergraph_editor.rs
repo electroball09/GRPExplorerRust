@@ -1,5 +1,5 @@
 use super::*;
-use crate::objects::{*, shader::node_ids::ShaderNodeId, shader::node_ids::ShaderNodeId::*};
+use crate::objects::{*, node_ids::ShaderNodeId, node_ids::ShaderNodeId::*};
 
 mod node_id_editors;
 use node_id_editors::*;

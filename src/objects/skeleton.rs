@@ -1,5 +1,5 @@
 use super::ArchetypeImpl;
-use std::io::{Cursor};
+use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 
 #[derive(Default)]

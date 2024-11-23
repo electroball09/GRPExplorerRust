@@ -1,23 +1,25 @@
-pub mod yeti_script; pub use yeti_script::*;
-pub mod ini;         pub use ini::*;
-pub mod curve;       pub use curve::*;
-pub mod otf;         pub use otf::*;
-pub mod layer;       pub use layer::*;
-pub mod gameobject;  pub use gameobject::*;
-pub mod feu;         pub use feu::*;
-pub mod ai_const;    pub use ai_const::*;
-pub mod dbk;         pub use dbk::*;
-pub mod dbr;         pub use dbr::*;
-pub mod epl;         pub use epl::*;
-pub mod meshes;      pub use meshes::*;
-pub mod texture;     pub use texture::*;
-pub mod sound;       pub use sound::*;
-pub mod material;    pub use material::*;
-pub mod shader;      pub use shader::*;
-pub mod skeleton;    pub use skeleton::*;
-pub mod eps;         pub use eps::*;
-pub mod zone;        pub use zone::*;
-pub mod dtb;         pub use dtb::*;
+mod yeti_script; pub use yeti_script::*;
+mod ini;         pub use ini::*;
+mod curve;       pub use curve::*;
+mod otf;         pub use otf::*;
+mod layer;       pub use layer::*;
+mod gameobject;  pub use gameobject::*;
+mod feu;         pub use feu::*;
+mod ai_const;    pub use ai_const::*;
+mod dbk;         pub use dbk::*;
+mod dbr;         pub use dbr::*;
+mod epl;         pub use epl::*;
+mod meshes;      pub use meshes::*;
+mod texture;     pub use texture::*;
+mod sound;       pub use sound::*;
+mod material;    pub use material::*;
+mod shader;      pub use shader::*;
+mod skeleton;    pub use skeleton::*;
+mod eps;         pub use eps::*;
+mod zone;        pub use zone::*;
+mod dtb;         pub use dtb::*;
+mod vxc;         pub use vxc::*;
+mod vxt;         pub use vxt::*;
 
 mod load_error; pub use load_error::*;
 
@@ -70,60 +72,52 @@ pub enum ObjectArchetype {
     EditableParamsList(EditableParamsList),
     Dbr(Dbr),
     DataTable(DataTable),
+    VertexColors(VertexColors),
+    Vxt(Vxt),
 }
 
 impl ObjectArchetype {
+    fn get_impl(&mut self) -> Option<&mut dyn ArchetypeImpl> {
+        let a: Option<&mut dyn ArchetypeImpl> = match self {
+            Self::Script                (ref mut arch) => Some(arch),
+            Self::Ini                   (ref mut arch) => Some(arch),
+            Self::Curve                 (ref mut arch) => Some(arch),
+            Self::Otf                   (ref mut arch) => Some(arch),
+            Self::Layer                 (ref mut arch) => Some(arch),
+            Self::GameObject            (ref mut arch) => Some(arch),
+            Self::Feu                   (ref mut arch) => Some(arch),
+            Self::ConstList             (ref mut arch) => Some(arch),
+            Self::Dbk                   (ref mut arch) => Some(arch),
+            Self::MeshData              (ref mut arch) => Some(arch),
+            Self::MeshMetadata          (ref mut arch) => Some(arch),
+            Self::TextureData           (ref mut arch) => Some(arch),
+            Self::TextureMetadata       (ref mut arch) => Some(arch),
+            Self::SoundBank             (ref mut arch) => Some(arch),
+            Self::Skeleton              (ref mut arch) => Some(arch),
+            Self::EditableParamStruct   (ref mut arch) => Some(arch),
+            Self::EditableParamsList    (ref mut arch) => Some(arch),
+            Self::Zone                  (ref mut arch) => Some(arch),
+            Self::Dbr                   (ref mut arch) => Some(arch),
+            Self::DataTable             (ref mut arch) => Some(arch),
+            Self::VertexColors          (ref mut arch) => Some(arch),
+            Self::Vxt                   (ref mut arch) => Some(arch),
+            Self::ShaderGraph           (ref mut arch) => Some(arch),
+            Self::NoImpl => None
+        };
+
+        return a;
+    }
+
     pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
-        match self {
-            Self::Script(script) => script.load_from_buf(buf),
-            Self::Ini(ini) => ini.load_from_buf(buf),
-            Self::Curve(curve) => curve.load_from_buf(buf),
-            Self::Otf(otf) => otf.load_from_buf(buf),
-            Self::Layer(layer) => layer.load_from_buf(buf),
-            Self::GameObject(gao) => gao.load_from_buf(buf),
-            Self::Feu(feu) => feu.load_from_buf(buf),
-            Self::ConstList(list) => list.load_from_buf(buf),
-            Self::Dbk(dbk) => dbk.load_from_buf(buf),
-            Self::MeshData(msd) => msd.load_from_buf(buf),
-            Self::MeshMetadata(msh) => msh.load_from_buf(buf),
-            Self::TextureData(txd) => txd.load_from_buf(buf),
-            Self::TextureMetadata(tga) => tga.load_from_buf(buf),
-            Self::SoundBank(snk) => snk.load_from_buf(buf),
-            Self::ShaderGraph(shd) => shd.load_from_buf(buf),
-            Self::Skeleton(ske) => ske.load_from_buf(buf),
-            Self::EditableParamStruct(eps) => eps.load_from_buf(buf),
-            Self::Zone(zon) => zon.load_from_buf(buf),
-            Self::EditableParamsList(epl) => epl.load_from_buf(buf),
-            Self::Dbr(dbr) => dbr.load_from_buf(buf),
-            Self::DataTable(dtb) => dtb.load_from_buf(buf),
-            Self::NoImpl => { Ok(()) }
+        if let Some(arch) = self.get_impl() {
+            return arch.load_from_buf(buf);
         }
+        Ok(())
     }
 
     pub fn unload(&mut self) {
-        match self {
-            Self::Script(script) => script.unload(),
-            Self::Ini(ini) => ini.unload(),
-            Self::Curve(curve) => curve.unload(),
-            Self::Otf(otf) => otf.unload(),
-            Self::Layer(layer) => layer.unload(),
-            Self::GameObject(gao) => gao.unload(),
-            Self::Feu(feu) => feu.unload(),
-            Self::ConstList(list) => list.unload(),
-            Self::Dbk(dbk) => dbk.unload(),
-            Self::MeshData(msd) => msd.unload(),
-            Self::MeshMetadata(msh) => msh.unload(),
-            Self::TextureData(txd) => txd.unload(),
-            Self::TextureMetadata(tga) => tga.unload(),
-            Self::SoundBank(snk) => snk.unload(),
-            Self::ShaderGraph(shd) => shd.unload(),
-            Self::Skeleton(ske) => ske.unload(),
-            Self::EditableParamStruct(eps) => eps.unload(),
-            Self::Zone(zon) => zon.unload(),
-            Self::EditableParamsList(epl) => epl.unload(),
-            Self::Dbr(dbr) => dbr.unload(),
-            Self::DataTable(dtb) => dtb.unload(),
-            Self::NoImpl => { }
+        if let Some(arch) = self.get_impl() {
+            arch.unload();
         }
     }
 }
@@ -140,7 +134,7 @@ impl YetiObject {
 
     pub fn type_to_archetype(obj_type: &ObjectType) -> ObjectArchetype {
         match obj_type {
-            ObjectType::zc => ObjectArchetype::Script(YetiScript::default()),
+            ObjectType::zc  => ObjectArchetype::Script(YetiScript::default()),
             ObjectType::ini => ObjectArchetype::Ini(YetiIni::default()),
             ObjectType::cur => ObjectArchetype::Curve(YetiCurve::default()),
             ObjectType::otf => ObjectArchetype::Otf(Otf::default()),
@@ -161,6 +155,8 @@ impl YetiObject {
             ObjectType::epl => ObjectArchetype::EditableParamsList(EditableParamsList::default()),
             ObjectType::dbr => ObjectArchetype::Dbr(Dbr::default()),
             ObjectType::dtb => ObjectArchetype::DataTable(DataTable::default()),
+            ObjectType::vxc => ObjectArchetype::VertexColors(VertexColors::default()),
+            ObjectType::vxt => ObjectArchetype::Vxt(Vxt::default()),
             _ => ObjectArchetype::NoImpl
         }
     }

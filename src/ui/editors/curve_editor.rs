@@ -1,4 +1,4 @@
-use crate::objects::curve::{CurveType, CurvePoint};
+use crate::objects::{CurveType, CurvePoint};
 
 use super::*;
 

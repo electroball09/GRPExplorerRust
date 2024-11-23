@@ -1,5 +1,6 @@
 use super::*;
 use editors::{create_editor_for_type, EditorContext, EditorImpl};
+use egui::Widget;
 use log::*;
 use crate::egui::Ui;
 use crate::loader::BigfileLoad;
@@ -20,6 +21,7 @@ struct EditorTab {
 pub struct FileEditorTabs {
     editor_tabs: Vec<EditorTab>,
     open_tab: Option<u32>,
+    loads_per_update: u32,
 }
 
 impl FileEditorTabs {
@@ -27,6 +29,7 @@ impl FileEditorTabs {
         FileEditorTabs {
             editor_tabs: Vec::new(),
             open_tab: None,
+            loads_per_update: 100,
         }
     }
 }
@@ -218,7 +221,7 @@ impl FileEditorTabs {
     fn process_loads(&mut self, bf: &mut Bigfile) -> bool {
         for tab in self.editor_tabs.iter_mut() {
             if !tab.loaded {
-                if tab.load.load_num(bf, 100) {
+                if tab.load.load_num(bf, self.loads_per_update) {
                     tab.loaded = true;
                 }
                 return true;
@@ -284,5 +287,8 @@ impl View for FileEditorTabs {
                 bf.log_loaded_objects();
             }
         }
+        ui.menu_button("Loading", |ui| {
+            egui::Slider::new(&mut self.loads_per_update, 1..=1000).ui(ui);
+        });
     }
 }
