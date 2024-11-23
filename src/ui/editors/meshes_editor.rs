@@ -25,6 +25,17 @@ impl super::EditorImpl for MeshDataEditor {
                     exp_msd_as_obj(path, &msd);
                 }
             }
+
+            egui::ScrollArea::vertical().auto_shrink(true).show(ui, |ui| {
+                for v in 0..msd.num_vertices {
+                    ui.collapsing(format!("vertex {}", v), |ui| {
+                        let str: Vec<String> = msd.vertex_data.bufs[v as usize].iter().map(|b| format!("{:#04X}", b)).collect();
+                        ui.label(format!("{:?}", str));
+                        ui.label(format!("pos: {}", msd.vertex_data.pos[v as usize]));
+                        ui.label(format!("uv0: {}", msd.vertex_data.uv0[v as usize]));
+                    });
+                }
+            });
         }
     }
 }

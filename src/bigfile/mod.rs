@@ -27,7 +27,7 @@ pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
         ObjectType::seq => Some("Sequence"),
         ObjectType::got => Some("Graphic Object Table"),
         ObjectType::msh => Some("Mesh Metadata"),
-        ObjectType::vxc => Some("Vertex Cache ???"),
+        ObjectType::vxc => Some("Vertex Colors ?"),
         ObjectType::mat => Some("Material"),
         ObjectType::sha => Some("Shader"),
         ObjectType::tga => Some("Texture Metadata"),

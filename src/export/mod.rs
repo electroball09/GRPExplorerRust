@@ -83,10 +83,8 @@ pub fn exp_msd_as_obj(path: String, msd: &crate::objects::meshes::MeshData) {
             write!(file, "v {} {} {}\n", vert.x, vert.y, vert.z).unwrap(); // swap y and z for coordinate correctness
         }
 
-        if let Some(uv0) = &msd.vertex_data.uv0 {
-            for uv in uv0 {
-                write!(file, "vt {} {}\n", uv.x, uv.y).unwrap();
-            }
+        for uv in &msd.vertex_data.uv0 {
+            write!(file, "vt {} {}\n", uv.x, uv.y).unwrap();
         }
 
         for face in &msd.faces {

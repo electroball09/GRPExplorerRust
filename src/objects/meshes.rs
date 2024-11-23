@@ -1,5 +1,5 @@
 use super::ArchetypeImpl;
-use std::io::{Cursor, Seek, SeekFrom};
+use std::io::{Cursor, Read, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::*;
 
@@ -47,14 +47,14 @@ pub struct FaceData {
 
 #[derive(Default)]
 pub struct VertexData {
+    pub bufs: Vec<[u8; 32]>,
     pub pos: Vec<Vec3>,
-    pub uv0: Option<Vec<Vec2>>
+    pub uv0: Vec<Vec2>
 }
 
 impl VertexData {
     pub fn clear_data(&mut self) {
-        self.pos.clear();
-        self.uv0 = None;
+        *self = Default::default();
     }
 }
 
@@ -97,31 +97,34 @@ impl ArchetypeImpl for MeshData {
 
         cursor.seek(SeekFrom::Start((0x47 + self.data_offset) as u64))?;
 
+        let mut bufs: Vec<[u8; 32]> = Vec::with_capacity(self.num_vertices as usize);
         let mut pos: Vec<Vec3> = Vec::with_capacity(self.num_vertices as usize);
         let mut uv0: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
-        let mut i = 0;
-        while i < self.num_vertices {
-            pos.push(
-                (Vec3::new(
-                    snorm16_to_float(cursor.read_i16::<LittleEndian>()?),
-                    snorm16_to_float(cursor.read_i16::<LittleEndian>()?),
-                    snorm16_to_float(cursor.read_i16::<LittleEndian>()?)
-                ) * snorm16_to_float(cursor.read_i16::<LittleEndian>()?)
+        for _i in 0..self.num_vertices {
+            let mut vbuf: [u8; 32] = [0; 32];
+            cursor.read(&mut vbuf)?;
+            bufs.push(vbuf.clone());
+            let mut vbufr: &[u8] = &vbuf;
+            pos.push((Vec3::new(
+                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
+                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
+                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?)
+                ) * snorm16_to_float(vbufr.read_i16::<LittleEndian>()?)
                     * self.uniform_scale)
                     + self.pivot_offset
                 
             );
             uv0.push(
                  Vec2::new(
-                uvi16_to_float(cursor.read_i16::<LittleEndian>()?),
-                uvi16_to_float(cursor.read_i16::<LittleEndian>()?),
+                uvi16_to_float(vbufr.read_i16::<LittleEndian>()?),
+                uvi16_to_float(vbufr.read_i16::<LittleEndian>()?),
             ));
-            cursor.seek(SeekFrom::Current(20))?;
-            i += 1;
+            //cursor.seek(SeekFrom::Current(20))?;
         }
         self.vertex_data = VertexData {
+            bufs,
             pos,
-            uv0: Some(uv0)
+            uv0,
         };
 
         self.faces = Vec::with_capacity(self.num_indices as usize);
