@@ -5,16 +5,63 @@ use glam::*;
 
 #[derive(Default)]
 pub struct MeshMetadata {
+    pub num_submeshes: u8,
+    pub version: i32,
+    pub unk_dat01: [u8; 10],
+    pub submeshes: Vec<SubmeshDescriptor>,
+    pub unk_dat02: [u8; 32],
+}
 
+#[derive(Default)]
+pub struct SubmeshDescriptor {
+    pub vtx_start: u16,
+    pub vtx_num: u16,
+    pub unk_01: u16,
+    pub unk_02: u16,
+    pub unk_03: u16,
+    pub unk_04: u16,
+    pub unk_05: u16,
+    pub unk_vec: Vec<u8>,
 }
 
 impl ArchetypeImpl for MeshMetadata {
-    fn load_from_buf(&mut self, _buf: &[u8]) -> Result<(), super::LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::LoadError> {
+        let mut cursor = Cursor::new(buf);
+
+        self.num_submeshes = cursor.read_u8()?;
+        self.version = cursor.read_i32::<LittleEndian>()?;
+        if self.version != 2 {
+            return Err(format!("unknown version: {}", self.version).into());
+        }
+        cursor.read(&mut self.unk_dat01)?;
+        for _ in 0..self.num_submeshes {
+            let mut desc = SubmeshDescriptor {
+                vtx_start: cursor.read_u16::<LittleEndian>()?,
+                vtx_num: cursor.read_u16::<LittleEndian>()?,
+                unk_01: cursor.read_u16::<LittleEndian>()?,
+                unk_02: cursor.read_u16::<LittleEndian>()?,
+                unk_03: cursor.read_u16::<LittleEndian>()?,
+                unk_04: cursor.read_u16::<LittleEndian>()?,
+                unk_05: cursor.read_u16::<LittleEndian>()?,
+                unk_vec: vec![0; cursor.read_u8()? as usize],
+            };
+            for idx in 0..desc.unk_vec.len() {
+                desc.unk_vec[idx] = cursor.read_u8()?;
+            }
+            self.submeshes.push(desc);
+        }
+        cursor.read(&mut self.unk_dat02)?;
+
+        if self.unk_dat02[0] != 0x20 && self.unk_dat02[31] != 0xFF {
+            //there's some older unused files with a different format, cba to figure it out tho
+            return Err("unknown data in mesh metadata".into());
+        }
+
         Ok(())
     }
 
     fn unload(&mut self) {
-        
+        *self = Default::default()
     }
 }
 
@@ -50,12 +97,6 @@ pub struct VertexData {
     pub bufs: Vec<[u8; 32]>,
     pub pos: Vec<Vec3>,
     pub uv0: Vec<Vec2>
-}
-
-impl VertexData {
-    pub fn clear_data(&mut self) {
-        *self = Default::default();
-    }
 }
 
 fn snorm16_to_float(v: i16) -> f32 {
@@ -103,7 +144,6 @@ impl ArchetypeImpl for MeshData {
         for _i in 0..self.num_vertices {
             let mut vbuf: [u8; 32] = [0; 32];
             cursor.read(&mut vbuf)?;
-            bufs.push(vbuf.clone());
             let mut vbufr: &[u8] = &vbuf;
             pos.push((Vec3::new(
                     snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
@@ -119,7 +159,7 @@ impl ArchetypeImpl for MeshData {
                 uvi16_to_float(vbufr.read_i16::<LittleEndian>()?),
                 uvi16_to_float(vbufr.read_i16::<LittleEndian>()?),
             ));
-            //cursor.seek(SeekFrom::Current(20))?;
+            bufs.push(vbuf);
         }
         self.vertex_data = VertexData {
             bufs,
@@ -142,8 +182,6 @@ impl ArchetypeImpl for MeshData {
     }
 
     fn unload(&mut self) {
-        self.vertex_data.clear_data();
-        self.faces.clear();
-        self.faces.shrink_to(1);
+        *self = Default::default();
     }
 }

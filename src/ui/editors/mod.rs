@@ -49,6 +49,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::dbr => Box::new(DbrEditor { }),
         ObjectType::epl => Box::new(EditableParamsListEditor { }),
         ObjectType::dtb => Box::new(DataTableEditor { }),
+        ObjectType::msh => Box::new(MeshMetadataEditor { }),
         _               => Box::new(BlankEditor { }),
     }
 }

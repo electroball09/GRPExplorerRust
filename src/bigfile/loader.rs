@@ -61,7 +61,7 @@ impl BigfileLoad {
         };
 
         while let Ok(key) = tmp_to_load.remove() {
-            if bf.is_key_valid_to_load(key) {
+            if !self.loaded.contains(&key) && bf.is_key_valid_to_load(key) {
                 self.to_load.push(key);
             }
         }

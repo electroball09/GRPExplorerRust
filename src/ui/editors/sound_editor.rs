@@ -34,7 +34,7 @@ impl EditorImpl for SnkEditor {
                     for ent in &snk.entries {
                         ui.collapsing(format!("{:#04X} {}", ent.id, &ent.name), |ui| {
                             ui.label(format!("id: {:#04X}", ent.id));
-                            ui.label(format!("data: {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X} {:#04X}",
+                            ui.label(format!("data: {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X} {:04X}",
                                     ent.unk00, ent.unk01, ent.unk02, ent.unk03, ent.unk04, ent.unk05, ent.unk06, ent.unk07, ent.unk08, ent.unk09));
                         });
                     }
