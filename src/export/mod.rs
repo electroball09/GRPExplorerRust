@@ -10,6 +10,8 @@ use crate::objects::TextureFormat;
 use crate::objects::YetiObject;
 use crate::util::dds_header::DdsHeader;
 
+mod gltf_export; pub use gltf_export::*;
+
 pub fn pick_extract_folder() -> Option<PathBuf> {
     rfd::FileDialog::new().pick_folder()
 }

@@ -33,6 +33,7 @@ impl ArchetypeImpl for MeshMetadata {
         if self.version != 2 {
             return Err(format!("unknown version: {}", self.version).into());
         }
+
         cursor.read(&mut self.unk_dat01)?;
         for _ in 0..self.num_submeshes {
             let mut desc = SubmeshDescriptor {
@@ -168,20 +169,39 @@ impl ArchetypeImpl for MeshData {
         };
 
         self.faces = Vec::with_capacity(self.num_indices as usize);
-        let mut i2 = 0;
-        while i2 < self.num_indices {
+
+        for _ in 0..self.num_indices / 3 {
             self.faces.push(FaceData {
                 f0: cursor.read_u16::<LittleEndian>()?,
                 f1: cursor.read_u16::<LittleEndian>()?,
                 f2: cursor.read_u16::<LittleEndian>()?
             });
-            i2 += 3;
         }
+        // let mut i2 = 0;
+        // while i2 < self.num_indices {
+        //     i2 += 3;
+        // }
 
         Ok(())
     }
 
     fn unload(&mut self) {
         *self = Default::default();
+    }
+}
+
+impl MeshData {
+    pub fn bounding_box(&self) -> (Vec3, Vec3) {
+        let mut min = Vec3::new(0.0, 0.0, 0.0);
+        let mut max = Vec3::new(0.0, 0.0, 0.0);
+
+        for pos in self.vertex_data.pos.iter() {
+            for i in 0..3 {
+                min[i] = f32::min(min[i], pos[i]);
+                max[i] = f32::max(max[i], pos[i]);
+            }
+        }
+
+        (min, max)
     }
 }

@@ -23,7 +23,7 @@ pub unsafe fn explorer_app_start() {
             if let Some(gl) = &cc.gl {
                 app.shader_cache.init(gl.clone());
             }
-            Ok(Box::<ExplorerApp>::new(app))
+            Ok(Box::new(app))
         })
     ).unwrap();
 }

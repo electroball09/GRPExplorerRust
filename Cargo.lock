@@ -500,6 +500,12 @@ dependencies = [
 
 [[package]]
 name = "base64"
+version = "0.13.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9e1b586273c5702936fe7b7d6896644d8be71e6314cfe09d3167c95f712589e8"
+
+[[package]]
+name = "base64"
 version = "0.21.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
@@ -1777,6 +1783,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "gltf"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e3ce1918195723ce6ac74e80542c5a96a40c2b26162c1957a5cd70799b8cacf7"
+dependencies = [
+ "base64 0.13.1",
+ "byteorder",
+ "gltf-json",
+ "image",
+ "lazy_static",
+ "serde_json",
+ "urlencoding",
+]
+
+[[package]]
+name = "gltf-derive"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14070e711538afba5d6c807edb74bcb84e5dbb9211a3bf5dea0dfab5b24f4c51"
+dependencies = [
+ "inflections",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.87",
+]
+
+[[package]]
+name = "gltf-json"
+version = "1.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e6176f9d60a7eab0a877e8e96548605dedbde9190a7ae1e80bbcc1c9af03ab14"
+dependencies = [
+ "gltf-derive",
+ "serde",
+ "serde_derive",
+ "serde_json",
+]
+
+[[package]]
 name = "glutin"
 version = "0.32.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1921,6 +1966,8 @@ dependencies = [
  "flate2",
  "font-loader",
  "glam",
+ "gltf",
+ "gltf-json",
  "image",
  "log",
  "log4rs",
@@ -2260,6 +2307,12 @@ dependencies = [
  "equivalent",
  "hashbrown 0.15.1",
 ]
+
+[[package]]
+name = "inflections"
+version = "1.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a257582fdcde896fd96463bf2d40eefea0580021c0712a0e2b028b60b47a837a"
 
 [[package]]
 name = "interpolate_name"
@@ -3541,7 +3594,7 @@ version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b91f7eff05f748767f183df4320a63d6936e9c6107d97c9e6bdd9784f4289c94"
 dependencies = [
- "base64",
+ "base64 0.21.7",
  "bitflags 2.6.0",
  "serde",
  "serde_derive",
@@ -4193,6 +4246,12 @@ dependencies = [
  "idna",
  "percent-encoding",
 ]
+
+[[package]]
+name = "urlencoding"
+version = "2.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "daf8dba3b7eb870caf1ddeed7bc9d2a049f3cfdfae7cb521b087cc33ae4c49da"
 
 [[package]]
 name = "utf16_iter"

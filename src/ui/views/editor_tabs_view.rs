@@ -287,6 +287,7 @@ impl View for FileEditorTabs {
                 bf.log_loaded_objects();
             }
         }
+        
         ui.menu_button("Loading", |ui| {
             egui::Slider::new(&mut self.loads_per_update, 1..=1000).ui(ui);
         });

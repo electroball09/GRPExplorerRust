@@ -6,28 +6,44 @@ pub struct MeshMetadataEditor;
 
 impl EditorImpl for MeshMetadataEditor {
     fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
-        let msh = match &ectx.bf.object_table.get(&key).unwrap().archetype {
-            ObjectArchetype::MeshMetadata(ref msh) => msh,
-            _ => return
+        let msd = if ui.button("Export to .glb").clicked() {
+            let msd_key = ectx.bf.object_table.get(&key).unwrap().references[0];
+            ectx.bf.load_file(msd_key).unwrap();
+            match &ectx.bf.object_table.get(&msd_key).unwrap().archetype {
+                ObjectArchetype::MeshData(ref msd) => Some((msd, msd_key)),
+                _ => None
+            }
+        } else {
+            None
         };
 
-        ui.label(format!("num submeshes: {}", msh.num_submeshes));
-        ui.label(format!("version: {}", msh.version));
-        ui.label(format!("unk_dat01: {}", msh.unk_dat01.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
-        ui.label(format!("unk_dat02: {}", msh.unk_dat02.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
-        for idx in 0..msh.submeshes.len() {
-            let sb = &msh.submeshes[idx];
-            ui.collapsing(format!("submesh {}", idx), |ui| {
-                ui.label(format!("vtx_start: {}", sb.vtx_start));
-                ui.label(format!("vtx_num: {}", sb.vtx_num));
-                ui.label(format!("calc vtx end: {}", sb.vtx_start + sb.vtx_num));
-                ui.label(format!("unk_01: {0} {0:#06X}", sb.unk_01));
-                ui.label(format!("unk_02: {0} {0:#06X}", sb.unk_02));
-                ui.label(format!("unk_03: {0} {0:#06X}", sb.unk_03));
-                ui.label(format!("unk_04: {0} {0:#06X}", sb.unk_04));
-                ui.label(format!("unk_05: {0} {0:#06X}", sb.unk_05));
-                ui.label(format!("unk_vec {}: {}", sb.unk_vec.len(), sb.unk_vec.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
-            });
+        if let ObjectArchetype::MeshMetadata(ref msh) = &ectx.bf.object_table.get(&key).unwrap().archetype {
+            ui.label(format!("num submeshes: {}", msh.num_submeshes));
+            ui.label(format!("version: {}", msh.version));
+            ui.label(format!("unk_dat01: {}", msh.unk_dat01.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
+            ui.label(format!("unk_dat02: {}", msh.unk_dat02.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
+            for idx in 0..msh.submeshes.len() {
+                let sb = &msh.submeshes[idx];
+                ui.collapsing(format!("submesh {}", idx), |ui| {
+                    ui.label(format!("vtx_start: {}", sb.vtx_start));
+                    ui.label(format!("vtx_num: {}", sb.vtx_num));
+                    ui.label(format!("calc vtx end: {}", sb.vtx_start + sb.vtx_num));
+                    ui.label(format!("unk_01: {0} {0:#06X}", sb.unk_01));
+                    ui.label(format!("unk_02: {0} {0:#06X}", sb.unk_02));
+                    ui.label(format!("unk_03: {0} {0:#06X}", sb.unk_03));
+                    ui.label(format!("unk_04: {0} {0:#06X}", sb.unk_04));
+                    ui.label(format!("unk_05: {0} {0:#06X}", sb.unk_05));
+                    ui.label(format!("unk_vec {}: {}", sb.unk_vec.len(), sb.unk_vec.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
+                });
+            }
+
+            if let Some(msd) = msd {
+                export_mesh_to_gltf(msh, msd.0);
+            }
+        }
+
+        if let Some(msd) = msd {
+            ectx.bf.unload_file(msd.1).unwrap();
         }
     }
 }
