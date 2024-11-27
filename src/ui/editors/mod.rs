@@ -16,6 +16,7 @@ mod skeleton_editor; use skeleton_editor::*;
 mod eps_editor; use eps_editor::*;
 mod zone_editor; use zone_editor::*;
 mod dtb_editor; use dtb_editor::*;
+mod vxc_editor; use vxc_editor::*;
 
 pub use crate::egui as egui;
 
@@ -50,6 +51,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::epl => Box::new(EditableParamsListEditor { }),
         ObjectType::dtb => Box::new(DataTableEditor { }),
         ObjectType::msh => Box::new(MeshMetadataEditor { }),
+        ObjectType::vxc => Box::new(VertexColorsEditor::default()),
         _               => Box::new(BlankEditor { }),
     }
 }
