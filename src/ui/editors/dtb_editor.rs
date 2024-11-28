@@ -37,7 +37,7 @@ impl EditorImpl for DataTableEditor {
                             ui.allocate_space([15.0, 0.0].into());
                             match value {
                                 ColumnData::Asset(v) => {
-                                    if ectx.bf.is_key_valid_to_load(*v) {
+                                    if ectx.bf.is_key_valid(*v) {
                                         if ui.button(format!("{}", value)).clicked() {
                                             open_new_tab = Some(*v);
                                         }

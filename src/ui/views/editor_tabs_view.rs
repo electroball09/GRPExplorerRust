@@ -29,7 +29,7 @@ impl FileEditorTabs {
         FileEditorTabs {
             editor_tabs: Vec::new(),
             open_tab: None,
-            loads_per_update: 100,
+            loads_per_update: 700,
         }
     }
 }

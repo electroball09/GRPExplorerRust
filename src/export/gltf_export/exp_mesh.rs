@@ -100,7 +100,7 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         let face_view = ct.root.push(json::buffer::View {
             buffer: *ct.buffer_js,
             byte_length: USize64::from(sbf_len),
-            byte_offset: Some(USize64::from(buffer_start + sbf_start)),
+            byte_offset: Some(USize64::from(sbf_start)),
             byte_stride: Some(json::buffer::Stride(face_size)),
             extensions: Default::default(),
             extras: Default::default(),

@@ -33,6 +33,7 @@ texpresso = "2.0.1"
 platform-dirs = "0.3.0"
 gltf = "1.4.1"
 gltf-json = { version = "1.4.1", features = ["names"] }
+byte-unit = "5.1.6"
 
 [dependencies.strum]
 version = "0.24.1"

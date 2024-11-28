@@ -55,6 +55,23 @@ bitflags! {
     }
 }
 
+impl GameObject {
+    pub fn position(&self) -> Vec3 {
+        let (_, _, pos) = self.matrix.to_scale_rotation_translation();
+        pos
+    }
+
+    pub fn rotation(&self) -> Quat {
+        let (_, rot, _) = self.matrix.to_scale_rotation_translation();
+        rot
+    }
+
+    pub fn scale(&self) -> Vec3 {
+        let (scl, _, _) = self.matrix.to_scale_rotation_translation();
+        scl
+    }
+}
+
 impl ArchetypeImpl for GameObject {
     fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
         let mut cursor = Cursor::new(buf);

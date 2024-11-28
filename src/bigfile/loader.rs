@@ -36,7 +36,7 @@ impl BigfileLoad {
                     continue;
                 }
                 
-                if bf.is_key_valid_to_load(key) {
+                if bf.is_key_valid(key) {
                     match bf.load_file(key) {
                         Ok(_) => {
                             for subkey in &bf.object_table[&key].references {
@@ -61,7 +61,7 @@ impl BigfileLoad {
         };
 
         while let Ok(key) = tmp_to_load.remove() {
-            if !self.loaded.contains(&key) && bf.is_key_valid_to_load(key) {
+            if !self.loaded.contains(&key) && bf.is_key_valid(key) {
                 self.to_load.push(key);
             }
         }
@@ -71,7 +71,7 @@ impl BigfileLoad {
 
     pub fn unload_all(&mut self, bf: &mut Bigfile) {
         for key in self.loaded.iter() {
-            let load = bf.is_key_valid_to_load(*key);
+            let load = bf.is_key_valid(*key);
             if load {
                 if let Err(error) = bf.unload_file(*key) {
                     error!("{}", error);

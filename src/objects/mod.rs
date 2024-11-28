@@ -20,6 +20,7 @@ mod zone;        pub use zone::*;
 mod dtb;         pub use dtb::*;
 mod vxc;         pub use vxc::*;
 mod vxt;         pub use vxt::*;
+mod world;       pub use world::*;
 
 mod load_error; pub use load_error::*;
 
@@ -75,6 +76,7 @@ pub enum ObjectArchetype {
     VertexColors(VertexColors),
     Vxt(Vxt),
     GraphicObjectTable(GraphicObjectTable),
+    World(World),
 }
 
 impl ObjectArchetype {
@@ -104,6 +106,7 @@ impl ObjectArchetype {
             Self::Vxt                   (ref mut arch) => Some(arch),
             Self::ShaderGraph           (ref mut arch) => Some(arch),
             Self::GraphicObjectTable    (ref mut arch) => Some(arch),
+            Self::World                 (ref mut arch) => Some(arch),
             Self::NoImpl => None
         };
 
@@ -160,6 +163,7 @@ impl YetiObject {
             ObjectType::vxc => ObjectArchetype::VertexColors(VertexColors::default()),
             ObjectType::vxt => ObjectArchetype::Vxt(Vxt::default()),
             ObjectType::got => ObjectArchetype::GraphicObjectTable(GraphicObjectTable::default()),
+            ObjectType::wor => ObjectArchetype::World(World::default()),
             _ => ObjectArchetype::NoImpl
         }
     }

@@ -40,6 +40,11 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
     
     let data = texture_util::decompress_texture(&meta, txd);
 
+    if data.len() != meta.width as usize * meta.height as usize * 4 as usize {
+        log::warn!("skipping texture {:#010X} due to bad data size! {} != {}", ct.key, data.len(), meta.width as usize * meta.height as usize * 4 as usize);
+        return Vec::new();
+    }
+
     let tex_start = ct.cursor.position();
     image::write_buffer_with_format(ct.cursor, &data, meta.width as u32, meta.height as u32, image::ExtendedColorType::Rgba8, image::ImageFormat::Bmp).unwrap();
     //ct.cursor.write(&data).unwrap();

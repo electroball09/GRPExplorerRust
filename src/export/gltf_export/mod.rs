@@ -7,6 +7,7 @@ use std::io::Cursor;
 use std::mem;
 use json::validation::USize64;
 use std::borrow::Cow;
+use byte_unit::*;
 
 use byteorder::LittleEndian as ENDIAN;
 
@@ -27,7 +28,7 @@ pub struct ExportContext<'a> {
 macro_rules! check_cache {
     ($ct:expr) => {
         if $ct.index_cache.contains_key(&$ct.key) {
-            log::info!("hit cached key {:#010X}", $ct.key);
+            //log::info!("hit cached key {:#010X}", $ct.key);
             let mut vec = Vec::new();
             for idx in $ct.index_cache.get(&$ct.key).unwrap() {
                 vec.push(json::Index::new(*idx));
@@ -48,6 +49,15 @@ macro_rules! insert_cache {
     }
 }
 pub(crate) use insert_cache;
+macro_rules! ct_with_key {
+    ($ct:expr, $key:expr, $code:block) => {
+        let old_key = $ct.key;
+        $ct.key = $key;
+        $code;
+        $ct.key = old_key;
+    }
+}
+pub(crate) use ct_with_key;
 
 fn align_to_multiple_of_four(n: usize) -> usize {
     (n + 3) & !3
@@ -104,13 +114,21 @@ pub fn export(key: u32, bf: &Bigfile) {
         },
         ObjectType::got => {
             nodes = gltf_got(&mut ct);
+        },
+        ObjectType::gao => {
+            nodes = gltf_gao(&mut ct);
+        },
+        ObjectType::wor => {
+            nodes = gltf_wor(&mut ct);
         }
         _ => { }
     };
 
+    assert!(ct.cursor.position() <= u32::MAX as u64);
     ct.root.buffers[0].byte_length = USize64(ct.cursor.position());
 
     log::info!("exported {} nodes", nodes.len());
+    log::info!("buffer size: {:#}", Byte::from_u64(ct.cursor.position()));
 
     ct.root.push(json::Scene {
         extensions: Default::default(),

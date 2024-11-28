@@ -17,6 +17,7 @@ mod eps_editor; use eps_editor::*;
 mod zone_editor; use zone_editor::*;
 mod dtb_editor; use dtb_editor::*;
 mod vxc_editor; use vxc_editor::*;
+mod world_editor; use world_editor::*;
 
 pub use crate::egui as egui;
 
@@ -53,6 +54,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::msh => Box::new(MeshMetadataEditor { }),
         ObjectType::vxc => Box::new(VertexColorsEditor::default()),
         ObjectType::got => Box::new(GraphicObjectTableEditor::default()),
+        ObjectType::wor => Box::new(WorldEditor::default()),
         _               => Box::new(BlankEditor { }),
     }
 }

@@ -34,10 +34,6 @@ impl Default for TextureMetadataEditor {
 
 impl EditorImpl for TextureMetadataEditor {
     fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
-        if ui.button("Export to .glb...").clicked() {
-            ectx.respond(EditorResponse::GltfExport(key));
-        }
-
         let mut mtype = TextureMetaType::None;
         if let ObjectArchetype::TextureMetadata(tga) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             mtype = tga.meta;

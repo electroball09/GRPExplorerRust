@@ -149,7 +149,7 @@ impl Bigfile {
         }
     }
 
-    pub fn is_key_valid_to_load(&self, key: u32) -> bool {
+    pub fn is_key_valid(&self, key: u32) -> bool {
         if let Some(file) = self.file_table.get(&key) {
             if file.offset != 0xFFFFFFFF {
                 return true;
