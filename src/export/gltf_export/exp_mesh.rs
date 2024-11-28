@@ -1,11 +1,12 @@
 use crate::objects::*;
-
 use super::*;
 use gltf_json as json;
 use json::validation::Checked::Valid;
 use json::validation::USize64;
 
 pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
+    check_cache!(ct);
+
     let msd_key = ct.bf.object_table[&ct.key].references[0];
 
     let msh = match &ct.bf.object_table[&ct.key].archetype {
@@ -13,7 +14,6 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         _ => panic!("wrong object type!")
     };
     let msh_name = ct.bf.file_table[&ct.key].get_name().to_string();
-    log::info!("mesh: {}", &msh_name);
 
     let msd = match &ct.bf.object_table[&msd_key].archetype {
         ObjectArchetype::MeshData(msd) => msd,
@@ -31,7 +31,7 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         let vtx = msd.vertex_data.pos[idx];
         let uv0 = msd.vertex_data.uv0[idx];
 
-        ct.cursor.write_f32::<ENDIAN>(vtx.x).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(-vtx.x).expect("write error"); // negate x coord for blender
         ct.cursor.write_f32::<ENDIAN>(vtx.z).expect("write error"); // flip y and z coords for blender
         ct.cursor.write_f32::<ENDIAN>(vtx.y).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(uv0.x).expect("write error");
@@ -86,7 +86,6 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
     for idx in 0..msh.submeshes.len() {
         let submesh = &msh.submeshes[idx];
         let sbf_start = ct.cursor.position() as usize;
-        log::info!("sbf_start: {}", sbf_start);
         for v in 0..submesh.face_num as usize {
             assert!(submesh.face_start % 3 == 0);
             let idx = ((submesh.face_start / 3) as usize) + v;
@@ -96,8 +95,7 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
             ct.cursor.write_u16::<ENDIAN>(face.f1).unwrap();
             ct.cursor.write_u16::<ENDIAN>(face.f2).unwrap();
         }
-        let sbf_len: usize = ct.cursor.position() as usize - sbf_start; 
-        log::info!("fbuf_len: {}", sbf_len);
+        let sbf_len: usize = ct.cursor.position() as usize - sbf_start;
 
         let face_view = ct.root.push(json::buffer::View {
             buffer: *ct.buffer_js,
@@ -148,9 +146,9 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
             weights: None
         });
 
-        vec.push(mesh);
+        insert_cache!(ct, &ct.key, mesh);
 
-        log::info!("end pos: {}", ct.cursor.position());
+        vec.push(mesh);
     };
 
     vec

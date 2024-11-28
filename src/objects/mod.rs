@@ -74,6 +74,7 @@ pub enum ObjectArchetype {
     DataTable(DataTable),
     VertexColors(VertexColors),
     Vxt(Vxt),
+    GraphicObjectTable(GraphicObjectTable),
 }
 
 impl ObjectArchetype {
@@ -102,6 +103,7 @@ impl ObjectArchetype {
             Self::VertexColors          (ref mut arch) => Some(arch),
             Self::Vxt                   (ref mut arch) => Some(arch),
             Self::ShaderGraph           (ref mut arch) => Some(arch),
+            Self::GraphicObjectTable    (ref mut arch) => Some(arch),
             Self::NoImpl => None
         };
 
@@ -157,6 +159,7 @@ impl YetiObject {
             ObjectType::dtb => ObjectArchetype::DataTable(DataTable::default()),
             ObjectType::vxc => ObjectArchetype::VertexColors(VertexColors::default()),
             ObjectType::vxt => ObjectArchetype::Vxt(Vxt::default()),
+            ObjectType::got => ObjectArchetype::GraphicObjectTable(GraphicObjectTable::default()),
             _ => ObjectArchetype::NoImpl
         }
     }

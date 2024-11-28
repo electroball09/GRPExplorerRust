@@ -1,4 +1,4 @@
-use std::{io::Cursor, str::FromStr};
+use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use glam::*;
@@ -76,5 +76,20 @@ impl ArchetypeImpl for GameObject {
         *self = Self {
             ..Default::default()
         }
+    }
+}
+
+#[derive(Default)]
+pub struct GraphicObjectTable {
+
+}
+
+impl ArchetypeImpl for GraphicObjectTable {
+    fn load_from_buf(&mut self, _buf: &[u8]) -> Result<(), LoadError> {
+        Ok(())
+    }
+
+    fn unload(&mut self) {
+        *self = Default::default();
     }
 }

@@ -2,16 +2,18 @@ use crate::metadata::ObjectType;
 use crate::Bigfile;
 use byteorder::WriteBytesExt;
 use gltf_json as json;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::io::Cursor;
 use std::mem;
-use json::validation::Checked::Valid;
 use json::validation::USize64;
 use std::borrow::Cow;
 
 use byteorder::LittleEndian as ENDIAN;
 
 mod exp_mesh; use exp_mesh::*;
+mod exp_world; use exp_world::*;
+mod exp_gao; use exp_gao::*;
+mod exp_texture; use exp_texture::*;
 
 pub struct ExportContext<'a> {
     pub key: u32,
@@ -19,7 +21,33 @@ pub struct ExportContext<'a> {
     pub cursor: &'a mut Cursor<&'a mut Vec<u8>>,
     pub root: &'a mut json::Root,
     pub buffer_js: &'a json::Index<json::Buffer>,
+    pub index_cache: HashMap<u32, Vec<u32>>
 }
+
+macro_rules! check_cache {
+    ($ct:expr) => {
+        if $ct.index_cache.contains_key(&$ct.key) {
+            log::info!("hit cached key {:#010X}", $ct.key);
+            let mut vec = Vec::new();
+            for idx in $ct.index_cache.get(&$ct.key).unwrap() {
+                vec.push(json::Index::new(*idx));
+            }
+            return vec;
+        }
+    }
+}
+pub(crate) use check_cache;
+macro_rules! insert_cache {
+    ($ct:expr, $key:expr, $index:expr) => {
+        let value = $index.value() as u32;
+        if $ct.index_cache.contains_key($key) {
+            $ct.index_cache.get_mut($key).unwrap().push(value);
+        } else {
+            $ct.index_cache.insert(*$key, vec![value]);
+        }
+    }
+}
+pub(crate) use insert_cache;
 
 fn align_to_multiple_of_four(n: usize) -> usize {
     (n + 3) & !3
@@ -57,7 +85,8 @@ pub fn export(key: u32, bf: &Bigfile) {
         bf: &*bf,
         cursor: &mut cursor,
         root: &mut root,
-        buffer_js: &mut buffer_idx
+        buffer_js: &mut buffer_idx,
+        index_cache: HashMap::new(),
     };
 
     match bf.file_table[&key].object_type {
@@ -72,11 +101,16 @@ pub fn export(key: u32, bf: &Bigfile) {
                     ..Default::default()
                 }));
             }
+        },
+        ObjectType::got => {
+            nodes = gltf_got(&mut ct);
         }
         _ => { }
     };
 
     ct.root.buffers[0].byte_length = USize64(ct.cursor.position());
+
+    log::info!("exported {} nodes", nodes.len());
 
     ct.root.push(json::Scene {
         extensions: Default::default(),

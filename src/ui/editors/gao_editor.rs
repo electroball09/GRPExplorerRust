@@ -23,3 +23,16 @@ impl EditorImpl for GameobjectEditor {
         }
     }
 }
+
+#[derive(Default)]
+pub struct GraphicObjectTableEditor {
+
+}
+
+impl EditorImpl for GraphicObjectTableEditor {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+        if ui.button("Export to .glb...").clicked() {
+            ectx.respond(EditorResponse::GltfExport(key));
+        }
+    }
+}

@@ -52,6 +52,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::dtb => Box::new(DataTableEditor { }),
         ObjectType::msh => Box::new(MeshMetadataEditor { }),
         ObjectType::vxc => Box::new(VertexColorsEditor::default()),
+        ObjectType::got => Box::new(GraphicObjectTableEditor::default()),
         _               => Box::new(BlankEditor { }),
     }
 }
