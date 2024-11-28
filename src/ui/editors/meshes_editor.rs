@@ -7,12 +7,7 @@ pub struct MeshMetadataEditor;
 impl EditorImpl for MeshMetadataEditor {
     fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
         let msd = if ui.button("Export to .glb").clicked() {
-            let msd_key = ectx.bf.object_table.get(&key).unwrap().references[0];
-            ectx.bf.load_file(msd_key).unwrap();
-            match &ectx.bf.object_table.get(&msd_key).unwrap().archetype {
-                ObjectArchetype::MeshData(ref msd) => Some((msd, msd_key)),
-                _ => None
-            }
+            Some(ectx.bf.object_table.get(&key).unwrap().references[0])
         } else {
             None
         };
@@ -37,14 +32,10 @@ impl EditorImpl for MeshMetadataEditor {
                     ui.label(format!("unk_vec {}: {}", sb.unk_vec.len(), sb.unk_vec.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
                 });
             }
-
-            if let Some(msd) = msd {
-                export_mesh_to_gltf(msh, msd.0);
-            }
         }
 
         if let Some(msd) = msd {
-            ectx.bf.unload_file(msd.1).unwrap();
+            ectx.respond(EditorResponse::GltfExport(key));
         }
     }
 }

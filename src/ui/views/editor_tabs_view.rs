@@ -276,6 +276,9 @@ impl View for FileEditorTabs {
                 },
                 EditorResponse::ExtractFile(key, path) => {
                     ectx.bf.extract_file_to_path(&path, key).expect("could not extract file!");
+                },
+                EditorResponse::GltfExport(key) => {
+                    crate::export::export(key, ectx.bf);
                 }
             }
         }

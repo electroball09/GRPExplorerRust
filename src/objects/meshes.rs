@@ -2,6 +2,7 @@ use super::ArchetypeImpl;
 use std::io::{Cursor, Read, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::*;
+use std::ops::Range;
 
 #[derive(Default)]
 pub struct MeshMetadata {
@@ -253,6 +254,21 @@ impl MeshData {
         let mut max = Vec3::new(0.0, 0.0, 0.0);
 
         for pos in self.vertex_data.pos.iter() {
+            for i in 0..3 {
+                min[i] = f32::min(min[i], pos[i]);
+                max[i] = f32::max(max[i], pos[i]);
+            }
+        }
+
+        (min, max)
+    }
+
+    pub fn bounding_box_range(&self, range: Range<usize>) -> (Vec3, Vec3) {
+        let mut min = Vec3::new(0.0, 0.0, 0.0);
+        let mut max = Vec3::new(0.0, 0.0, 0.0);
+
+        for idx in range {
+            let pos = &self.vertex_data.pos[idx];
             for i in 0..3 {
                 min[i] = f32::min(min[i], pos[i]);
                 max[i] = f32::max(max[i], pos[i]);

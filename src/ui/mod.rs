@@ -201,6 +201,7 @@ pub enum EditorResponse {
     OpenNewTab(u32),
     CloseTab(u32),
     ExtractFile(u32, String),
+    GltfExport(u32),
 }
 
 pub struct EditorContext<'a> {

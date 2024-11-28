@@ -1,4 +1,4 @@
-use std::io::{Cursor};
+use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use num::FromPrimitive;
