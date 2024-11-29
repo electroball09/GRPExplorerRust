@@ -83,6 +83,8 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         sparse: None
     });
 
+    let mut prims = Vec::new();
+
     for idx in 0..msh.submeshes.len() {
         let submesh = &msh.submeshes[idx];
         let sbf_start = ct.cursor.position() as usize;
@@ -137,19 +139,21 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
             mode: Valid(json::mesh::Mode::Triangles),
             targets: None
         };
-    
-        let mesh = ct.root.push(json::Mesh {
-            extensions: Default::default(),
-            extras: Default::default(),
-            name: Some(format!("{:#010X} {} submesh{}", ct.key, msh_name, idx)),
-            primitives: vec![primitive],
-            weights: None
-        });
 
-        insert_cache!(ct, &ct.key, mesh);
-
-        vec.push(mesh);
+        prims.push(primitive);
     };
+    
+    let mesh = ct.root.push(json::Mesh {
+        extensions: Default::default(),
+        extras: Default::default(),
+        name: Some(format!("{:#010X} {}", ct.key, msh_name)),
+        primitives: prims,
+        weights: None
+    });
+
+    insert_cache!(ct, &ct.key, mesh);
+
+    vec.push(mesh);
 
     vec
 }

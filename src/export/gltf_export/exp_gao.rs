@@ -129,15 +129,17 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         };
         for i in 0..meshes.len() {
             let mesh = &meshes[i];
-            if mats.len() > 0 {
-                let mat_idx = {
-                    if i >= mats.len() {
-                        mats.len() - 1
-                    } else {
-                        i
-                    }
-                };
-                ct.root.meshes[mesh.value()].primitives[0].material = Some(mats[mat_idx]);
+            for j in 0..ct.root.meshes[mesh.value()].primitives.len() {
+                if mats.len() > 0 {
+                    let mat_idx = {
+                        if j >= mats.len() {
+                            mats.len() - 1
+                        } else {
+                            j
+                        }
+                    };
+                    ct.root.meshes[mesh.value()].primitives[j].material = Some(mats[mat_idx]);
+                }
             }
 
             nodes.push(ct.root.push(json::Node {
