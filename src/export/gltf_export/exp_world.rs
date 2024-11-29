@@ -1,5 +1,6 @@
 use super::*;
 use gltf_json as json;
+
 pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     gltf_export_init!(ct);
 
@@ -27,12 +28,14 @@ pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                 },
                 ObjectType::wil => {
                     for subworld in &ct.bf.object_table[key].references {
-                        if !ct.index_cache.contains_key(subworld) {
-                            ct_with_key!(ct, *subworld, {
-                                for node in gltf_wor(ct).drain(..) {
-                                    nodes.push(node);
-                                }
-                            });
+                        if ct.bf.is_key_valid(*subworld) {
+                            if !ct.index_cache.contains_key(subworld) {
+                                ct_with_key!(ct, *subworld, {
+                                    for node in gltf_wor(ct).drain(..) {
+                                        nodes.push(node);
+                                    }
+                                });
+                            }
                         }
                     }
                 },
@@ -42,10 +45,6 @@ pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     }
 
     ct.root.nodes[node.value()].children = Some(nodes);
-
-    // for node in nodes.iter() {
-    //     insert_cache!(ct, &ct.key, *node);
-    // }
 
     vec![node]
 }

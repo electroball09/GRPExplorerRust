@@ -1,8 +1,9 @@
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use glam::*;
 use bitflags::bitflags;
+use log::warn;
 use super::{ArchetypeImpl, LoadError};
 use crate::util::load_util::*;
 
@@ -15,6 +16,7 @@ pub struct GameObject {
     pub flag_b: u8,
     pub flag_c: u8,
     pub matrix: Mat4,
+    pub light: Light,
 }
 
 bitflags! {
@@ -55,6 +57,37 @@ bitflags! {
     }
 }
 
+#[derive(Default, Debug)]
+pub enum Light {
+    #[default]
+    None,
+    Point(PointLightParams),
+    Spot(SpotLightParams),
+    Directional(DirectionalLightParams)
+}
+
+#[derive(Default, Debug)]
+pub struct PointLightParams {
+    pub color: Vec4,
+    pub intensity: f32,
+    pub range: f32
+}
+
+#[derive(Default, Debug)]
+pub struct SpotLightParams {
+    pub color: Vec4,
+    pub intensity: f32,
+    pub range: f32,
+    pub inner_cone_angle: f32,
+    pub outer_cone_angle: f32
+}
+
+#[derive(Default, Debug)]
+pub struct DirectionalLightParams {
+    pub color: Vec4,
+    pub intensity: f32
+}
+
 impl GameObject {
     pub fn position(&self) -> Vec3 {
         let (_, _, pos) = self.matrix.to_scale_rotation_translation();
@@ -86,6 +119,66 @@ impl ArchetypeImpl for GameObject {
         self.flag_b = cursor.read_u8()?;
         self.flag_c = cursor.read_u8()?;
         self.matrix = read_mat4(&mut cursor)?;
+
+        if self.identity_flags.contains(IdentityFlags::SFX_STRUCT | IdentityFlags::HAS_VISUAL) {
+            let lt = cursor.read_u8()?;
+            let mut dat: [u8; 8] = [0; 8];
+            cursor.read(&mut dat)?;
+            match lt {
+                1 => {
+                    self.light = Light::Point(PointLightParams {
+                        color: Vec4::new(
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0
+                        ).zyxw(), // for some reason yeti light colors are bgra
+                        intensity: cursor.read_f32::<LittleEndian>()?,
+                        range: {
+                            cursor.read_f32::<LittleEndian>()?;
+                            cursor.read_f32::<LittleEndian>()?
+                        }
+                    });
+                },
+                2 => {
+                    self.light = Light::Spot( SpotLightParams {
+                        color: Vec4::new(
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0
+                        ).zyxw(), // for some reason yeti light colors are bgra
+                        intensity: cursor.read_f32::<LittleEndian>()?,
+                        range: {
+                            cursor.read_f32::<LittleEndian>()?;
+                            cursor.read_f32::<LittleEndian>()?
+                        },
+                        inner_cone_angle: {
+                            cursor.read_f32::<LittleEndian>()?;
+                            cursor.read_f32::<LittleEndian>()?;
+                            cursor.read_f32::<LittleEndian>()?
+                        },
+                        outer_cone_angle: cursor.read_f32::<LittleEndian>()?
+                    });
+                },
+                3 => {
+                    self.light = Light::Directional(DirectionalLightParams {
+                        color: Vec4::new(
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0,
+                            cursor.read_u8()? as f32 / 255.0
+                        ).zyxw(), // for some reason yeti light colors are bgra
+                        intensity: cursor.read_f32::<LittleEndian>()?,
+                    });
+                },
+                _ => {
+                    self.light = Light::None;
+                    warn!("weird light type?? {}", lt);
+                }
+            }
+        }
+
         Ok(())
     }
 

@@ -1,4 +1,4 @@
-use crate::objects::ObjectArchetype;
+use crate::objects::{Light, ObjectArchetype};
 
 use super::*;
 use glam::Mat4;
@@ -169,8 +169,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         z_axis: [0.0, 1.0, 0.0, 0.0].into(),
         w_axis: [0.0, 0.0, 0.0, 1.0].into(),
     };
-    let blender_matrix = toggle_matrix * yeti_matrix * toggle_matrix;
-    //let blender_matrix = gao.matrix;
+    let blender_matrix = toggle_matrix * yeti_matrix * toggle_matrix; // this switches y and z coords and flips x coord, same as in exp_mesh.rs
 
     let nodes = {
         let old_key = ct.key;
@@ -187,12 +186,92 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         nodes
     };
 
+    let light = {
+        if let Some(ref mut ext) = ct.root.extensions {
+            if let Some(ref mut lights) = ext.khr_lights_punctual {
+                match &gao.light {
+                    Light::Point(point) => {
+                        lights.lights.push(json::extensions::scene::khr_lights_punctual::Light {
+                            color: [point.color.x, point.color.y, point.color.z],
+                            extensions: None,
+                            extras: Default::default(),
+                            intensity: point.intensity * 1000.0,
+                            name: None,
+                            range: Some(point.range * 1000.0),
+                            spot: None,
+                            type_: Valid(json::extensions::scene::khr_lights_punctual::Type::Point)
+                        });
+                        Some(lights.lights.len() as u32 - 1)
+                    },
+                    Light::Spot(spot) => {
+                        lights.lights.push(json::extensions::scene::khr_lights_punctual::Light {
+                            color: [spot.color.x, spot.color.y, spot.color.z],
+                            extensions: None,
+                            extras: Default::default(),
+                            intensity: spot.intensity * 1000.0,
+                            name: None,
+                            range: Some(spot.range * 1000.0),
+                            spot: Some(json::extensions::scene::khr_lights_punctual::Spot {
+                                inner_cone_angle: spot.inner_cone_angle,
+                                outer_cone_angle: spot.outer_cone_angle
+                            }),
+                            type_: Valid(json::extensions::scene::khr_lights_punctual::Type::Spot)
+                        });
+                        Some(lights.lights.len() as u32 - 1)
+                    },
+                    Light::Directional(directional) => {
+                        lights.lights.push(json::extensions::scene::khr_lights_punctual::Light {
+                            color: [directional.color.x, directional.color.y, directional.color.z],
+                            extensions: None,
+                            extras: Default::default(),
+                            intensity: directional.intensity * 1000.0,
+                            name: None,
+                            range: None,
+                            spot: None,
+                            type_: Valid(json::extensions::scene::khr_lights_punctual::Type::Directional)
+                        });
+                        Some(lights.lights.len() as u32 - 1)
+                    },
+                    Light::None => None
+                }
+            } else {
+                log::warn!("no khr_lights_punctual struct!");
+                None
+            }
+        } else {
+            log::warn!("no extension struct!");
+            None
+        }
+    };
+
+
+    if nodes.len() == 0 && light == None { // skip exporting empty/childless/implementationless gaos
+        log::warn!("skipping {} due to no data", name);
+        return Vec::new();
+    }
+
+    if let Some(ref light) = light {
+        log::debug!("light idx: {}", light);
+    }
+
     let node = ct.root.push(json::Node {
         matrix: Some(blender_matrix.to_cols_array()),
         children: Some(nodes),
         name: Some(name),
+        extensions: {
+            if let Some(light) = light {
+                Some(json::extensions::scene::Node {
+                    khr_lights_punctual: Some(json::extensions::scene::khr_lights_punctual::KhrLightsPunctual {
+                        light: json::Index::new(light)
+                    })
+                })
+            } else {
+                Default::default()
+            }
+        },
         ..Default::default()
     });
+    
 
     insert_cache!(ct, &ct.key, node);
 

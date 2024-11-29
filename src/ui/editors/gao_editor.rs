@@ -22,6 +22,8 @@ impl EditorImpl for GameobjectEditor {
             ui.label(format!("pos: {}", gao.position()));
             ui.label(format!("rot: {}", gao.rotation()));
             ui.label(format!("scl: {}", gao.scale()));
+            ui.add_space(15.0);
+            ui.label(format!("light: {:?}", gao.light));
         }
     }
 }

@@ -76,7 +76,13 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
 }
 
 pub fn export(key: u32, bf: &Bigfile) {
-    let mut root = json::Root::default();
+    let mut root = json::Root {
+        extensions_used: vec!["KHR_lights_punctual".into()],
+        extensions: Some(json::extensions::Root {
+            khr_lights_punctual: Some(json::extensions::root::KhrLightsPunctual::default())
+        }),
+        ..Default::default()
+    };
 
     let mut buf = Vec::new();
     let mut cursor = Cursor::new(&mut buf);
@@ -127,7 +133,7 @@ pub fn export(key: u32, bf: &Bigfile) {
     assert!(ct.cursor.position() <= u32::MAX as u64);
     ct.root.buffers[0].byte_length = USize64(ct.cursor.position());
 
-    log::info!("exported {} nodes", nodes.len());
+    log::info!("exported {} nodes", ct.root.nodes.len());
     log::info!("buffer size: {:#}", Byte::from_u64(ct.cursor.position()));
 
     ct.root.push(json::Scene {
