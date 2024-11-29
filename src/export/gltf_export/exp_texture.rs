@@ -6,7 +6,7 @@ use json::validation::Checked::Valid;
 use json::validation::USize64;
 
 pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>> {
-    check_cache!(ct);
+    gltf_export_init!(ct);
 
     let (meta, txd_key) = match &ct.bf.object_table[&ct.key].archetype {
         ObjectArchetype::TextureMetadata(tga) => {

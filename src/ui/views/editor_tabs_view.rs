@@ -159,7 +159,7 @@ impl FileEditorTabs {
     fn draw_central_panel(&mut self, key: u32, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
         egui::CentralPanel::default().show(ectx.ctx, |ui| {
             for tab in self.editor_tabs.iter_mut() {
-                if tab.key == key {
+                if tab.key == key && tab.loaded {
                     tab.editor.draw(key, ui, ectx);
                 }
             }

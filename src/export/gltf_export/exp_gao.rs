@@ -6,7 +6,7 @@ use gltf_json as json;
 use json::validation::Checked::Valid;
 
 pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material>> {
-    check_cache!(ct);
+    gltf_export_init!(ct);
 
     let name = format!("{:#010X} {}", ct.key, ct.bf.file_table[&ct.key].get_name_ext());
 
@@ -66,7 +66,7 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
 }
 
 pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
-    check_cache!(ct);
+    gltf_export_init!(ct);
 
     let map = {
         let mut map = HashMap::new();
@@ -152,7 +152,7 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 }
 
 pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
-    check_cache!(ct);
+    gltf_export_init!(ct);
 
     let gao = match &ct.bf.object_table[&ct.key].archetype {
         ObjectArchetype::GameObject(gao) => gao,

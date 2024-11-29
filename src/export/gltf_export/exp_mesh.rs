@@ -5,7 +5,7 @@ use json::validation::Checked::Valid;
 use json::validation::USize64;
 
 pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
-    check_cache!(ct);
+    gltf_export_init!(ct);
 
     let msd_key = ct.bf.object_table[&ct.key].references[0];
 

@@ -25,7 +25,7 @@ pub struct ExportContext<'a> {
     pub index_cache: HashMap<u32, Vec<u32>>
 }
 
-macro_rules! check_cache {
+macro_rules! gltf_export_init {
     ($ct:expr) => {
         if $ct.index_cache.contains_key(&$ct.key) {
             //log::info!("hit cached key {:#010X}", $ct.key);
@@ -37,7 +37,7 @@ macro_rules! check_cache {
         }
     }
 }
-pub(crate) use check_cache;
+pub(crate) use gltf_export_init;
 macro_rules! insert_cache {
     ($ct:expr, $key:expr, $index:expr) => {
         let value = $index.value() as u32;
