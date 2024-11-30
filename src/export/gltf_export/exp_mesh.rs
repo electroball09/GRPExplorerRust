@@ -21,7 +21,7 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
     };
     let _msd_name = ct.bf.file_table[&msd_key].get_name().to_string();
 
-    let vtx_size: usize = 12 + 8;
+    let vtx_size: usize = 12 + 16;
     let face_size: usize = 2;
 
     let mut vec = Vec::new();
@@ -30,12 +30,15 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
     for idx in 0..msd.num_vertices as usize {
         let vtx = msd.vertex_data.pos[idx];
         let uv0 = msd.vertex_data.uv0[idx];
+        let uv1 = msd.vertex_data.uv1[idx];
 
         ct.cursor.write_f32::<ENDIAN>(-vtx.x).expect("write error"); // negate x coord for blender
         ct.cursor.write_f32::<ENDIAN>(vtx.z).expect("write error"); // flip y and z coords for blender
         ct.cursor.write_f32::<ENDIAN>(vtx.y).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(uv0.x).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(uv0.y).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(uv1.x).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(uv1.y).expect("write error");
     }
     let vbuf_len = ct.cursor.position() as usize - buffer_start;
 
@@ -68,9 +71,24 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         sparse: None
     });
 
-    let uv_acc = ct.root.push(json::Accessor {
+    let uv0_acc = ct.root.push(json::Accessor {
         buffer_view: Some(vtx_view),
         byte_offset: Some(USize64(12)),
+        count: USize64::from(msd.num_vertices as usize),
+        component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+        extensions: Default::default(),
+        extras: Default::default(),
+        type_: Valid(json::accessor::Type::Vec2),
+        min: None,
+        max: None,
+        name: None,
+        normalized: false,
+        sparse: None
+    });
+
+    let uv1_acc = ct.root.push(json::Accessor {
+        buffer_view: Some(vtx_view),
+        byte_offset: Some(USize64(20)),
         count: USize64::from(msd.num_vertices as usize),
         component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
         extensions: Default::default(),
@@ -129,7 +147,8 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
             attributes: {
                 let mut map = BTreeMap::new();
                 map.insert(Valid(json::mesh::Semantic::Positions), pos_acc);
-                map.insert(Valid(json::mesh::Semantic::TexCoords(0)), uv_acc);
+                map.insert(Valid(json::mesh::Semantic::TexCoords(0)), uv0_acc);
+                map.insert(Valid(json::mesh::Semantic::TexCoords(1)), uv1_acc);
                 map
             },
             extensions: Default::default(),

@@ -171,7 +171,13 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         z_axis: [0.0, 1.0, 0.0, 0.0].into(),
         w_axis: [0.0, 0.0, 0.0, 1.0].into(),
     };
-    let blender_matrix = toggle_matrix * yeti_matrix * toggle_matrix; // this switches y and z coords and flips x coord, same as in exp_mesh.rs
+    let mut blender_matrix = toggle_matrix * yeti_matrix * toggle_matrix; // this switches y and z coords and flips x coord, same as in exp_mesh.rs
+    match gao.light {
+        Light::Directional(_) | Light::Spot(_) => {
+            blender_matrix.z_axis *= -1.0; // directional and spot lights are flipped in blender
+        },
+        _ => { }
+    };
 
     let nodes = {
         let old_key = ct.key;
@@ -197,7 +203,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             color: [point.color.x, point.color.y, point.color.z],
                             extensions: None,
                             extras: Default::default(),
-                            intensity: point.intensity * 1000.0,
+                            intensity: point.intensity * 10000.0,
                             name: None,
                             range: Some(point.range * 1000.0),
                             spot: None,
@@ -210,7 +216,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             color: [spot.color.x, spot.color.y, spot.color.z],
                             extensions: None,
                             extras: Default::default(),
-                            intensity: spot.intensity * 1000.0,
+                            intensity: spot.intensity * 10000.0,
                             name: None,
                             range: Some(spot.range * 1000.0),
                             spot: Some(json::extensions::scene::khr_lights_punctual::Spot {
@@ -226,7 +232,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             color: [directional.color.x, directional.color.y, directional.color.z],
                             extensions: None,
                             extras: Default::default(),
-                            intensity: directional.intensity * 1000.0,
+                            intensity: directional.intensity * 10000.0,
                             name: None,
                             range: None,
                             spot: None,
