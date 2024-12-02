@@ -3,7 +3,7 @@ use editors::{create_editor_for_type, EditorContext, EditorImpl};
 use egui::Widget;
 use log::*;
 use crate::egui::Ui;
-use crate::loader::BigfileLoad;
+use crate::loader::{AmortizedLoad, LoadSet};
 use clipboard::*;
 use crate::bigfile::{Bigfile, obj_type_to_name};
 use crate::bigfile::metadata::FileEntry;
@@ -14,8 +14,12 @@ struct EditorTab {
     key: u32,
     name: String,
     editor: Box<dyn EditorImpl>,
-    load: BigfileLoad,
+    load: AmortizedLoad,
     loaded: bool,
+}
+
+pub struct EditorTabContext<'a> {
+    pub load_set: &'a dyn LoadSet,
 }
 
 pub struct FileEditorTabs {
@@ -46,7 +50,7 @@ impl FileEditorTabs {
                 key,
                 name: bf.file_table[&key].get_name_ext().to_string(),
                 editor,
-                load: BigfileLoad::new(key),
+                load: AmortizedLoad::new(key),
                 loaded: false,
             });
             if let Err(error) = bf.load_file(key) {
@@ -160,10 +164,13 @@ impl FileEditorTabs {
         egui::CentralPanel::default().show(ectx.ctx, |ui| {
             for tab in self.editor_tabs.iter_mut() {
                 if tab.key == key && tab.loaded {
-                    tab.editor.draw(key, ui, ectx);
+                    let tctx = EditorTabContext {
+                        load_set: &tab.load
+                    };
+                    tab.editor.draw(key, ui, ectx, &tctx);
                 }
             }
-        }); 
+        });
     }
 
     fn draw_side_panel(&mut self, key: u32, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
@@ -241,12 +248,11 @@ impl View for FileEditorTabs {
             return;
         }
 
-        let mut ectx = EditorContext {
-            bf: app.bigfile.unwrap(),
-            shader_cache: app.shader_cache,
-            ctx: app.ctx,
-            responses: Vec::new()
-        };
+        let mut ectx = EditorContext::new(
+            app.bigfile.unwrap(),
+            app.shader_cache,
+            app.ctx
+        );
 
         self.draw_top_panel(ui, &mut ectx);
 

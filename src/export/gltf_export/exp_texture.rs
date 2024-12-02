@@ -36,7 +36,7 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
         _ => panic!("not a texture data file??")
     };
 
-    let name = ct.bf.file_table[&txd_key].get_name_ext().to_string();
+    let name = Some(format!("{:#010X} {}", ct.key, ct.bf.file_table[&txd_key].get_name_ext().to_string()));
     
     let data = texture_util::decompress_texture(&meta, txd);
 
@@ -46,7 +46,8 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
     }
 
     let tex_start = ct.cursor.position();
-    image::write_buffer_with_format(ct.cursor, &data, meta.width as u32, meta.height as u32, image::ExtendedColorType::Rgba8, image::ImageFormat::Bmp).unwrap();
+    //image::write_buffer_with_format(ct.cursor, &data, meta.width as u32, meta.height as u32, image::ExtendedColorType::Rgba8, image::ImageFormat::Bmp).unwrap();
+    image::write_buffer_with_format(ct.cursor, &data, meta.width as u32, meta.height as u32, image::ExtendedColorType::Rgba8, image::ImageFormat::Png).unwrap();
     //ct.cursor.write(&data).unwrap();
     let tex_end = ct.cursor.position();
 
@@ -56,15 +57,15 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
         byte_offset: Some(USize64(tex_start)),
         target: Some(Valid(json::buffer::Target::ArrayBuffer)),
         byte_stride: Some(json::buffer::Stride(16)),
-        name: None, 
+        name: name.clone(), 
         extensions: Default::default(),
         extras: Default::default()
     });
 
     let source = ct.root.push(json::Image {
         buffer_view: Some(tex_view),
-        mime_type: Some(json::image::MimeType("image/bmp".to_string())),
-        name: None,
+        mime_type: Some(json::image::MimeType("image/png".to_string())),
+        name: name.clone(),
         uri: None,
         extensions: Default::default(),
         extras: Default::default()
@@ -73,7 +74,7 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
     let sampler = ct.root.push(json::texture::Sampler {
         mag_filter: Some(Valid(json::texture::MagFilter::Linear)),
         min_filter: Some(Valid(json::texture::MinFilter::Linear)),
-        name: None,
+        name: name.clone(),
         wrap_s: Valid(json::texture::WrappingMode::Repeat),
         wrap_t: Valid(json::texture::WrappingMode::Repeat),
         extensions: Default::default(),
@@ -81,7 +82,7 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
     });
 
     let texture = ct.root.push(json::Texture {
-        name: Some(format!("{:#010X} {}", ct.key, name)),
+        name: name.clone(),
         sampler: Some(sampler),
         source,
         extensions: Default::default(),

@@ -21,12 +21,13 @@ mod world_editor; use world_editor::*;
 
 pub use crate::egui as egui;
 
+use super::editor_tabs_view::EditorTabContext;
 pub use super::{EditorContext, EditorResponse};
 
 use crate::{objects::ObjectArchetype, bigfile::metadata::ObjectType};
 
 pub trait EditorImpl {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext);
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, tctx: &EditorTabContext);
 }
 
 pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {

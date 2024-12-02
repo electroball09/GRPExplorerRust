@@ -2,19 +2,43 @@ use std::cmp::min;
 use std::collections::HashSet;
 
 use queues::{IsQueue, Queue};
+use strum::IntoEnumIterator;
 
 use super::*;
 
-pub struct BigfileLoad {
+pub struct AmortizedLoad {
     loaded: HashSet<u32>,
+    type_map: HashMap<ObjectType, Vec<u32>>,
     to_load: Vec<u32>,
 }
 
-impl BigfileLoad {
+pub trait LoadSet {
+    fn loaded_by_type(&self, obj_type: crate::bigfile::ObjectType) -> Option<&Vec<u32>>;
+    fn is_loaded(&self) -> bool;
+}
+
+impl LoadSet for AmortizedLoad {
+    fn loaded_by_type(&self, obj_type: crate::bigfile::ObjectType) -> Option<&Vec<u32>> {
+        self.type_map.get(&obj_type)
+    }
+
+    fn is_loaded(&self) -> bool {
+        self.to_load.len() == 0
+    }
+}
+
+impl Default for AmortizedLoad {
+    fn default() -> Self {
+        Self::new(0xFFFFFFFF)
+    }
+}
+
+impl AmortizedLoad {
     pub fn new(initial_key: u32) -> Self {
         Self {
             loaded: HashSet::new(),
             to_load: vec![initial_key],
+            type_map: ObjectType::iter().map(|t| (t, Vec::new())).collect(),
         }
     }
 
@@ -23,6 +47,11 @@ impl BigfileLoad {
     }
 
     pub fn load_num(&mut self, bf: &mut Bigfile, num: u32) -> bool {
+        if self.is_loaded() {
+            warn!("attemtping to load a completely loaded load set!");
+            return true;
+        }
+
         let mut tmp_to_load: Queue<u32> = Queue::new();
 
         for key in self.to_load.drain(0..min(num as usize, self.to_load.len())) {
@@ -41,7 +70,8 @@ impl BigfileLoad {
                         Ok(_) => {
                             for subkey in &bf.object_table[&key].references {
                                 let _ = tmp_to_load.add(*subkey);
-                            }
+                            };
+                            self.type_map.get_mut(&bf.file_table.get(&key).unwrap().object_type).unwrap().push(key);
                         },
                         Err(error) => {
                             error!("error loading key {:#010X}: {}", key, error);

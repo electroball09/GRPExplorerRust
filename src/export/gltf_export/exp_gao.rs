@@ -174,7 +174,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let mut blender_matrix = toggle_matrix * yeti_matrix * toggle_matrix; // this switches y and z coords and flips x coord, same as in exp_mesh.rs
     match gao.light {
         Light::Directional(_) | Light::Spot(_) => {
-            blender_matrix.z_axis *= -1.0; // directional and spot lights are flipped in blender
+            blender_matrix.z_axis *= -1.0; // directional and spot lights are flipped in gltf
         },
         _ => { }
     };
@@ -204,7 +204,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             extensions: None,
                             extras: Default::default(),
                             intensity: point.intensity * 10000.0,
-                            name: None,
+                            name: Some(name.clone()),
                             range: Some(point.range * 1000.0),
                             spot: None,
                             type_: Valid(json::extensions::scene::khr_lights_punctual::Type::Point)
@@ -217,7 +217,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             extensions: None,
                             extras: Default::default(),
                             intensity: spot.intensity * 10000.0,
-                            name: None,
+                            name: Some(name.clone()),
                             range: Some(spot.range * 1000.0),
                             spot: Some(json::extensions::scene::khr_lights_punctual::Spot {
                                 inner_cone_angle: spot.inner_cone_angle,
@@ -233,7 +233,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             extensions: None,
                             extras: Default::default(),
                             intensity: directional.intensity * 10000.0,
-                            name: None,
+                            name: Some(name.clone()),
                             range: None,
                             spot: None,
                             type_: Valid(json::extensions::scene::khr_lights_punctual::Type::Directional)

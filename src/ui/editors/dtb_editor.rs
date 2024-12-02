@@ -6,7 +6,7 @@ pub struct DataTableEditor {
 }
 
 impl EditorImpl for DataTableEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext) {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         let dtb = match ectx.bf.object_table.get(&key).unwrap().archetype {
             ObjectArchetype::DataTable(ref dtb2) => dtb2,
             _ => { return; }

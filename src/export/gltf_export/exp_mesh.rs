@@ -86,20 +86,20 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         sparse: None
     });
 
-    let uv1_acc = ct.root.push(json::Accessor {
-        buffer_view: Some(vtx_view),
-        byte_offset: Some(USize64(20)),
-        count: USize64::from(msd.num_vertices as usize),
-        component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
-        extensions: Default::default(),
-        extras: Default::default(),
-        type_: Valid(json::accessor::Type::Vec2),
-        min: None,
-        max: None,
-        name: None,
-        normalized: false,
-        sparse: None
-    });
+    // let uv1_acc = ct.root.push(json::Accessor {
+    //     buffer_view: Some(vtx_view),
+    //     byte_offset: Some(USize64(20)),
+    //     count: USize64::from(msd.num_vertices as usize),
+    //     component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+    //     extensions: Default::default(),
+    //     extras: Default::default(),
+    //     type_: Valid(json::accessor::Type::Vec2),
+    //     min: None,
+    //     max: None,
+    //     name: None,
+    //     normalized: false,
+    //     sparse: None
+    // });
 
     let mut prims = Vec::new();
 
@@ -148,7 +148,7 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
                 let mut map = BTreeMap::new();
                 map.insert(Valid(json::mesh::Semantic::Positions), pos_acc);
                 map.insert(Valid(json::mesh::Semantic::TexCoords(0)), uv0_acc);
-                map.insert(Valid(json::mesh::Semantic::TexCoords(1)), uv1_acc);
+                //map.insert(Valid(json::mesh::Semantic::TexCoords(1)), uv1_acc);
                 map
             },
             extensions: Default::default(),
