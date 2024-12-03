@@ -76,6 +76,13 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
 }
 
 pub fn export(key: u32, bf: &Bigfile) {
+    let file_name = format!("{}.glb", bf.file_table[&key].get_name());
+
+    let path = match rfd::FileDialog::new().add_filter("glTF2.0", &[".glb"]).set_file_name(&file_name).save_file() {
+        Some(path) => { path },
+        None => return
+    };
+
     let mut root = json::Root {
         extensions_used: vec!["KHR_lights_punctual".into()],
         extensions: Some(json::extensions::Root {
@@ -154,7 +161,7 @@ pub fn export(key: u32, bf: &Bigfile) {
         bin: Some(Cow::Owned(to_padded_byte_vector(buf))),
         json: Cow::Owned(json_string.into_bytes())
     };
-    let writer = std::fs::File::create("tool_output\\test.glb").unwrap();
+    let writer = std::fs::File::create(path).unwrap();
     glb.to_writer(writer).unwrap();
 }
 
