@@ -1,37 +1,80 @@
-use crate::objects::{Light, ObjectArchetype};
+use crate::objects::{Light, ObjectArchetype, TextureMetaType};
 
 use super::*;
 use glam::Mat4;
 use gltf_json as json;
 use json::validation::Checked::Valid;
 
+struct LoadedTextures {
+    pub base_color: Option<json::Index<json::Texture>>,
+    pub normal: Option<json::Index<json::Texture>>,
+}
+
+fn load_textures<'a>(ct: &'a mut ExportContext) -> LoadedTextures {
+    let mut textures = LoadedTextures {
+        base_color: None,
+        normal: None
+    };
+
+    let mut bkey = None;
+    let mut nkey = None;
+    for rkey in ct.bf.object_table[&ct.key].references.iter() {
+        if ct.bf.is_key_valid(*rkey) {
+            if let ObjectArchetype::TextureMetadata(tga) = &ct.bf.object_table[&rkey].archetype {
+                let (rkey, meta) = match tga.meta {
+                    TextureMetaType::Metadata(meta) => (*rkey, meta),
+                    TextureMetaType::Passthrough => {
+                        let rkey = ct.bf.object_table[&rkey].references[0];
+                        if let ObjectArchetype::TextureMetadata(tga) = &ct.bf.object_table[&rkey].archetype {
+                            match tga.meta {
+                                TextureMetaType::Metadata(meta) => (rkey, meta),
+                                _ => continue
+                            }
+                        } else {
+                            continue
+                        }
+                    },
+                    TextureMetaType::None => continue
+                };
+
+                if meta.is_normal_map() {
+                    nkey = Some(rkey);
+                } else {
+                    if bkey == None {
+                        bkey = Some(rkey);
+                    }
+                }
+            }
+        };
+    };
+
+    if let Some(bkey) = bkey {
+        ct_with_key!(ct, bkey, {
+            let texs = gltf_tga(ct);
+            if texs.len() != 0 {
+                textures.base_color = Some(texs[0]);
+            }
+        });
+    }
+
+    if let Some(nkey) = nkey {
+        ct_with_key!(ct, nkey, {
+            let texs = gltf_tga(ct);
+            if texs.len() != 0 {
+                textures.normal = Some(texs[0]);
+            }
+        });
+    }
+
+    textures
+}
+
 pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material>> {
     gltf_export_init!(ct);
 
     let name = format!("{:#010X} {}", ct.key, ct.bf.file_table[&ct.key].get_name_ext());
 
-    let mut tga_key = None;
-    for rkey in ct.bf.object_table[&ct.key].references.iter() {
-        if ct.bf.is_key_valid(*rkey) {
-            if let ObjectType::tga = ct.bf.file_table[&rkey].object_type {
-                tga_key = Some(rkey);
-                break;
-            }
-        }
-    }
-    let tga_key = match tga_key {
-        Some(key) => *key,
-        None => { return Vec::new() }
-    };
-    
-    let old_key = ct.key;
-    ct.key = tga_key;
-    let texture = super::gltf_tga(ct);
-    if texture.len() == 0 {
-        return Vec::new();
-    }
-    let texture = texture[0];
-    ct.key = old_key;
+    let textures = load_textures(ct);
 
     let material = ct.root.push(json::Material {
         alpha_cutoff: None,
@@ -41,7 +84,9 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
         pbr_metallic_roughness: json::material::PbrMetallicRoughness {
             base_color_factor: json::material::PbrBaseColorFactor([1.0; 4]),
             base_color_texture: Some(json::texture::Info {
-                index: texture,
+                index: if let Some(idx) = textures.base_color {
+                    idx
+                } else { json::Index::new(0) },
                 tex_coord: 0,
                 extensions: Default::default(),
                 extras: Default::default()
@@ -52,7 +97,15 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
             extensions: Default::default(),
             extras: Default::default()
         },
-        normal_texture: None,
+        normal_texture: if let Some(idx) = textures.normal {
+            Some(json::material::NormalTexture {
+                index: idx,
+                scale: 1.0,
+                tex_coord: 0,
+                extensions: Default::default(),
+                extras: Default::default()
+            })
+        } else { None },
         occlusion_texture: None,
         emissive_factor: json::material::EmissiveFactor([0.0; 3]),
         emissive_texture: None,

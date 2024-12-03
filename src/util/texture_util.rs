@@ -2,7 +2,7 @@ use crate::objects::{TextureData, TextureFormat, TextureMetadata};
 
 pub fn decompress_texture(meta: &TextureMetadata, txd: &TextureData) -> Vec<u8> {
     match meta.format {
-        TextureFormat::Bgra32 | TextureFormat::Rgba32 | TextureFormat::Gray => {
+        TextureFormat::Bgra8 | TextureFormat::Rgba8 | TextureFormat::Gray => {
             txd.texture_data.clone()
         },
         TextureFormat::Dxt1 => {

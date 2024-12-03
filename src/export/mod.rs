@@ -58,11 +58,11 @@ pub fn exp_texture(path_no_ext: String, tga: &objects::TextureMetadataObject, tx
                     file.write(&txd.texture_data[..]).unwrap();
                 }
             },
-            TextureFormat::Rgba32 => {
+            TextureFormat::Rgba8 => {
                 let path = format!("{}.bmp", path_no_ext);
                 image::save_buffer(path, &txd.texture_data, meta.width as u32, meta.height as u32, ColorType::Rgba8).unwrap();
             },
-            TextureFormat::Bgra32 => {
+            TextureFormat::Bgra8 => {
                 let path = format!("{}.bmp", path_no_ext);
                 image::save_buffer(path, &txd.texture_data, meta.width as u32, meta.height as u32, ColorType::Rgba8).unwrap();
             },

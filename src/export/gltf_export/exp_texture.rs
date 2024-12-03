@@ -28,7 +28,7 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
                 TextureMetaType::None => panic!("wtf we have a weird texture here! {:#010X}", ct.key)
             }
         },
-        _ => panic!("wrong object type!")
+        _ => panic!("wrong object type!") 
     };
     
     let txd = match &ct.bf.object_table[&txd_key].archetype {
@@ -38,17 +38,23 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
 
     let name = Some(format!("{:#010X} {}", ct.key, ct.bf.file_table[&txd_key].get_name_ext().to_string()));
     
-    let data = texture_util::decompress_texture(&meta, txd);
+    let mut data = texture_util::decompress_texture(&meta, txd);
 
     if data.len() != meta.width as usize * meta.height as usize * 4 as usize {
         log::warn!("skipping texture {:#010X} due to bad data size! {} != {}", ct.key, data.len(), meta.width as usize * meta.height as usize * 4 as usize);
         return Vec::new();
     }
 
+    if meta.is_normal_map() {
+        data = data.chunks_exact(4).flat_map(|ch| [ch[1], ch[3], ch[2], 255]).collect();
+    }
+
     let tex_start = ct.cursor.position();
-    //image::write_buffer_with_format(ct.cursor, &data, meta.width as u32, meta.height as u32, image::ExtendedColorType::Rgba8, image::ImageFormat::Bmp).unwrap();
-    image::write_buffer_with_format(ct.cursor, &data, meta.width as u32, meta.height as u32, image::ExtendedColorType::Rgba8, image::ImageFormat::Png).unwrap();
-    //ct.cursor.write(&data).unwrap();
+    let color_type = match meta.format {
+        TextureFormat::Bgra8 => image::ExtendedColorType::Bgra8,
+        _ => image::ExtendedColorType::Rgba8
+    };
+    image::write_buffer_with_format(ct.cursor, &data, meta.width as u32, meta.height as u32, color_type, image::ImageFormat::Png).unwrap();
     let tex_end = ct.cursor.position();
 
     let tex_view = ct.root.push(json::buffer::View {

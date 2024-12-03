@@ -1,12 +1,13 @@
 use egui::Widget;
 
 use super::*;
-use crate::objects::{ObjectArchetype, TextureMetaType};
+use crate::objects::{ObjectArchetype, TextureFormat, TextureMetaType};
 use crate::export::*;
 use crate::util::texture_util;
 
 pub struct TextureMetadataEditor {
     texture: Option<egui::TextureHandle>,
+    tex_data: Option<Vec<u8>>,
     tex_size: egui::Vec2,
     zoom: f32,
 }
@@ -15,22 +16,59 @@ impl Default for TextureMetadataEditor {
     fn default() -> Self {
         Self { 
             texture: None,
+            tex_data: None,
             tex_size: [100.0, 100.0].into(),
             zoom: 1.0,
         }
     }
 }
 
-// impl TextureMetadataEditor {
-//     fn from_brga(size: [usize; 2], brga: &[u8]) -> egui::ColorImage {
-//         assert_eq!(size[0] * size[1] * 4, brga.len());
-//         let pixels = brga
-//             .chunks_exact(4)
-//             .map(|p| egui::Color32::from_rgba_premultiplied(p[1], p[2], p[0], p[3]))
-//             .collect();
-//         egui::ColorImage { size, pixels }
-//     }
-// }
+impl TextureMetadataEditor {
+    fn from_rgba(size: [usize; 2], brga: &[u8]) -> Result<egui::ColorImage, String> {
+        let expected_size = size[0] * size[1] * 4;
+        if expected_size != brga.len() {
+            return Err(format!("unexpected size: expected {} != len {}", expected_size, brga.len()))
+        }
+        let pixels = brga
+            .chunks_exact(4)
+            .map(|p| egui::Color32::from_rgba_premultiplied(p[0], p[1], p[2], p[3]))
+            .collect();
+        Ok(egui::ColorImage { size, pixels })
+    }
+
+    fn from_brga(size: [usize; 2], brga: &[u8]) -> Result<egui::ColorImage, String> {
+        let expected_size = size[0] * size[1] * 4;
+        if expected_size != brga.len() {
+            return Err(format!("unexpected size: expected {} != len {}", expected_size, brga.len()))
+        }
+        let pixels = brga
+            .chunks_exact(4)
+            .map(|p| egui::Color32::from_rgba_premultiplied(p[1], p[2], p[0], p[3]))
+            .collect();
+        Ok(egui::ColorImage { size, pixels })
+    }
+
+    fn from_normal_map(size: [usize; 2], brga: &[u8]) -> Result<egui::ColorImage, String> {
+        let expected_size = size[0] * size[1] * 4;
+        if expected_size != brga.len() {
+            return Err(format!("unexpected size: expected {} != len {}", expected_size, brga.len()))
+        }
+        let pixels = brga
+            .chunks_exact(4)
+            .map(|p| {
+                let r = p[1];
+                let g = p[3];
+                let b = p[2];
+                let a = 255; // clear alpha channel
+                egui::Color32::from_rgba_premultiplied(r,g,b,a)
+            }).collect();
+        Ok(egui::ColorImage { size, pixels })
+    }
+
+    fn image_to_buf(img: &egui::ColorImage) -> Vec<u8> {
+        img.pixels.iter().flat_map(|img| [img.r(), img.g(), img.b(), img.a()]).collect()
+    }
+}
 
 impl EditorImpl for TextureMetadataEditor {
     fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
@@ -51,10 +89,25 @@ impl EditorImpl for TextureMetadataEditor {
                     ectx.bf.load_file(txd_key).unwrap();
                     if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table.get(&txd_key).unwrap().archetype {
                         let data = texture_util::decompress_texture(&meta, txd);
-                        let image = egui::ColorImage::from_rgba_premultiplied([meta.width.into(), meta.height.into()], &data);
-                        let tex = ectx.ctx.load_texture(format!("{:#010X}", key), image, Default::default());
-                        self.texture = Some(tex);
-                        self.tex_size = [meta.width as f32, meta.height as f32].into();
+                        let size = [meta.width as usize, meta.height as usize];
+                        let image = {
+                            match meta.format {
+                                TextureFormat::Bgra8 => TextureMetadataEditor::from_brga(size, &data),
+                                _ => {
+                                    if meta.is_normal_map() {
+                                        TextureMetadataEditor::from_normal_map(size, &data)
+                                    } else {
+                                        TextureMetadataEditor::from_rgba(size, &data)
+                                    }
+                                }
+                            }
+                        };
+                        if let Ok(image) = image {
+                            self.tex_data = Some(TextureMetadataEditor::image_to_buf(&image));
+                            let tex = ectx.ctx.load_texture(format!("{:#010X}", key), image, Default::default());
+                            self.texture = Some(tex);
+                            self.tex_size = [meta.width as f32, meta.height as f32].into();
+                        }
                     }
                 }
                 
@@ -65,20 +118,15 @@ impl EditorImpl for TextureMetadataEditor {
                     ui.label(format!("unk_02: {}", meta.unk_02));
                     ui.label(format!("format: {:?}", meta.format));
                     ui.label(format!("tex type?: {:#06X}", meta.mb_type_indicator));
-        
-                    if ui.button("Export...").clicked() {
-                        let obj = &ectx.bf.object_table.get(&key).unwrap();
-                        let key = obj.get_key();
-                        if let Some(path) = pick_exp_path_no_ext(&ectx.bf.object_table[&key]) {
-                            let txd_key = ectx.bf.object_table[&key].references[0];
-                            if let Ok(_) = ectx.bf.load_file(txd_key) {
-                                if let ObjectArchetype::TextureMetadata(tga) = &ectx.bf.object_table[&key].archetype {
-                                    if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table[&txd_key].archetype {
-                                        exp_texture(path, &tga, &txd);
-                                    }
-                                }
+
+                    if let Some(ref data) = self.tex_data {
+                        if ui.button("Export...").clicked() {
+                            let obj = &ectx.bf.object_table.get(&key).unwrap();
+                            let key = obj.get_key();
+                            if let Some(path) = pick_exp_path_no_ext(&ectx.bf.object_table[&key]) {
+                                let path = format!("{}.png", path);
+                                image::save_buffer_with_format(path, &data, meta.width.into(), meta.height.into(), image::ExtendedColorType::Rgba8, image::ImageFormat::Png).unwrap();
                             }
-                            ectx.bf.unload_file(txd_key).unwrap();
                         }
                     }
                 });

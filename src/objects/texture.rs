@@ -7,8 +7,8 @@ pub enum TextureFormat {
     Gray,
     Dxt5,
     Dxt1,
-    Bgra32,
-    Rgba32,
+    Bgra8,
+    Rgba8,
     UnusedX360_27,
     UnusedX360_28,
 }
@@ -21,8 +21,8 @@ impl TextureFormat {
             0x0C => TextureFormat::Dxt5,
             0x08 => TextureFormat::Dxt1,
             0x09 => TextureFormat::Dxt1,
-            0x04 => TextureFormat::Bgra32,
-            0x05 => TextureFormat::Rgba32,
+            0x04 => TextureFormat::Bgra8,
+            0x05 => TextureFormat::Rgba8,
             0x27 => TextureFormat::UnusedX360_27,
             0x28 => TextureFormat::UnusedX360_28,
             _ => TextureFormat::Unknown
@@ -60,12 +60,9 @@ pub struct TextureMetadata {
     pub mb_type_indicator: u16,
 }
 
-impl TextureMetadataObject {
+impl TextureMetadata {
     pub fn is_normal_map(&self) -> bool{
-        match self.meta {
-            TextureMetaType::Metadata(meta) => meta.mb_type_indicator == 4096,
-            _ => false
-        }
+        self.mb_type_indicator == 4096
     }
 }
 
