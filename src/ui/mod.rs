@@ -26,6 +26,7 @@ use views::editor_tabs_view::FileEditorTabs;
 pub mod views;
 pub mod editors;
 mod editor_context; pub use editor_context::*;
+mod file_diff_tool; use file_diff_tool::*;
 
 pub struct AppContext<'a> {
     pub bigfile: Option<&'a mut Bigfile>,
@@ -37,7 +38,8 @@ pub struct ExplorerApp {
     pub bigfile: Option<Bigfile>,
     side_panel: views::side_panel::SidePanelView,
     fe_view: FileEditorTabs, 
-    pub shader_cache: ShaderCache
+    pub shader_cache: ShaderCache,
+    file_diff_tool: Option<FileDiffTool>,
 }
 
 impl Default for ExplorerApp {
@@ -46,7 +48,8 @@ impl Default for ExplorerApp {
             bigfile: None,
             side_panel: SidePanelView::new(),
             fe_view: FileEditorTabs::new(),
-            shader_cache: ShaderCache::new()
+            shader_cache: ShaderCache::new(),
+            file_diff_tool: None
         }
     }
 }
@@ -176,6 +179,19 @@ impl ExplorerApp {
                     self.fe_view.settings_menu(ui, &mut app);
                 });
                 ui.separator();
+
+                let mut close_tool = false;
+                if let Some(fdt) = &mut self.file_diff_tool {
+                    close_tool = fdt.draw(ui, ctx);
+                } else {
+                    if ui.button("Open file diff tool...").clicked() {
+                        self.file_diff_tool = Some(FileDiffTool::new());
+                    }
+                    ui.separator();
+                }
+                if close_tool {
+                    self.file_diff_tool = None;
+                }
             });
         });
 

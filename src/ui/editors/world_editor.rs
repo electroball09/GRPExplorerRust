@@ -1,55 +1,52 @@
+use std::collections::HashMap;
+
 use super::*;
 
 #[derive(Default)]
-pub struct WorldEditor;
+pub struct WorldEditor {
+    mat_map: Option<HashMap<u32, Vec<u32>>>,
+    display_order: Vec<u32>,
+}
 
 impl EditorImpl for WorldEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, tctx: &EditorTabContext) {
+        if let None = self.mat_map {
+            let mut mat_map = HashMap::new();
+            for mat in tctx.load_set.loaded_by_type(ObjectType::mat).unwrap() {
+                let shd_key = ectx.bf.object_table[mat].references.last().unwrap();
+                if !mat_map.contains_key(shd_key) {
+                    mat_map.insert(*shd_key, vec![*mat]);
+                } else {
+                    mat_map.get_mut(shd_key).unwrap().push(*mat);
+                }
+            }
+            self.display_order = mat_map.keys().map(|b| *b).collect::<Vec<u32>>();
+            self.display_order.sort_by(|a, b| {
+                let a = ectx.bf.file_table[a].get_name();
+                let b = ectx.bf.file_table[b].get_name();
+                a.cmp(b)
+            });
+            self.mat_map = Some(mat_map);
+        }
+
         if ui.button("Export to .glb...").clicked() {
             ectx.respond(EditorResponse::GltfExport(key));
         }
 
-        // ectx.ctx.show_viewport_immediate(
-        //     egui::ViewportId::from_hash_of("test!"), 
-        //     egui::ViewportBuilder::default()
-        //     .with_title("test!")
-        //     .with_always_on_top()
-        //     .with_maximize_button(false)
-        //     .with_minimize_button(false)
-        //     .with_close_button(false)
-        //     .with_resizable(false)
-        //     .with_taskbar(false)
-        //     .with_position([500.0, 200.0])
-        //     .with_inner_size([300.0, 200.0]), 
-        //     |ctx, _class| {
-        //         egui::CentralPanel::default().show(ctx, |ui| {
-        //             ui.label("test!")
-        //         });
-        //     }
-        // );
-
-        ui.columns(2, |cols| {
-            egui::ScrollArea::vertical().auto_shrink(false).id_salt("mat_col").show(&mut cols[0], |ui| {
-                for mat in _tctx.load_set.loaded_by_type(ObjectType::mat).unwrap() {
-                    ui.horizontal(|ui| {
-                        if ui.button(format!("{:#010X}", mat)).clicked() {
+        egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
+            for shd in &self.display_order {
+                ui.collapsing(format!("{:#010X} {}", shd, ectx.bf.file_table[shd].get_name_ext()), |ui| {
+                    if ui.button("Open shader...").clicked() {
+                        ectx.respond(EditorResponse::OpenNewTab(*shd));
+                    }
+    
+                    for mat in &self.mat_map.as_ref().unwrap()[shd] {
+                        if ui.button(format!("{:#010X} {}", mat, ectx.bf.file_table[mat].get_name_ext())).clicked() {
                             ectx.respond(EditorResponse::OpenNewTab(*mat));
                         }
-                        ui.label(ectx.bf.file_table.get(mat).unwrap().get_name());
-                    });
-                }
-            });
-
-            egui::ScrollArea::vertical().auto_shrink(false).id_salt("shd_col").show(&mut cols[1], |ui| {
-                for shd in _tctx.load_set.loaded_by_type(ObjectType::shd).unwrap() {
-                    ui.horizontal(|ui| {
-                        if ui.button(format!("{:#010X}", shd)).clicked() {
-                            ectx.respond(EditorResponse::OpenNewTab(*shd));
-                        }
-                        ui.label(ectx.bf.file_table.get(shd).unwrap().get_name());
-                    });
-                }
-            })
+                    }
+                });
+            }
         });
     }
 }

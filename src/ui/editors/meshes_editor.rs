@@ -34,7 +34,7 @@ impl EditorImpl for MeshMetadataEditor {
             }
         }
 
-        if let Some(msd) = msd {
+        if let Some(_msd) = msd {
             ectx.respond(EditorResponse::GltfExport(key));
         }
     }

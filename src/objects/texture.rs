@@ -51,10 +51,22 @@ impl Default for TextureMetadataObject {
 
 #[derive(Default, Clone, Copy)]
 pub struct TextureMetadata {
+    pub unk_01: u32,
     pub width: u16,
     pub height: u16,
+    pub unk_02: u8,
     pub format: TextureFormat,
     pub fmt_id: u8,
+    pub mb_type_indicator: u16,
+}
+
+impl TextureMetadataObject {
+    pub fn is_normal_map(&self) -> bool{
+        match self.meta {
+            TextureMetaType::Metadata(meta) => meta.mb_type_indicator == 4096,
+            _ => false
+        }
+    }
 }
 
 impl ArchetypeImpl for TextureMetadataObject {
@@ -66,14 +78,17 @@ impl ArchetypeImpl for TextureMetadataObject {
 
         let mut meta = TextureMetadata::default();
 
-        let mut bytes: [u8; 2] = [0; 2];
-        bytes.copy_from_slice(&buf[4..6]);
-        meta.width = u16::from_le_bytes(bytes);
-        bytes.copy_from_slice(&buf[6..8]);
-        meta.height = u16::from_le_bytes(bytes);
+        let mut cursor = Cursor::new(buf);
+        
+        meta.unk_01 = cursor.read_u32::<LittleEndian>()?;
+        meta.width = cursor.read_u16::<LittleEndian>()?;
+        meta.height = cursor.read_u16::<LittleEndian>()?;
+        meta.unk_02 = cursor.read_u8()?;
 
-        meta.fmt_id = buf[9];
+        meta.fmt_id = cursor.read_u8()?;
         meta.format = TextureFormat::from_id(meta.fmt_id);
+
+        meta.mb_type_indicator = cursor.read_u16::<LittleEndian>()?;
 
         if let TextureFormat::Unknown = meta.format {
             return Err(format!("unknown texture format: {:#04X}", meta.fmt_id).into());

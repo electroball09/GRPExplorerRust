@@ -59,10 +59,12 @@ impl EditorImpl for TextureMetadataEditor {
                 }
                 
                 egui::SidePanel::left("tex_panel").resizable(false).exact_width(100.0).show_inside(ui, |ui| {
+                    ui.label(format!("unk_01: {}", meta.unk_01));
                     ui.label(format!("width: {}", meta.width));
                     ui.label(format!("height: {}", meta.height));
+                    ui.label(format!("unk_02: {}", meta.unk_02));
                     ui.label(format!("format: {:?}", meta.format));
-                    ui.label(format!("fmt id: {:#04X}", meta.fmt_id));
+                    ui.label(format!("tex type?: {:#06X}", meta.mb_type_indicator));
         
                     if ui.button("Export...").clicked() {
                         let obj = &ectx.bf.object_table.get(&key).unwrap();
