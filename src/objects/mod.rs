@@ -1,4 +1,5 @@
-mod yeti_script; pub use yeti_script::*;
+mod yeti_script; use enum_as_inner::EnumAsInner;
+pub use yeti_script::*;
 mod ini;         pub use ini::*;
 mod curve;       pub use curve::*;
 mod otf;         pub use otf::*;
@@ -50,6 +51,7 @@ impl Default for YetiObject {
     }
 }
 
+#[derive(EnumAsInner)]
 pub enum ObjectArchetype {
     NoImpl,
     Script(YetiScript),
@@ -208,7 +210,6 @@ impl YetiObject {
         if self.load_refs == 0 {
             self.archetype.unload();
             self.references.clear();
-            self.references.shrink_to(1);
         }
     }
 }

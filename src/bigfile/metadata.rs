@@ -4,6 +4,7 @@ use std::fmt::Display;
 use std::io::Read;
 use byteorder::{ReadBytesExt, LittleEndian};
 use chrono::{DateTime, Utc};
+use enum_as_inner::EnumAsInner;
 use num::FromPrimitive;
 use strum::{AsRefStr, EnumIter};
 use strum_macros::EnumString;
@@ -277,7 +278,7 @@ impl FileEntry {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, EnumString, EnumIter, PartialEq, Eq, AsRefStr, Hash)]
+#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, EnumString, EnumIter, EnumAsInner, PartialEq, Eq, AsRefStr, Hash)]
 pub enum ObjectType {
     #[default]
     null = 0,

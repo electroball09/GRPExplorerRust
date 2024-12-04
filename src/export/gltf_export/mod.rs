@@ -15,6 +15,7 @@ mod exp_mesh; use exp_mesh::*;
 mod exp_world; use exp_world::*;
 mod exp_gao; use exp_gao::*;
 mod exp_texture; use exp_texture::*;
+mod exp_mat; use exp_mat::*;
 
 pub struct ExportContext<'a> {
     pub key: u32,

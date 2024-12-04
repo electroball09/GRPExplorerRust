@@ -4,49 +4,53 @@ use super::*;
 use gltf_json as json;
 use json::validation::Checked::Valid;
 use json::validation::USize64;
+use crate::bigfile::util::*;
 
-pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>> {
+#[derive(Default, PartialEq, Debug)]
+pub enum TextureTransformHint {
+    #[default]
+    None,
+    NormalMap,
+    ChannelToAlpha(usize),
+    ChannelToAlphaInvertAndClear(usize),
+}
+
+pub fn gltf_tga<'a>(ct: &'a mut ExportContext, hint: TextureTransformHint) -> Vec<json::Index<json::Texture>> {
     gltf_export_init!(ct);
 
-    let (meta, txd_key) = match &ct.bf.object_table[&ct.key].archetype {
-        ObjectArchetype::TextureMetadata(tga) => {
-            let first_ref = ct.bf.object_table[&ct.key].references[0];
-            match tga.meta {
-                TextureMetaType::Metadata(meta) => (meta, first_ref),
-                TextureMetaType::Passthrough => {
-                    match &ct.bf.object_table[&first_ref].archetype {
-                        ObjectArchetype::TextureMetadata(tga) => {
-                            let first_ref = ct.bf.object_table[&first_ref].references[0];
-                            match tga.meta {
-                                TextureMetaType::Metadata(meta) => (meta, first_ref),
-                                _ => panic!("wtf we have a weird texture here! {:#010X} {:#010X}", ct.key, first_ref)
-                            }
-                        },
-                        _ => panic!("wrong object type!")
-                    }
-                }
-                TextureMetaType::None => panic!("wtf we have a weird texture here! {:#010X}", ct.key)
-            }
-        },
-        _ => panic!("wrong object type!") 
+    let key = match unwrap_tga_key(ct.key, ct.bf) {
+        Some(key) => key,
+        None => return Vec::new()
     };
-    
-    let txd = match &ct.bf.object_table[&txd_key].archetype {
-        ObjectArchetype::TextureData(txd) => txd,
-        _ => panic!("not a texture data file??")
-    };
+    let meta = &ct.bf.object_table[&key].archetype.as_texture_metadata().unwrap().meta.as_metadata().unwrap();
+
+    let txd_key = ct.bf.object_table[&key].references[0];
+    let txd = &ct.bf.object_table[&txd_key].archetype.as_texture_data().unwrap();
 
     let name = Some(format!("{:#010X} {}", ct.key, ct.bf.file_table[&txd_key].get_name_ext().to_string()));
     
-    let mut data = texture_util::decompress_texture(&meta, txd);
+    let data = texture_util::decompress_texture(&meta, txd);
 
     if data.len() != meta.width as usize * meta.height as usize * 4 as usize {
         log::warn!("skipping texture {:#010X} due to bad data size! {} != {}", ct.key, data.len(), meta.width as usize * meta.height as usize * 4 as usize);
         return Vec::new();
     }
 
-    if meta.is_normal_map() {
-        data = data.chunks_exact(4).flat_map(|ch| [ch[1], ch[3], ch[2], 255]).collect();
+    let data = match hint {
+        TextureTransformHint::None => { data },
+        TextureTransformHint::NormalMap => {
+            data.chunks_exact(4).flat_map(|ch| [ch[1], ch[3], ch[2], 255]).collect()
+        },
+        TextureTransformHint::ChannelToAlpha(orig_channel) => {
+            data.chunks_exact(4).flat_map(|ch| [ch[0], ch[1], ch[2], ch[orig_channel]]).collect()
+        },
+        TextureTransformHint::ChannelToAlphaInvertAndClear(orig_channel) => {
+            data.chunks_exact(4).flat_map(|ch| [255, 255, 255, 255 - ch[orig_channel]]).collect()
+        }
+    };
+
+    if meta.is_normal_map() != (hint == TextureTransformHint::NormalMap) {
+        log::warn!("texture: {:#010X}  is_normal_map: {}  hint: {:?}", key, meta.is_normal_map(), hint);
     }
 
     let tex_start = ct.cursor.position();
@@ -88,7 +92,7 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Texture>
     });
 
     let texture = ct.root.push(json::Texture {
-        name: name.clone(),
+        name: name,
         sampler: Some(sampler),
         source,
         extensions: Default::default(),

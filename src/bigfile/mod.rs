@@ -1,6 +1,7 @@
 pub mod metadata;
 pub mod io;
 pub mod loader;
+pub mod util;
 
 use log::*;
 

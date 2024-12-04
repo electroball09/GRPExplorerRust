@@ -16,6 +16,8 @@ fn load_textures<'a>(ct: &'a mut ExportContext) -> LoadedTextures {
         normal: None
     };
 
+    let shd_key = ct.bf.object_table[&ct.key].references.last().unwrap();
+
     let mut bkey = None;
     let mut nkey = None;
     for rkey in ct.bf.object_table[&ct.key].references.iter() {
@@ -50,7 +52,7 @@ fn load_textures<'a>(ct: &'a mut ExportContext) -> LoadedTextures {
 
     if let Some(bkey) = bkey {
         ct_with_key!(ct, bkey, {
-            let texs = gltf_tga(ct);
+            let texs = gltf_tga(ct, TextureTransformHint::None);
             if texs.len() != 0 {
                 textures.base_color = Some(texs[0]);
             }
@@ -59,7 +61,7 @@ fn load_textures<'a>(ct: &'a mut ExportContext) -> LoadedTextures {
 
     if let Some(nkey) = nkey {
         ct_with_key!(ct, nkey, {
-            let texs = gltf_tga(ct);
+            let texs = gltf_tga(ct, TextureTransformHint::NormalMap);
             if texs.len() != 0 {
                 textures.normal = Some(texs[0]);
             }
@@ -67,55 +69,6 @@ fn load_textures<'a>(ct: &'a mut ExportContext) -> LoadedTextures {
     }
 
     textures
-}
-
-pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material>> {
-    gltf_export_init!(ct);
-
-    let name = format!("{:#010X} {}", ct.key, ct.bf.file_table[&ct.key].get_name_ext());
-
-    let textures = load_textures(ct);
-
-    let material = ct.root.push(json::Material {
-        alpha_cutoff: None,
-        alpha_mode: Valid(json::material::AlphaMode::Opaque),
-        double_sided: false,
-        name: Some(name),
-        pbr_metallic_roughness: json::material::PbrMetallicRoughness {
-            base_color_factor: json::material::PbrBaseColorFactor([1.0; 4]),
-            base_color_texture: Some(json::texture::Info {
-                index: if let Some(idx) = textures.base_color {
-                    idx
-                } else { json::Index::new(0) },
-                tex_coord: 0,
-                extensions: Default::default(),
-                extras: Default::default()
-            }),
-            metallic_factor: json::material::StrengthFactor(0.0),
-            roughness_factor: json::material::StrengthFactor(1.0),
-            metallic_roughness_texture: None,
-            extensions: Default::default(),
-            extras: Default::default()
-        },
-        normal_texture: if let Some(idx) = textures.normal {
-            Some(json::material::NormalTexture {
-                index: idx,
-                scale: 1.0,
-                tex_coord: 0,
-                extensions: Default::default(),
-                extras: Default::default()
-            })
-        } else { None },
-        occlusion_texture: None,
-        emissive_factor: json::material::EmissiveFactor([0.0; 3]),
-        emissive_texture: None,
-        extensions: Default::default(),
-        extras: Default::default()
-    });
-
-    insert_cache!(ct, &ct.key, material);
-
-    vec![material]
 }
 
 pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {

@@ -30,7 +30,7 @@ impl TextureFormat {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, EnumAsInner)]
 pub enum TextureMetaType {
     None,
     Metadata(TextureMetadata),
