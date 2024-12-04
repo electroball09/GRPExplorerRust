@@ -33,14 +33,14 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
     };
 
     match ct.key {
-        0xA4802C06 => transform_alphablend_emissive_shader(&mut material, ct),
-        0xA4802C05 => transform_alphablend_shader(&mut material, ct),
+        0xA4802C06 | 0xA4801CC1 => transform_alphablend_emissive_shader(&mut material, ct),
+        0xA4802C05 | 0x6B800408 | 0xA4801CC0 => transform_alphablend_shader(&mut material, ct),
         _ => {
             match shd_key {
                 0xAD00A2AD | 0xAD00F0A4 => transform_invcoloralpha_shader(&mut material, ct),
-                0xAD00F62A => transform_skybox_shader(&mut material, ct),
-                0xAD00E77D | 0xAD00E7B3 => transform_alphablend_shader(&mut material, ct),
-                0xAD00B686 => transform_alphatest_shader(&mut material, ct),
+                0xAD00F62A | 0x0D8151FE | 0xAD027A32 => transform_skybox_shader(&mut material, ct),
+                0xAD00E77D | 0xAD00E7B3 | 0x80866577 | 0x8086B1CC | 0x808666DA | 0xAD0149E9 => transform_alphablend_shader(&mut material, ct),
+                0xAD00B686 | 0xAD008F52 => transform_alphatest_shader(&mut material, ct),
                 _ => transform_standard_shader(&mut material, ct),
             };
         }
@@ -55,7 +55,7 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
 
 fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext) {
     let mut textures = ct.bf.object_table[&ct.key].references.iter()
-        .filter(|key| ct.bf.is_key_valid(**key) && ct.bf.file_table[key].object_type.is_txd())
+        .filter(|key| ct.bf.is_key_valid(**key) && ct.bf.file_table[key].object_type.is_tga())
         .map(|key| *key);
 
     // this clusterfuck is courtesy of the fact that objects will almost always have a base color, but can have either a normal map or specular map or both or neither
@@ -66,8 +66,12 @@ fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut Expo
                     (Some(key0), None, Some(key))
                 } else {
                     if let Some(key2) = textures.next() {
-                        if ct.bf.object_table[&key2].archetype.as_texture_metadata().unwrap().meta.as_metadata().unwrap().is_normal_map() {
-                            (Some(key0), Some(key), Some(key2))
+                        if let Some(key2) = unwrap_tga_key(key2, ct.bf) {
+                            if ct.bf.object_table[&key2].archetype.as_texture_metadata().unwrap().meta.as_metadata().unwrap().is_normal_map() {
+                                (Some(key0), Some(key), Some(key2))
+                            } else {
+                                (Some(key0), Some(key), None)
+                            }
                         } else {
                             (Some(key0), Some(key), None)
                         }
@@ -84,6 +88,8 @@ fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut Expo
     } else {
         (None, None, None)
     };
+
+    //log::info!("{} {:?} {:?} {:?}", textures.count(), bkey, skey, nkey);
 
     if let Some(key) = bkey {
         ct_with_key!(ct, key, {
@@ -156,10 +162,12 @@ fn transform_skybox_shader<'a>(material: &mut json::Material, ct: &'a mut Export
 }
 
 fn transform_invcoloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext) {
-    let txd_key = *ct.bf.object_table[&ct.key].references.iter()
+    let txd_key = match ct.bf.object_table[&ct.key].references.iter()
         .filter(|key| ct.bf.is_key_valid(**key))
-        .find(|key| ct.bf.file_table[key].object_type.is_txd())
-        .unwrap();
+        .find(|key| ct.bf.file_table[key].object_type.is_tga()) {
+            Some(key) => *key,
+            None => return
+    };
 
     let mut texture = None;
     ct_with_key!(ct, txd_key, {
