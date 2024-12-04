@@ -32,15 +32,20 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
         extras: Default::default()
     };
 
+    // we want to set texture modes per material, and if not, per shader
     match ct.key {
-        0xA4802C06 | 0xA4801CC1 => transform_alphablend_emissive_shader(&mut material, ct),
-        0xA4802C05 | 0x6B800408 | 0xA4801CC0 => transform_alphablend_shader(&mut material, ct),
+        0xA4802C06 | 0xA4801CC1 | 0xA480258D | 0xA3810A9D | 0xA4801AEE | 0xA4802A74 => transform_alphablend_emissive_shader(&mut material, ct),
+        0xA4802C05 | 0x6B800408 | 0xA4801CC0 | 0xA480258C | 0xA3810A9C | 0xA4801AEC | 0xA4802A75 => transform_alphablend_shader(&mut material, ct),
+        0x6F800200 => transform_submarine_material(&mut material, ct),
         _ => {
             match shd_key {
-                0xAD00A2AD | 0xAD00F0A4 => transform_invcoloralpha_shader(&mut material, ct),
-                0xAD00F62A | 0x0D8151FE | 0xAD027A32 => transform_skybox_shader(&mut material, ct),
-                0xAD00E77D | 0xAD00E7B3 | 0x80866577 | 0x8086B1CC | 0x808666DA | 0xAD0149E9 => transform_alphablend_shader(&mut material, ct),
-                0xAD00B686 | 0xAD008F52 => transform_alphatest_shader(&mut material, ct),
+                0xAD00A2AD => transform_invcoloralpha_shader(&mut material, ct, [0.05, 0.05, 0.05, 1.0]), // decals like wall grime and footprints
+                0xAD00F0A4 | 0x11800B53 => transform_coloralpha_shader(&mut material, ct, [1.0, 0.817, 0.514, 1.0], 0.1), // godrays
+                0xAD00F62A | 0x0D8151FE | 0xAD027A32 | 0xAD027A1C => transform_skybox_shader(&mut material, ct), // skyboxes
+                0xAD00E77D | 0xAD00E7B3 | 0x80866577 | 0x8086B1CC | 0x808666DA | 0xAD0149E9 | 0x61031807 | 0xAD02A99B | 0x0D815201 | 0x0D815CF7 | 0xAD00F51D | 0xAD008934 | 0xAD008825 | 0xAD028F84 |
+                0xAD00892E
+                     => transform_alphablend_shader(&mut material, ct),
+                0xAD00B686 | 0xAD008F52  | 0xAD010D7A | 0xAD00961F => transform_alphatest_shader(&mut material, ct),
                 _ => transform_standard_shader(&mut material, ct),
             };
         }
@@ -93,12 +98,15 @@ fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut Expo
 
     if let Some(key) = bkey {
         ct_with_key!(ct, key, {
-            material.pbr_metallic_roughness.base_color_texture = Some(json::texture::Info {
-                index: gltf_tga(ct, TextureTransformHint::None)[0],
-                tex_coord: 0,
-                extensions: Default::default(),
-                extras: Default::default()
-            });
+            let textures = gltf_tga(ct, TextureTransformHint::None);
+            if textures.len() > 0 {
+                material.pbr_metallic_roughness.base_color_texture = Some(json::texture::Info {
+                    index: textures[0],
+                    tex_coord: 0,
+                    extensions: Default::default(),
+                    extras: Default::default()
+                });
+            }
         });
     }
     if let Some(key) = skey {
@@ -107,27 +115,38 @@ fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut Expo
                 specular: Some(json::extensions::material::Specular {
                     specular_color_factor: json::extensions::material::SpecularColorFactor([1.0, 1.0, 1.0]),
                     specular_factor: json::extensions::material::SpecularFactor(1.0),
-                    specular_texture: Some(json::texture::Info {
-                        index: gltf_tga(ct, TextureTransformHint::ChannelToAlpha(0))[0],
-                        tex_coord: 0,
-                        extensions: Default::default(),
-                        extras: Default::default()
-                    }),
+                    specular_texture: {
+                        let textures = gltf_tga(ct, TextureTransformHint::ChannelToAlpha(0));
+                        if textures.len() > 0 {
+                            Some(json::texture::Info {
+                                index: textures[0],
+                                tex_coord: 0,
+                                extensions: Default::default(),
+                                extras: Default::default()
+                            })
+                        } else {
+                            None
+                        }
+                    },
                     specular_color_texture: None,
                     extras: Default::default()
-                })
+                }),
+                emissive_strength: None
             })
         });
     }
     if let Some(key) = nkey {
         ct_with_key!(ct, key, {
-            material.normal_texture = Some(json::material::NormalTexture {
-                index: gltf_tga(ct, TextureTransformHint::NormalMap)[0],
-                tex_coord: 0,
-                scale: 1.0,
-                extensions: Default::default(),
-                extras: Default::default()
-            });
+            let textures = gltf_tga(ct, TextureTransformHint::NormalMap);
+            if textures.len() > 0 {
+                material.normal_texture = Some(json::material::NormalTexture {
+                    index: textures[0],
+                    tex_coord: 0,
+                    scale: 1.0,
+                    extensions: Default::default(),
+                    extras: Default::default()
+                });
+            }
         });
     }
 }
@@ -159,9 +178,15 @@ fn transform_skybox_shader<'a>(material: &mut json::Material, ct: &'a mut Export
 
     material.emissive_factor = json::material::EmissiveFactor([1.0, 1.0, 1.0]);
     material.emissive_texture = material.pbr_metallic_roughness.base_color_texture.clone();
+    material.extensions = Some(json::extensions::material::Material {
+        specular: None,
+        emissive_strength: Some(json::extensions::material::EmissiveStrength {
+            emissive_strength: json::extensions::material::EmissiveStrengthFactor(4.0)
+        })
+    });
 }
 
-fn transform_invcoloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext) {
+fn transform_invcoloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext, base_color_factor: [f32; 4]) {
     let txd_key = match ct.bf.object_table[&ct.key].references.iter()
         .filter(|key| ct.bf.is_key_valid(**key))
         .find(|key| ct.bf.file_table[key].object_type.is_tga()) {
@@ -181,4 +206,34 @@ fn transform_invcoloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut
         extensions: Default::default(),
         extras: Default::default()
     });
+    material.pbr_metallic_roughness.base_color_factor = json::material::PbrBaseColorFactor(base_color_factor);
+}
+
+fn transform_coloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext, base_color_factor: [f32; 4], alpha_scale: f32) {
+    let txd_key = match ct.bf.object_table[&ct.key].references.iter()
+        .filter(|key| ct.bf.is_key_valid(**key))
+        .find(|key| ct.bf.file_table[key].object_type.is_tga()) {
+            Some(key) => *key,
+            None => return
+    };
+
+    let mut texture = None;
+    ct_with_key!(ct, txd_key, {
+        texture = Some(gltf_tga(ct, TextureTransformHint::ChannelToAlphaAndClear(0, alpha_scale))[0]);
+    });
+
+    material.alpha_mode = Valid(json::material::AlphaMode::Blend);
+    material.pbr_metallic_roughness.base_color_texture = Some(json::texture::Info {
+        index: texture.unwrap(),
+        tex_coord: 0,
+        extensions: Default::default(),
+        extras: Default::default()
+    });
+    material.pbr_metallic_roughness.base_color_factor = json::material::PbrBaseColorFactor(base_color_factor);
+}
+
+fn transform_submarine_material<'a>(material: &mut json::Material, ct: &'a mut ExportContext) {
+    transform_standard_shader(material, ct);
+
+    material.pbr_metallic_roughness.base_color_texture.as_mut().unwrap().tex_coord = 1; // wtf ubisoft
 }

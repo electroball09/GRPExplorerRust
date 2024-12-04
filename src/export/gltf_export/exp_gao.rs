@@ -1,75 +1,9 @@
-use crate::objects::{Light, ObjectArchetype, TextureMetaType};
+use crate::objects::{Light, ObjectArchetype};
 
 use super::*;
 use glam::Mat4;
 use gltf_json as json;
 use json::validation::Checked::Valid;
-
-struct LoadedTextures {
-    pub base_color: Option<json::Index<json::Texture>>,
-    pub normal: Option<json::Index<json::Texture>>,
-}
-
-fn load_textures<'a>(ct: &'a mut ExportContext) -> LoadedTextures {
-    let mut textures = LoadedTextures {
-        base_color: None,
-        normal: None
-    };
-
-    let shd_key = ct.bf.object_table[&ct.key].references.last().unwrap();
-
-    let mut bkey = None;
-    let mut nkey = None;
-    for rkey in ct.bf.object_table[&ct.key].references.iter() {
-        if ct.bf.is_key_valid(*rkey) {
-            if let ObjectArchetype::TextureMetadata(tga) = &ct.bf.object_table[&rkey].archetype {
-                let (rkey, meta) = match tga.meta {
-                    TextureMetaType::Metadata(meta) => (*rkey, meta),
-                    TextureMetaType::Passthrough => {
-                        let rkey = ct.bf.object_table[&rkey].references[0];
-                        if let ObjectArchetype::TextureMetadata(tga) = &ct.bf.object_table[&rkey].archetype {
-                            match tga.meta {
-                                TextureMetaType::Metadata(meta) => (rkey, meta),
-                                _ => continue
-                            }
-                        } else {
-                            continue
-                        }
-                    },
-                    TextureMetaType::None => continue
-                };
-
-                if meta.is_normal_map() {
-                    nkey = Some(rkey);
-                } else {
-                    if bkey == None {
-                        bkey = Some(rkey);
-                    }
-                }
-            }
-        };
-    };
-
-    if let Some(bkey) = bkey {
-        ct_with_key!(ct, bkey, {
-            let texs = gltf_tga(ct, TextureTransformHint::None);
-            if texs.len() != 0 {
-                textures.base_color = Some(texs[0]);
-            }
-        });
-    }
-
-    if let Some(nkey) = nkey {
-        ct_with_key!(ct, nkey, {
-            let texs = gltf_tga(ct, TextureTransformHint::NormalMap);
-            if texs.len() != 0 {
-                textures.normal = Some(texs[0]);
-            }
-        });
-    }
-
-    textures
-}
 
 pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     gltf_export_init!(ct);
@@ -226,8 +160,8 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             name: Some(name.clone()),
                             range: Some(spot.range * 1000.0),
                             spot: Some(json::extensions::scene::khr_lights_punctual::Spot {
-                                inner_cone_angle: spot.inner_cone_angle,
-                                outer_cone_angle: spot.outer_cone_angle
+                                inner_cone_angle: spot.inner_cone_angle / 2.0,
+                                outer_cone_angle: spot.outer_cone_angle / 2.0
                             }),
                             type_: Valid(json::extensions::scene::khr_lights_punctual::Type::Spot)
                         });
@@ -260,12 +194,8 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
 
     if nodes.len() == 0 && light == None { // skip exporting empty/childless/implementationless gaos
-        log::warn!("skipping {} due to no data", name);
+        log::debug!("skipping {} due to no data", name);
         return Vec::new();
-    }
-
-    if let Some(ref light) = light {
-        log::debug!("light idx: {}", light);
     }
 
     let node = ct.root.push(json::Node {

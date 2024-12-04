@@ -12,6 +12,7 @@ pub enum TextureTransformHint {
     None,
     NormalMap,
     ChannelToAlpha(usize),
+    ChannelToAlphaAndClear(usize, f32),
     ChannelToAlphaInvertAndClear(usize),
 }
 
@@ -38,15 +39,14 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext, hint: TextureTransformHint) -> Ve
 
     let data = match hint {
         TextureTransformHint::None => { data },
-        TextureTransformHint::NormalMap => {
-            data.chunks_exact(4).flat_map(|ch| [ch[1], ch[3], ch[2], 255]).collect()
-        },
-        TextureTransformHint::ChannelToAlpha(orig_channel) => {
-            data.chunks_exact(4).flat_map(|ch| [ch[0], ch[1], ch[2], ch[orig_channel]]).collect()
-        },
-        TextureTransformHint::ChannelToAlphaInvertAndClear(orig_channel) => {
-            data.chunks_exact(4).flat_map(|ch| [255, 255, 255, 255 - ch[orig_channel]]).collect()
-        }
+        TextureTransformHint::NormalMap => 
+            data.chunks_exact(4).flat_map(|ch| [ch[1], ch[3], ch[2], 255]).collect(),
+        TextureTransformHint::ChannelToAlpha(orig_channel) => 
+            data.chunks_exact(4).flat_map(|ch| [ch[0], ch[1], ch[2], ch[orig_channel]]).collect(),
+        TextureTransformHint::ChannelToAlphaAndClear(orig_channel, alpha_scale) => 
+            data.chunks_exact(4).flat_map(|ch| [255, 255, 255, (ch[orig_channel] as f32 * alpha_scale) as u8]).collect(),
+        TextureTransformHint::ChannelToAlphaInvertAndClear(orig_channel) => 
+            data.chunks_exact(4).flat_map(|ch| [255, 255, 255, 255 - ch[orig_channel]]).collect(),
     };
 
     if meta.is_normal_map() != (hint == TextureTransformHint::NormalMap) {
