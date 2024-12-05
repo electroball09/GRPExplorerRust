@@ -14,6 +14,22 @@ pub enum TextureTransformHint {
     ChannelToAlpha(usize),
     ChannelToAlphaAndClear(usize, f32),
     ChannelToAlphaInvertAndClear(usize),
+    ChannelModify(TextureChannelIdentifier, TextureChannelIdentifier, TextureChannelIdentifier, TextureChannelIdentifier),
+}
+
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub enum TextureChannelIdentifier {
+    Channel(usize),
+    Clear(u8)
+}
+
+impl TextureChannelIdentifier {
+    fn transform_value(&self, channel: u8, data: &[u8]) -> u8 {
+        match self {
+            Self::Channel(nchan) => data[*nchan],
+            Self::Clear(value) => *value
+        }
+    }
 }
 
 pub fn gltf_tga<'a>(ct: &'a mut ExportContext, hint: TextureTransformHint) -> Vec<json::Index<json::Texture>> {
@@ -47,6 +63,8 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext, hint: TextureTransformHint) -> Ve
             data.chunks_exact(4).flat_map(|ch| [255, 255, 255, (ch[orig_channel] as f32 * alpha_scale) as u8]).collect(),
         TextureTransformHint::ChannelToAlphaInvertAndClear(orig_channel) => 
             data.chunks_exact(4).flat_map(|ch| [255, 255, 255, 255 - ch[orig_channel]]).collect(),
+        TextureTransformHint::ChannelModify(cr, cg, cb, ca) =>
+            data.chunks_exact(4).flat_map(|ch| [cr.transform_value(0, ch), cr.transform_value(0, ch), cr.transform_value(0, ch), cr.transform_value(0, ch)]).collect(),
     };
 
     if meta.is_normal_map() != (hint == TextureTransformHint::NormalMap) {

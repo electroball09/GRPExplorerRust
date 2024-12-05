@@ -49,9 +49,9 @@ impl Default for GltfExportOptions {
 impl GltfExportOptions {
     pub fn blender() -> Self {
         Self {
-            directional_light_intensity_multiplier: 80000.0,
-            spot_light_intentisy_multiplier: 80000.0,
-            point_light_intensity_multiplier: 100000.0,
+            directional_light_intensity_multiplier: 10000.0,
+            spot_light_intentisy_multiplier: 8000.0,
+            point_light_intensity_multiplier: 8000.0,
             skybox_emissive_multiplier: 2.5,
             spot_light_range_multiplier: 1000.0,
             point_light_range_multiplier: 1000.0,

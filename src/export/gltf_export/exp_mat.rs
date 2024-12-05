@@ -37,6 +37,7 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
         0xA4802C06 | 0xA4801CC1 | 0xA480258D | 0xA3810A9D | 0xA4801AEE | 0xA4802A74 | 0xA4802AE7 => transform_alphablend_emissive_shader(&mut material, ct),
         0xA4802C05 | 0x6B800408 | 0xA4801CC0 | 0xA480258C | 0xA3810A9C | 0xA4801AEC | 0xA4802A75 | 0xA4802AE6 => transform_alphablend_shader(&mut material, ct),
         0x6F800200 => transform_submarine_material(&mut material, ct),
+        0xdf729421 => transform_standard_shader(&mut material, ct),
         _ => {
             match shd_key {
                 0xAD00A2AD => transform_invcoloralpha_shader(&mut material, ct, [0.05, 0.05, 0.05, 1.0]), // decals like wall grime and footprints
@@ -58,7 +59,7 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
     vec![material]
 }
 
-fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext) {
+fn load_standard_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext, spec_transform_hint: TextureTransformHint) {
     let mut textures = ct.bf.object_table[&ct.key].references.iter()
         .filter(|key| ct.bf.is_key_valid(**key) && ct.bf.file_table[key].object_type.is_tga())
         .map(|key| *key);
@@ -116,7 +117,7 @@ fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut Expo
                     specular_color_factor: json::extensions::material::SpecularColorFactor([1.0, 1.0, 1.0]),
                     specular_factor: json::extensions::material::SpecularFactor(1.0),
                     specular_texture: {
-                        let textures = gltf_tga(ct, TextureTransformHint::ChannelToAlpha(0));
+                        let textures = gltf_tga(ct, spec_transform_hint);
                         if textures.len() > 0 {
                             Some(json::texture::Info {
                                 index: textures[0],
@@ -149,6 +150,10 @@ fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut Expo
             }
         });
     }
+}
+
+fn transform_standard_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext) {
+    load_standard_shader(material, ct, TextureTransformHint::ChannelToAlpha(0));
 }
 
 fn transform_alphablend_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext) {
