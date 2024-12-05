@@ -9,6 +9,8 @@ pub struct TextureMetadataEditor {
     texture: Option<egui::TextureHandle>,
     tex_data: Option<Vec<u8>>,
     tex_size: egui::Vec2,
+    texture_combinations: Option<TextureCombinations>,
+    tex_view_mode: [bool; 4],
     zoom: f32,
 }
 
@@ -18,9 +20,45 @@ impl Default for TextureMetadataEditor {
             texture: None,
             tex_data: None,
             tex_size: [100.0, 100.0].into(),
+            texture_combinations: None,
+            tex_view_mode: [true, true, true, false],
             zoom: 1.0,
         }
     }
+}
+
+struct ImageCombinations {
+    pub rgb: egui::ColorImage,
+    pub rba: egui::ColorImage,
+    pub rga: egui::ColorImage,
+    pub gba: egui::ColorImage,
+    pub rg : egui::ColorImage,
+    pub rb : egui::ColorImage,
+    pub ra : egui::ColorImage,
+    pub gb : egui::ColorImage,
+    pub ga : egui::ColorImage,
+    pub ba : egui::ColorImage,
+    pub r  : egui::ColorImage,
+    pub g  : egui::ColorImage,
+    pub b  : egui::ColorImage,
+    pub a  : egui::ColorImage,
+}
+
+struct TextureCombinations {
+    pub rgb: egui::TextureHandle,
+    pub rba: egui::TextureHandle,
+    pub rga: egui::TextureHandle,
+    pub gba: egui::TextureHandle,
+    pub rg : egui::TextureHandle,
+    pub rb : egui::TextureHandle,
+    pub ra : egui::TextureHandle,
+    pub gb : egui::TextureHandle,
+    pub ga : egui::TextureHandle,
+    pub ba : egui::TextureHandle,
+    pub r  : egui::TextureHandle,
+    pub g  : egui::TextureHandle,
+    pub b  : egui::TextureHandle,
+    pub a  : egui::TextureHandle,
 }
 
 impl TextureMetadataEditor {
@@ -68,6 +106,65 @@ impl TextureMetadataEditor {
     fn image_to_buf(img: &egui::ColorImage) -> Vec<u8> {
         img.pixels.iter().flat_map(|img| [img.r(), img.g(), img.b(), img.a()]).collect()
     }
+
+    fn get_displayed_texture_handle(&self) -> &egui::TextureHandle {
+        match self.tex_view_mode {
+            [true, true, true, true] =>     self.texture.as_ref().unwrap(),
+            [true, true, true, false] =>    &self.texture_combinations.as_ref().unwrap().rgb,
+            [true, true, false, true] =>    &self.texture_combinations.as_ref().unwrap().rba,
+            [true, false, true, true] =>    &self.texture_combinations.as_ref().unwrap().rga,
+            [false, true, true, true] =>    &self.texture_combinations.as_ref().unwrap().gba,
+            [true, true, false, false] =>   &self.texture_combinations.as_ref().unwrap().rg ,
+            [true, false, true, false] =>   &self.texture_combinations.as_ref().unwrap().rb ,
+            [true, false, false, true] =>   &self.texture_combinations.as_ref().unwrap().ra ,
+            [false, true, true, false] =>   &self.texture_combinations.as_ref().unwrap().gb ,
+            [false, true, false, true] =>   &self.texture_combinations.as_ref().unwrap().ga ,
+            [false, false, true, true] =>   &self.texture_combinations.as_ref().unwrap().ba ,
+            [true, false, false, false] =>  &self.texture_combinations.as_ref().unwrap().r  ,
+            [false, true, false, false] =>  &self.texture_combinations.as_ref().unwrap().g  ,
+            [false, false, true, false] =>  &self.texture_combinations.as_ref().unwrap().b  ,
+            [false, false, false, true] =>  &self.texture_combinations.as_ref().unwrap().a  ,
+            [false, false, false, false] => self.texture.as_ref().unwrap(),
+        }
+    }
+
+    fn make_image_combinations(image: &egui::ColorImage) -> ImageCombinations {
+        ImageCombinations {
+            rgb: egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), c32.b(), 0)).collect() },
+            rba: egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, c32.b(), c32.a())).collect() },
+            rga: egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), 0, c32.a())).collect() },
+            gba: egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), c32.b(), c32.a())).collect() },
+            rg : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), 0, 0)).collect() },
+            rb : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, c32.b(), 0)).collect() },
+            ra : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, 0, c32.a())).collect() },
+            gb : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), c32.b(), 0)).collect() },
+            ga : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), 0, c32.a())).collect() },
+            ba : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, 0, c32.b(), c32.a())).collect() },
+            r  : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, 0, 0)).collect() },
+            g  : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), 0, 0)).collect() },
+            b  : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, 0, c32.b(), 0)).collect() },
+            a  : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.a(), c32.a(), c32.a(), 0)).collect() },
+        }
+    }
+
+    fn make_texture_combinations(name: &str, ctx: &egui::Context, combs: ImageCombinations) -> TextureCombinations {
+        TextureCombinations {
+            rgb: ctx.load_texture(format!("{}-rgb", name), combs.rgb, Default::default()),
+            rba: ctx.load_texture(format!("{}-rba", name), combs.rba, Default::default()),
+            rga: ctx.load_texture(format!("{}-rga", name), combs.rga, Default::default()),
+            gba: ctx.load_texture(format!("{}-gba", name), combs.gba, Default::default()),
+            rg : ctx.load_texture(format!("{}-rg ", name), combs.rg , Default::default()),
+            rb : ctx.load_texture(format!("{}-rb ", name), combs.rb , Default::default()),
+            ra : ctx.load_texture(format!("{}-ra ", name), combs.ra , Default::default()),
+            gb : ctx.load_texture(format!("{}-gb ", name), combs.gb , Default::default()),
+            ga : ctx.load_texture(format!("{}-ga ", name), combs.ga , Default::default()),
+            ba : ctx.load_texture(format!("{}-ba ", name), combs.ba , Default::default()),
+            r  : ctx.load_texture(format!("{}-r  ", name), combs.r  , Default::default()),
+            g  : ctx.load_texture(format!("{}-g  ", name), combs.g  , Default::default()),
+            b  : ctx.load_texture(format!("{}-b  ", name), combs.b  , Default::default()),
+            a  : ctx.load_texture(format!("{}-a  ", name), combs.a  , Default::default()),
+        }
+    }
 }
 
 impl EditorImpl for TextureMetadataEditor {
@@ -103,15 +200,18 @@ impl EditorImpl for TextureMetadataEditor {
                             }
                         };
                         if let Ok(image) = image {
+                            let name = format!("{:#010X}", key);
                             self.tex_data = Some(TextureMetadataEditor::image_to_buf(&image));
-                            let tex = ectx.ctx.load_texture(format!("{:#010X}", key), image, Default::default());
+                            let icombs = TextureMetadataEditor::make_image_combinations(&image);
+                            self.texture_combinations = Some(TextureMetadataEditor::make_texture_combinations(&name, ectx.ctx, icombs)); //this is really inefficient but idk another way
+                            let tex = ectx.ctx.load_texture(name, image, Default::default());
                             self.texture = Some(tex);
                             self.tex_size = [meta.width as f32, meta.height as f32].into();
                         }
                     }
                 }
                 
-                egui::SidePanel::left("tex_panel").resizable(false).exact_width(100.0).show_inside(ui, |ui| {
+                egui::SidePanel::left("tex_panel").resizable(false).exact_width(200.0).show_inside(ui, |ui| {
                     ui.label(format!("unk_01: {}", meta.unk_01));
                     ui.label(format!("width: {}", meta.width));
                     ui.label(format!("height: {}", meta.height));
@@ -129,11 +229,17 @@ impl EditorImpl for TextureMetadataEditor {
                             }
                         }
                     }
+
+                    ui.separator();
+                    ui.checkbox(&mut self.tex_view_mode[0], "r");
+                    ui.checkbox(&mut self.tex_view_mode[1], "g");
+                    ui.checkbox(&mut self.tex_view_mode[2], "b");
+                    ui.checkbox(&mut self.tex_view_mode[3], "a");
                 });
                 egui::CentralPanel::default().show_inside(ui, |ui| {
-                    if let Some(tex) = &self.texture {
+                    if let Some(_) = &self.texture {
                         ui.centered_and_justified(|ui| {
-                            let rsp = egui::Widget::ui(egui::Image::new(tex).fit_to_exact_size(self.tex_size * self.zoom), ui);
+                            let rsp = egui::Widget::ui(egui::Image::new(self.get_displayed_texture_handle()).fit_to_exact_size(self.tex_size * self.zoom), ui);
                             if rsp.hovered() {
                                 let delta = ui.input(|i| {
                                     i.events.iter().find_map(|e| match e {
