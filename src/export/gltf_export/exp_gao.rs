@@ -172,7 +172,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             color: [directional.color.x, directional.color.y, directional.color.z],
                             extensions: None,
                             extras: Default::default(),
-                            intensity: directional.intensity * 10000.0,
+                            intensity: directional.intensity * 5000.0,
                             name: Some(name.clone()),
                             range: None,
                             spot: None,

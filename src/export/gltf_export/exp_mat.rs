@@ -34,8 +34,8 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
 
     // we want to set texture modes per material, and if not, per shader
     match ct.key {
-        0xA4802C06 | 0xA4801CC1 | 0xA480258D | 0xA3810A9D | 0xA4801AEE | 0xA4802A74 => transform_alphablend_emissive_shader(&mut material, ct),
-        0xA4802C05 | 0x6B800408 | 0xA4801CC0 | 0xA480258C | 0xA3810A9C | 0xA4801AEC | 0xA4802A75 => transform_alphablend_shader(&mut material, ct),
+        0xA4802C06 | 0xA4801CC1 | 0xA480258D | 0xA3810A9D | 0xA4801AEE | 0xA4802A74 | 0xA4802AE7 => transform_alphablend_emissive_shader(&mut material, ct),
+        0xA4802C05 | 0x6B800408 | 0xA4801CC0 | 0xA480258C | 0xA3810A9C | 0xA4801AEC | 0xA4802A75 | 0xA4802AE6 => transform_alphablend_shader(&mut material, ct),
         0x6F800200 => transform_submarine_material(&mut material, ct),
         _ => {
             match shd_key {
@@ -181,7 +181,7 @@ fn transform_skybox_shader<'a>(material: &mut json::Material, ct: &'a mut Export
     material.extensions = Some(json::extensions::material::Material {
         specular: None,
         emissive_strength: Some(json::extensions::material::EmissiveStrength {
-            emissive_strength: json::extensions::material::EmissiveStrengthFactor(4.0)
+            emissive_strength: json::extensions::material::EmissiveStrengthFactor(2.0)
         })
     });
 }
