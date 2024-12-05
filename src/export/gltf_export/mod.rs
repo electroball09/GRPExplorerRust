@@ -16,14 +16,70 @@ mod exp_world; use exp_world::*;
 mod exp_gao; use exp_gao::*;
 mod exp_texture; use exp_texture::*;
 mod exp_mat; use exp_mat::*;
+mod gltf_export_window; pub use gltf_export_window::*;
 
-pub struct ExportContext<'a> {
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct GltfExportOptions {
+    pub directional_light_intensity_multiplier  : f32,
+    pub spot_light_intentisy_multiplier         : f32,
+    pub spot_light_range_multiplier             : f32,
+    pub point_light_intensity_multiplier        : f32,
+    pub point_light_range_multiplier            : f32,
+    pub skybox_emissive_multiplier              : f32,
+
+    pub invert_directional_lights               : bool,
+    pub invert_spot_lights                      : bool,
+}
+
+impl Default for GltfExportOptions {
+    fn default() -> Self {
+        Self {
+            directional_light_intensity_multiplier: 1.0,
+            spot_light_intentisy_multiplier: 1.0,
+            point_light_intensity_multiplier: 1.0,
+            skybox_emissive_multiplier: 1.0,
+            spot_light_range_multiplier: 1.0,
+            point_light_range_multiplier: 1.0,
+            invert_directional_lights: false,
+            invert_spot_lights: false,
+        }
+    }
+}
+
+impl GltfExportOptions {
+    pub fn blender() -> Self {
+        Self {
+            directional_light_intensity_multiplier: 80000.0,
+            spot_light_intentisy_multiplier: 80000.0,
+            point_light_intensity_multiplier: 100000.0,
+            skybox_emissive_multiplier: 2.5,
+            spot_light_range_multiplier: 1000.0,
+            point_light_range_multiplier: 1000.0,
+            invert_directional_lights: true,
+            invert_spot_lights: true,
+        }
+    }
+
+    pub fn ue4() -> Self {
+        Self {
+            directional_light_intensity_multiplier: 4.0,
+            spot_light_intentisy_multiplier: 4.0,
+            point_light_intensity_multiplier: 4.0,
+            invert_directional_lights: false,
+            invert_spot_lights: false,
+            ..Default::default()
+        }
+    }
+}
+
+struct ExportContext<'a> {
     pub key: u32,
     pub bf: &'a Bigfile,
     pub cursor: &'a mut Cursor<&'a mut Vec<u8>>,
     pub root: &'a mut json::Root,
     pub buffer_js: &'a json::Index<json::Buffer>,
-    pub index_cache: HashMap<u32, Vec<u32>>
+    pub index_cache: HashMap<u32, Vec<u32>>,
+    pub options: GltfExportOptions,
 }
 
 macro_rules! gltf_export_init {
@@ -49,7 +105,7 @@ macro_rules! insert_cache {
         }
     }
 }
-pub(crate) use insert_cache;
+pub(in self) use insert_cache;
 macro_rules! ct_with_key {
     ($ct:expr, $key:expr, $code:block) => {
         let old_key = $ct.key;
@@ -58,7 +114,7 @@ macro_rules! ct_with_key {
         $ct.key = old_key;
     }
 }
-pub(crate) use ct_with_key;
+pub(in self) use ct_with_key;
 
 fn align_to_multiple_of_four(n: usize) -> usize {
     (n + 3) & !3
@@ -76,13 +132,16 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
     new_vec
 }
 
-pub fn export(key: u32, bf: &Bigfile) {
+pub fn gltf_export(key: u32, bf: &Bigfile, options: GltfExportOptions) {
     let file_name = format!("{}.glb", bf.file_table[&key].get_name());
 
     let path = match rfd::FileDialog::new().add_filter("glTF2.0", &[".glb"]).set_file_name(&file_name).save_file() {
         Some(path) => { path },
         None => return
     };
+
+    log::info!("begin glTF export to file {}", &path.display());
+    log::debug!("options: {:?}", &options);
 
     let mut root = json::Root {
         extensions_used: vec!["KHR_lights_punctual".into()],
@@ -111,6 +170,7 @@ pub fn export(key: u32, bf: &Bigfile) {
         root: &mut root,
         buffer_js: &mut buffer_idx,
         index_cache: HashMap::new(),
+        options: options,
     };
 
     match bf.file_table[&key].object_type {
@@ -164,34 +224,6 @@ pub fn export(key: u32, bf: &Bigfile) {
     };
     let writer = std::fs::File::create(path).unwrap();
     glb.to_writer(writer).unwrap();
+
+    log::info!("glTF export finished!");
 }
-
-// pub fn export_mesh_to_gltf(_msh: &MeshMetadata, msd: &MeshData) {
-//     let mut root = json::Root::default();
-
-//     let node = root.push(json::Node {
-//         mesh: Some(mesh),
-//         ..Default::default()
-//     });
-
-//     root.push(json::Scene {
-//         extensions: Default::default(),
-//         extras: Default::default(),
-//         name: None,
-//         nodes: vec![node]
-//     });
-
-//     let json_string = json::serialize::to_string(&root).unwrap();
-//     let json_offset = align_to_multiple_of_four(json_string.len());
-//     let glb = gltf::binary::Glb {
-//         header: gltf::binary::Header {
-//             magic: *b"glTF",
-//             version: 2,
-//             length: (json_offset + vbuf_len + fbuf_len) as u32
-//         },
-//         bin: Some(Cow::Owned(to_padded_byte_vector(buf))),
-//         json: Cow::Owned(json_string.into_bytes())
-//     };
-//     let writer = std::fs::File::create("tool_output\\test.glb").unwrap();
-//     glb.to_writer(writer).unwrap();
-// }

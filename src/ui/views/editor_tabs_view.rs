@@ -3,6 +3,7 @@ use editors::{create_editor_for_type, EditorContext, EditorImpl};
 use egui::Widget;
 use log::*;
 use crate::egui::Ui;
+use crate::export::GltfExportWindow;
 use crate::loader::{AmortizedLoad, LoadSet};
 use clipboard::*;
 use crate::bigfile::{Bigfile, obj_type_to_name};
@@ -26,6 +27,7 @@ pub struct FileEditorTabs {
     editor_tabs: Vec<EditorTab>,
     open_tab: Option<u32>,
     loads_per_update: u32,
+    open_exports: Vec<GltfExportWindow>,
 }
 
 impl FileEditorTabs {
@@ -34,6 +36,7 @@ impl FileEditorTabs {
             editor_tabs: Vec::new(),
             open_tab: None,
             loads_per_update: 700,
+            open_exports: Vec::new(),
         }
     }
 }
@@ -244,6 +247,13 @@ impl View for FileEditorTabs {
             if self.process_loads(bf) {
                 app.ctx.request_repaint();
             }
+
+            let do_closes = self.open_exports.iter_mut().map(|w| w.draw(app.ctx, bf)).collect::<Vec<bool>>();
+            for (i, close) in do_closes.iter().rev().enumerate() {
+                if *close {
+                    self.open_exports.remove(i);
+                }
+            }
         } else {
             return;
         }
@@ -284,7 +294,10 @@ impl View for FileEditorTabs {
                     ectx.bf.extract_file_to_path(&path, key).expect("could not extract file!");
                 },
                 EditorResponse::GltfExport(key) => {
-                    crate::export::export(key, ectx.bf);
+                    //crate::export::gltf_export(key, ectx.bf);
+
+                    let window = GltfExportWindow::new(key, ectx.bf.file_table[&key].get_name_ext());
+                    self.open_exports.push(window);
                 }
             }
         }

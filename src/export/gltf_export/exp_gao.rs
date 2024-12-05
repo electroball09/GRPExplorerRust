@@ -106,16 +106,25 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     // https://stackoverflow.com/questions/1263072/changing-a-matrix-from-right-handed-to-left-handed-coordinate-system
     let yeti_matrix = gao.matrix;
     let toggle_matrix = Mat4 {
-        x_axis: [-1.0, 0.0, 0.0, 0.0].into(),
-        y_axis: [0.0, 0.0, 1.0, 0.0].into(),
-        z_axis: [0.0, 1.0, 0.0, 0.0].into(),
+        x_axis: [-1.0, 0.0, 0.0, 0.0].into(), // flip the x axis
+        y_axis: [0.0, 0.0, 1.0, 0.0].into(), // swap y and z axis
+        z_axis: [0.0, 1.0, 0.0, 0.0].into(), // swap y and z axis
         w_axis: [0.0, 0.0, 0.0, 1.0].into(),
     };
-    let mut blender_matrix = toggle_matrix * yeti_matrix * toggle_matrix; // this switches y and z coords and flips x coord, same as in exp_mesh.rs
-    match gao.light {
-        Light::Directional(_) | Light::Spot(_) => {
-            blender_matrix.z_axis *= -1.0; // directional and spot lights are flipped in gltf
+    let mut final_matrix = toggle_matrix * yeti_matrix * toggle_matrix; // this switches y and z coords and flips x coord, same as in exp_mesh.rs
+    match gao.light { // directional and spot lights are flipped in gltf
+        Light::Directional(_) => {
+            if ct.options.invert_directional_lights {
+                log::debug!("flipping dir. lights");
+                final_matrix.z_axis *= -1.0; 
+            }
         },
+        Light::Spot(_) => {
+            if ct.options.invert_spot_lights {
+                log::debug!("flipping spot lights");
+                final_matrix.z_axis *= -1.0;
+            }
+        }
         _ => { }
     };
 
@@ -143,9 +152,9 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             color: [point.color.x, point.color.y, point.color.z],
                             extensions: None,
                             extras: Default::default(),
-                            intensity: point.intensity * 10000.0,
+                            intensity: point.intensity * ct.options.point_light_intensity_multiplier,
                             name: Some(name.clone()),
-                            range: Some(point.range * 1000.0),
+                            range: Some(point.range * ct.options.point_light_range_multiplier),
                             spot: None,
                             type_: Valid(json::extensions::scene::khr_lights_punctual::Type::Point)
                         });
@@ -156,9 +165,9 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             color: [spot.color.x, spot.color.y, spot.color.z],
                             extensions: None,
                             extras: Default::default(),
-                            intensity: spot.intensity * 10000.0,
+                            intensity: spot.intensity * ct.options.spot_light_intentisy_multiplier,
                             name: Some(name.clone()),
-                            range: Some(spot.range * 1000.0),
+                            range: Some(spot.range * ct.options.spot_light_range_multiplier),
                             spot: Some(json::extensions::scene::khr_lights_punctual::Spot {
                                 inner_cone_angle: spot.inner_cone_angle / 2.0,
                                 outer_cone_angle: spot.outer_cone_angle / 2.0
@@ -172,7 +181,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                             color: [directional.color.x, directional.color.y, directional.color.z],
                             extensions: None,
                             extras: Default::default(),
-                            intensity: directional.intensity * 5000.0,
+                            intensity: directional.intensity * ct.options.directional_light_intensity_multiplier,
                             name: Some(name.clone()),
                             range: None,
                             spot: None,
@@ -199,7 +208,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     }
 
     let node = ct.root.push(json::Node {
-        matrix: Some(blender_matrix.to_cols_array()),
+        matrix: Some(final_matrix.to_cols_array()),
         children: Some(nodes),
         name: Some(name),
         extensions: {

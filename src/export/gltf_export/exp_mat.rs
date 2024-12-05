@@ -181,7 +181,7 @@ fn transform_skybox_shader<'a>(material: &mut json::Material, ct: &'a mut Export
     material.extensions = Some(json::extensions::material::Material {
         specular: None,
         emissive_strength: Some(json::extensions::material::EmissiveStrength {
-            emissive_strength: json::extensions::material::EmissiveStrengthFactor(2.0)
+            emissive_strength: json::extensions::material::EmissiveStrengthFactor(ct.options.skybox_emissive_multiplier)
         })
     });
 }
