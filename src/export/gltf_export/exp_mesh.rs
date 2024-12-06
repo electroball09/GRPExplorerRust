@@ -1,5 +1,6 @@
 use crate::objects::*;
 use super::*;
+use glam::{Vec3, Vec4};
 use gltf_json as json;
 use json::validation::Checked::Valid;
 use json::validation::USize64;
@@ -21,7 +22,7 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
     };
     let _msd_name = ct.bf.file_table[&msd_key].get_name().to_string();
 
-    let vtx_size: usize = 12 + 16;
+    let vtx_size: usize = 12 + 16 + 24;
     let face_size: usize = 2;
 
     let mut vec = Vec::new();
@@ -31,6 +32,22 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         let vtx = msd.vertex_data.pos[idx];
         let uv0 = msd.vertex_data.uv0[idx];
         let uv1 = msd.vertex_data.uv1[idx];
+        let uv2 = msd.vertex_data.uv2[idx];
+        let uv3 = msd.vertex_data.uv3[idx];
+        
+        // hmm it's not qtangent
+        let v4 = Vec4::new(uv2.x, uv2.y, uv3.x, uv3.y);
+        let fty = 2.0 * v4.y;
+        let ftz = 2.0 * v4.z;
+        let ftwy = fty * v4.w;
+        let ftwz = ftz * v4.w;
+        let ftxy = fty * v4.x;
+        let ftxz = ftz * v4.x;
+        let ftyy = fty * v4.y;
+        let ftzz = ftz * v4.z;
+        let norm = Vec3::new(1.0 - (ftyy + ftzz), ftxy + ftwz, ftxz - ftwy).normalize();
+
+        //let norm = Vec3::new(uv3.x, uv3.y, 1.0 - uv3.x - uv3.y);
 
         ct.cursor.write_f32::<ENDIAN>(-vtx.x).expect("write error"); // negate x coord for blender
         ct.cursor.write_f32::<ENDIAN>(vtx.z).expect("write error"); // flip y and z coords for blender
@@ -39,6 +56,14 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         ct.cursor.write_f32::<ENDIAN>(uv0.y).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(uv1.x).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(uv1.y).expect("write error");
+
+        ct.cursor.write_f32::<ENDIAN>(norm.x).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(norm.y).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(norm.z).expect("write error");
+
+        ct.cursor.write_f32::<ENDIAN>(0.0).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(0.0).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(0.0).expect("write error");
     }
     let vbuf_len = ct.cursor.position() as usize - buffer_start;
 
@@ -86,9 +111,24 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
         sparse: None
     });
 
-    // let uv1_acc = ct.root.push(json::Accessor {
+    let uv1_acc = ct.root.push(json::Accessor {
+        buffer_view: Some(vtx_view),
+        byte_offset: Some(USize64(20)),
+        count: USize64::from(msd.num_vertices as usize),
+        component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+        extensions: Default::default(),
+        extras: Default::default(),
+        type_: Valid(json::accessor::Type::Vec2),
+        min: None,
+        max: None,
+        name: None,
+        normalized: false,
+        sparse: None
+    });
+
+    // let uv2_acc = ct.root.push(json::Accessor {
     //     buffer_view: Some(vtx_view),
-    //     byte_offset: Some(USize64(20)),
+    //     byte_offset: Some(USize64(28)),
     //     count: USize64::from(msd.num_vertices as usize),
     //     component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
     //     extensions: Default::default(),
@@ -100,6 +140,51 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
     //     normalized: false,
     //     sparse: None
     // });
+
+    // let uv3_acc = ct.root.push(json::Accessor {
+    //     buffer_view: Some(vtx_view),
+    //     byte_offset: Some(USize64(40)),
+    //     count: USize64::from(msd.num_vertices as usize),
+    //     component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+    //     extensions: Default::default(),
+    //     extras: Default::default(),
+    //     type_: Valid(json::accessor::Type::Vec2),
+    //     min: None,
+    //     max: None,
+    //     name: None,
+    //     normalized: false,
+    //     sparse: None
+    // });
+
+    let norm_acc = ct.root.push(json::Accessor {
+        buffer_view: Some(vtx_view),
+        byte_offset: Some(USize64(28)),
+        count: USize64::from(msd.num_vertices as usize),
+        component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+        extensions: Default::default(),
+        extras: Default::default(),
+        type_: Valid(json::accessor::Type::Vec3),
+        min: None,
+        max: None,
+        name: None,
+        normalized: false,
+        sparse: None
+    });
+
+    let tan_acc = ct.root.push(json::Accessor {
+        buffer_view: Some(vtx_view),
+        byte_offset: Some(USize64(40)),
+        count: USize64::from(msd.num_vertices as usize),
+        component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+        extensions: Default::default(),
+        extras: Default::default(),
+        type_: Valid(json::accessor::Type::Vec3),
+        min: None,
+        max: None,
+        name: None,
+        normalized: false,
+        sparse: None
+    });
 
     let mut prims = Vec::new();
 
@@ -148,7 +233,11 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
                 let mut map = BTreeMap::new();
                 map.insert(Valid(json::mesh::Semantic::Positions), pos_acc);
                 map.insert(Valid(json::mesh::Semantic::TexCoords(0)), uv0_acc);
-                //map.insert(Valid(json::mesh::Semantic::TexCoords(1)), uv1_acc);
+                map.insert(Valid(json::mesh::Semantic::TexCoords(1)), uv1_acc);
+                // map.insert(Valid(json::mesh::Semantic::TexCoords(2)), uv2_acc);
+                // map.insert(Valid(json::mesh::Semantic::TexCoords(3)), uv3_acc);
+                //map.insert(Valid(json::mesh::Semantic::Normals), norm_acc);
+                //map.insert(Valid(json::mesh::Semantic::Tangents), tan_acc);
                 map
             },
             extensions: Default::default(),

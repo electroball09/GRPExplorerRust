@@ -72,6 +72,8 @@ impl EditorImpl for MeshDataEditor {
                         ui.label(format!("pos: {}", msd.vertex_data.pos[v]));
                         ui.label(format!("uv0: {}", msd.vertex_data.uv0[v]));
                         ui.label(format!("uv1: {}", msd.vertex_data.uv1[v]));
+                        ui.label(format!("uv2: {}", msd.vertex_data.uv2[v]));
+                        ui.label(format!("uv3: {}", msd.vertex_data.uv3[v]));
                         ui.label("bones: ");
                         let bone = &msd.vertex_data.weights[v];
                         for b in 0..bone.len() {

@@ -94,10 +94,10 @@ pub struct FaceData {
     pub f2: u16
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone, Copy)]
 pub struct Weight {
     pub bone: u8,
-    pub weight: f32,
+    pub weight: u8,//f32,
 }
 
 #[derive(Default)]
@@ -106,11 +106,17 @@ pub struct VertexData {
     pub pos: Vec<Vec3>,
     pub uv0: Vec<Vec2>,
     pub uv1: Vec<Vec2>,
-    pub weights: Vec<[Weight; 8]>,
+    pub weights: Vec<[Weight; 4]>,
+    pub uv2: Vec<Vec2>,
+    pub uv3: Vec<Vec2>,
 }
 
 fn snorm16_to_float(v: i16) -> f32 {
     f32::max((v as f32) / 32767.0, -1.0)
+}
+
+fn snorm8_to_float(v: i8) -> f32 {
+    f32::max((v as f32) / 127.0, -1.0)
 }
 
 fn uvi16_to_float(v: i16) -> f32 {
@@ -152,7 +158,9 @@ impl ArchetypeImpl for MeshData {
         let mut pos: Vec<Vec3> = Vec::with_capacity(self.num_vertices as usize);
         let mut uv0: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
         let mut uv1: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
-        let mut weights: Vec<[Weight; 8]> = Vec::with_capacity(self.num_vertices as usize);
+        let mut weights: Vec<[Weight; 4]> = Vec::with_capacity(self.num_vertices as usize);
+        let mut uv2: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
+        let mut uv3: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
         for _i in 0..self.num_vertices {
             let mut vbuf: [u8; 32] = [0; 32];
             cursor.read(&mut vbuf)?;
@@ -176,50 +184,38 @@ impl ArchetypeImpl for MeshData {
                 uvi16_to_float(vbufr.read_i16::<LittleEndian>()?),
                 uvi16_to_float(vbufr.read_i16::<LittleEndian>()?),
             ));
-            weights.push([Weight {
-                bone: vbufr.read_u8()?,
-                weight: vbufr.read_u8()? as f32 / 255.0
-                },Weight {
-                    bone: vbufr.read_u8()?,
-                    weight: vbufr.read_u8()? as f32 / 255.0
-                },Weight {
-                    bone: vbufr.read_u8()?,
-                    weight: vbufr.read_u8()? as f32 / 255.0
-                },Weight {
-                    bone: vbufr.read_u8()?,
-                    weight: vbufr.read_u8()? as f32 / 255.0
-                },Weight {
-                    bone: vbufr.read_u8()?,
-                    weight: vbufr.read_u8()? as f32 / 255.0
-                },Weight {
-                    bone: vbufr.read_u8()?,
-                    weight: vbufr.read_u8()? as f32 / 255.0
-                },Weight {
-                    bone: vbufr.read_u8()?,
-                    weight: vbufr.read_u8()? as f32 / 255.0
-                },Weight {
-                    bone: vbufr.read_u8()?,
-                    weight: vbufr.read_u8()? as f32 / 255.0
-                },
-            ]);
-            // weights.push(Weights {
-            //     bone0: Weight {
-            //         bone: vbufr.read_u8()?,
-            //         weight: vbufr.read_u8()? as f32 / 255.0
-            //     },
-            //     bone1: Weight {
-            //         bone: vbufr.read_u8()?,
-            //         weight: vbufr.read_u8()? as f32 / 255.0
-            //     },
-            //     bone2: Weight {
-            //         bone: vbufr.read_u8()?,
-            //         weight: vbufr.read_u8()? as f32 / 255.0
-            //     },
-            //     bone3: Weight {
-            //         bone: vbufr.read_u8()?,
-            //         weight: vbufr.read_u8()? as f32 / 255.0
-            //     },
-            // });
+            weights.push({
+                let mut weights = [Weight::default(); 4];
+                for i in 0..4 {
+                    weights[i].weight = vbufr.read_u8()?;
+                }
+                for i in 0..4 {
+                    weights[i].bone = vbufr.read_u8()?;
+                }
+                weights
+            });
+            uv2.push(
+                 Vec2::new(
+                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
+                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
+            ));
+            uv3.push(
+                 Vec2::new(
+                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
+                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
+            ));
+            // uv2.push(
+            //     Vec2::new(
+            //         { let b = snorm8_to_float(vbufr.read_i8()?); snorm8_to_float(vbufr.read_i8()?); b },
+            //         { let b = snorm8_to_float(vbufr.read_i8()?); snorm8_to_float(vbufr.read_i8()?); b }
+            //     )
+            // );
+            // uv3.push(
+            //     Vec2::new(
+            //         { let b = snorm8_to_float(vbufr.read_i8()?); snorm8_to_float(vbufr.read_i8()?); b },
+            //         { let b = snorm8_to_float(vbufr.read_i8()?); snorm8_to_float(vbufr.read_i8()?); b }
+            //     )
+            // );
             bufs.push(vbuf);
         }
         self.vertex_data = VertexData {
@@ -228,6 +224,8 @@ impl ArchetypeImpl for MeshData {
             uv0,
             uv1,
             weights,
+            uv2,
+            uv3,
         };
 
         self.faces = Vec::with_capacity(self.num_indices as usize);
