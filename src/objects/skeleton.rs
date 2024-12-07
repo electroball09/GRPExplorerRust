@@ -1,5 +1,5 @@
 use super::ArchetypeImpl;
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 use byteorder::{LittleEndian, ReadBytesExt};
 
 #[derive(Default)]
@@ -12,11 +12,7 @@ pub struct Skeleton {
 
 pub struct Bone {
     name: String,
-    pub unk_00: u8,
-    pub unk_01: u8,
-    pub unk_02: u8,
-    pub unk_03: u8,
-    pub floats: [f32; 48],
+    pub data: [u8; 196],
 }
 
 impl Bone {
@@ -37,18 +33,10 @@ impl ArchetypeImpl for Skeleton {
         while i < self.num_bones {
             let mut bone = Bone {
                 name: String::new(),
-                unk_00: cursor.read_u8()?,
-                unk_01: cursor.read_u8()?,
-                unk_02: cursor.read_u8()?,
-                unk_03: cursor.read_u8()?,
-                floats: [0.0; 48]
+                data: [0; 196],
             };
 
-            let mut j = 0;
-            while j < 48 {
-                bone.floats[j] = cursor.read_f32::<LittleEndian>()?;
-                j += 1;
-            }
+            cursor.read(&mut bone.data)?;
 
             v.push(bone);
             i += 1;

@@ -119,6 +119,7 @@ impl GltfExportWindow {
                         number_field(ui, "Point Light Multiplier"       , &mut options.point_light_intensity_multiplier           , &mut self.edit_strings.point_light_intensity_multiplier       );
                         number_field(ui, "Point Light Range Multiplier" , &mut options.point_light_range_multiplier               , &mut self.edit_strings.point_light_range_multiplier           );
                         number_field(ui, "Skybox Brighness Multiplier"  , &mut options.skybox_emissive_multiplier                 , &mut self.edit_strings.skybox_emissive_multiplier             );
+                        ui.checkbox(&mut options.export_collision, "Export Collision");
                     });
 
                     self.options = options;

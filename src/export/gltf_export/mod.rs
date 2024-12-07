@@ -16,6 +16,7 @@ mod exp_world; use exp_world::*;
 mod exp_gao; use exp_gao::*;
 mod exp_texture; use exp_texture::*;
 mod exp_mat; use exp_mat::*;
+mod exp_col; use exp_col::*;
 mod gltf_export_window; pub use gltf_export_window::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -29,6 +30,8 @@ pub struct GltfExportOptions {
 
     pub invert_directional_lights               : bool,
     pub invert_spot_lights                      : bool,
+
+    pub export_collision                        : bool,
 }
 
 impl Default for GltfExportOptions {
@@ -42,6 +45,7 @@ impl Default for GltfExportOptions {
             point_light_range_multiplier: 1.0,
             invert_directional_lights: false,
             invert_spot_lights: false,
+            export_collision: true,
         }
     }
 }
@@ -52,11 +56,12 @@ impl GltfExportOptions {
             directional_light_intensity_multiplier: 10000.0,
             spot_light_intentisy_multiplier: 8000.0,
             point_light_intensity_multiplier: 8000.0,
-            skybox_emissive_multiplier: 2.5,
+            skybox_emissive_multiplier: 1.5,
             spot_light_range_multiplier: 1000.0,
             point_light_range_multiplier: 1000.0,
             invert_directional_lights: true,
             invert_spot_lights: true,
+            export_collision: false,
         }
     }
 
@@ -67,6 +72,7 @@ impl GltfExportOptions {
             point_light_intensity_multiplier: 4.0,
             invert_directional_lights: false,
             invert_spot_lights: false,
+            export_collision: true,
             ..Default::default()
         }
     }
@@ -194,6 +200,9 @@ pub fn gltf_export(key: u32, bf: &Bigfile, options: GltfExportOptions) {
         },
         ObjectType::wor => {
             nodes = gltf_wor(&mut ct);
+        },
+        ObjectType::col => {
+            nodes = gltf_col(&mut ct);
         }
         _ => { }
     };

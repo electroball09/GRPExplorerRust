@@ -84,6 +84,7 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
             nodes.push(ct.root.push(json::Node {
                 mesh: Some(*mesh),
+                name: ct.root.meshes[mesh.value()].name.clone(),
                 ..Default::default()
             }));
         }
@@ -133,10 +134,13 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         let mut nodes = Vec::new();
         for key in &ct.bf.object_table[&ct.key].references {
             if ct.bf.is_key_valid(*key) {
-                if let ObjectType::got = ct.bf.file_table[key].object_type {
-                    ct.key = *key;
-                    nodes = gltf_got(ct);
-                }
+                ct_with_key!(ct, *key, {
+                    match ct.bf.file_table[key].object_type {
+                        ObjectType::got => nodes.append(&mut gltf_got(ct)),
+                        ObjectType::cot => nodes.append(&mut gltf_cot(ct)),
+                        _ => { }
+                    };
+                });
             }
         }
         ct.key = old_key;

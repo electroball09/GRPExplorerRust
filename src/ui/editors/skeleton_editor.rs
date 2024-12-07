@@ -11,30 +11,11 @@ impl super::EditorImpl for SkeletonEditor {
             ui.label(format!("unk_01: {:#04X}", ske.unk_01));
 
             egui::ScrollArea::new([true, true]).auto_shrink([false, false]).show(ui, |ui| {
-                let mut i = 0;
-                for bone in &ske.bones {
+                for (i, bone) in ske.bones.iter().enumerate() {
                     ui.collapsing(format!("{} - {}", i, bone.get_name()), |ui| {
-                        ui.label(format!("unk_00: {}", bone.unk_00));
-                        ui.label(format!("unk_01: {:#04X}", bone.unk_01));
-                        ui.label(format!("unk_02: {:#04X}", bone.unk_02));
-                        ui.label(format!("unk_03: {:#04X}", bone.unk_03));
-                        ui.collapsing("Floats", |ui| {
-                            for chunk in bone.floats.chunks_exact(4) {
-                                ui.horizontal(|ui| {
-                                    ui.label(format!("{:10.5}", chunk[0]));
-                                    ui.label(format!("{:10.5}", chunk[1]));
-                                    ui.label(format!("{:10.5}", chunk[2]));
-                                    ui.label(format!("{:10.5}", chunk[3]));
-                                });
-                            }
-                            // let mut j = 0;
-                            // while j < 48 {
-                            //     ui.label(format!("{}: {}", j, bone.floats[j]));
-                            //     j += 1;
-                            // }
-                        });
+                        let str = bone.data.chunks_exact(8).map(|c| format!("{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7])).collect::<Vec<String>>().join("\r\n");
+                        ui.label(str);
                     });
-                    i += 1;
                 }
             });
         }

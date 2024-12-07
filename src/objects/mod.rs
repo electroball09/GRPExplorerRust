@@ -22,6 +22,7 @@ mod dtb;         pub use dtb::*;
 mod vxc;         pub use vxc::*;
 mod vxt;         pub use vxt::*;
 mod world;       pub use world::*;
+mod collision;   pub use collision::*;
 
 mod load_error; pub use load_error::*;
 
@@ -79,6 +80,8 @@ pub enum ObjectArchetype {
     Vxt(Vxt),
     GraphicObjectTable(GraphicObjectTable),
     World(World),
+    CollisionObject(CollisionObject),
+    CollisionObjectTable(CollisionObjectTable)
 }
 
 impl ObjectArchetype {
@@ -109,6 +112,8 @@ impl ObjectArchetype {
             Self::ShaderGraph           (ref mut arch) => Some(arch),
             Self::GraphicObjectTable    (ref mut arch) => Some(arch),
             Self::World                 (ref mut arch) => Some(arch),
+            Self::CollisionObject       (ref mut arch) => Some(arch),
+            Self::CollisionObjectTable  (ref mut arch) => Some(arch),
             Self::NoImpl => None
         };
 
@@ -166,6 +171,8 @@ impl YetiObject {
             ObjectType::vxt => ObjectArchetype::Vxt(Vxt::default()),
             ObjectType::got => ObjectArchetype::GraphicObjectTable(GraphicObjectTable::default()),
             ObjectType::wor => ObjectArchetype::World(World::default()),
+            ObjectType::col => ObjectArchetype::CollisionObject(CollisionObject::default()),
+            ObjectType::cot => ObjectArchetype::CollisionObjectTable(Default::default()),
             _ => ObjectArchetype::NoImpl
         }
     }

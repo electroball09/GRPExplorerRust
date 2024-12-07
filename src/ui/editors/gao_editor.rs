@@ -22,6 +22,11 @@ impl EditorImpl for GameobjectEditor {
             ui.label(format!("pos: {}", gao.position()));
             ui.label(format!("rot: {}", gao.rotation()));
             ui.label(format!("scl: {}", gao.scale()));
+            ui.separator();
+            ui.label(format!("mat x: {}", gao.matrix.x_axis));
+            ui.label(format!("mat y: {}", gao.matrix.y_axis));
+            ui.label(format!("mat z: {}", gao.matrix.z_axis));
+            ui.label(format!("mat w: {}", gao.matrix.w_axis));
             ui.add_space(15.0);
             ui.label(format!("light: {:?}", gao.light));
         }
