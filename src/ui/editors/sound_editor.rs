@@ -4,7 +4,7 @@ use crate::objects::{ObjectArchetype, SnkType};
 pub struct SnkEditor;
 
 impl EditorImpl for SnkEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         if let ObjectArchetype::SoundBank(snk) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             match &snk.snk_type {
                 SnkType::Unknown(v) => {

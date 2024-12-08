@@ -33,13 +33,13 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
     };
 
     // we want to set texture modes per material, and if not, per shader
-    match ct.key {
+    match ct.key.into() {
         0xA4802C06 | 0xA4801CC1 | 0xA480258D | 0xA3810A9D | 0xA4801AEE | 0xA4802A74 | 0xA4802AE7 => transform_alphablend_emissive_shader(&mut material, ct),
         0xA4802C05 | 0x6B800408 | 0xA4801CC0 | 0xA480258C | 0xA3810A9C | 0xA4801AEC | 0xA4802A75 | 0xA4802AE6 => transform_alphablend_shader(&mut material, ct),
         0x6F800200 => transform_submarine_material(&mut material, ct),
         0xdf729421 => transform_standard_shader(&mut material, ct),
         _ => {
-            match shd_key {
+            match (*shd_key).into() {
                 0xAD00A2AD => transform_invcoloralpha_shader(&mut material, ct, [0.05, 0.05, 0.05, 1.0]), // decals like wall grime and footprints
                 0xAD00F0A4 | 0x11800B53 => transform_coloralpha_shader(&mut material, ct, [1.0, 0.817, 0.514, 1.0], 0.1), // godrays
                 0xAD00F62A | 0x0D8151FE | 0xAD027A32 | 0xAD027A1C => transform_skybox_shader(&mut material, ct), // skyboxes
@@ -64,7 +64,7 @@ fn load_standard_shader<'a>(material: &mut json::Material, ct: &'a mut ExportCon
         .filter(|key| ct.bf.is_key_valid(**key) && ct.bf.file_table[key].object_type.is_tga())
         .map(|key| *key);
 
-    // this clusterfuck is courtesy of the fact that objects will almost always have a base color, but can have either a normal map or specular map or both or neither
+    // this clusterfuck is courtesy of the fact that objects will almost always have a base color, but can have either a normal map or specular map or both or neither, in any order
     let (bkey, skey, nkey) = if let Some(key0) = textures.next() {
         if let Some(key) = textures.next() {
             if let Some(key) = unwrap_tga_key(key, ct.bf) {

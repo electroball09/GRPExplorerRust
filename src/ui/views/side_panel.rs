@@ -3,6 +3,7 @@ use super::tools::ToolsView;
 use super::{View, bf_metadata_view::BigfileMetadataView};
 use super::file_tree_view::FileTreeView;
 use crate::egui as egui;
+use crate::metadata::YKey;
 use crate::ui::AppContext;
 
 pub struct SidePanelView {
@@ -31,7 +32,7 @@ impl SidePanelView {
         }
     }
 
-    pub fn should_open_new_tab(&self) -> Option<u32> {
+    pub fn should_open_new_tab(&self) -> Option<YKey> {
         if let Some(key) = self.ft_view.did_click_file() {
             Some(key)
         } else if let Some(key) = self.sr_view.did_click_file() {

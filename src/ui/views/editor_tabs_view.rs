@@ -5,6 +5,7 @@ use log::*;
 use crate::egui::Ui;
 use crate::export::GltfExportWindow;
 use crate::loader::{AmortizedLoad, LoadSet};
+use crate::metadata::YKey;
 use clipboard::*;
 use crate::bigfile::{Bigfile, obj_type_to_name};
 use crate::bigfile::metadata::FileEntry;
@@ -12,7 +13,7 @@ use crate::ui::*;
 use crate::ui::editors::EditorResponse;
 
 struct EditorTab {
-    key: u32,
+    key: YKey,
     name: String,
     editor: Box<dyn EditorImpl>,
     load: AmortizedLoad,
@@ -25,7 +26,7 @@ pub struct EditorTabContext<'a> {
 
 pub struct FileEditorTabs {
     editor_tabs: Vec<EditorTab>,
-    open_tab: Option<u32>,
+    open_tab: Option<YKey>,
     loads_per_update: u32,
     open_exports: Vec<GltfExportWindow>,
 }
@@ -42,11 +43,11 @@ impl FileEditorTabs {
 }
 
 impl FileEditorTabs {
-    fn find_tab(&self, key: u32) -> Option<usize> {
+    fn find_tab(&self, key: YKey) -> Option<usize> {
         self.editor_tabs.iter().position(|k| k.key == key)
     }
 
-    pub fn open_new_tab(&mut self, bf: &mut Bigfile, key: u32) {
+    pub fn open_new_tab(&mut self, bf: &mut Bigfile, key: YKey) {
         if let None = self.find_tab(key) {
             let editor = create_editor_for_type(&bf.file_table[&key].object_type);
             self.editor_tabs.push(EditorTab {
@@ -63,7 +64,7 @@ impl FileEditorTabs {
        self.set_open_tab(key);
     }
 
-    pub fn set_open_tab(&mut self, key: u32) {
+    pub fn set_open_tab(&mut self, key: YKey) {
         if let Some(_) = self.find_tab(key) {
             self.open_tab = Some(key);
         } else {
@@ -71,7 +72,7 @@ impl FileEditorTabs {
         }
     }
 
-    pub fn close_tab(&mut self, key: u32, bf: &mut Bigfile) {
+    pub fn close_tab(&mut self, key: YKey, bf: &mut Bigfile) {
         if let Some(idx) = self.find_tab(key) {
             self.editor_tabs.get_mut(idx).unwrap().load.unload_all(bf);
             self.editor_tabs.remove(idx);
@@ -126,7 +127,7 @@ impl FileEditorTabs {
 
     fn draw_top_panel(&mut self, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
         egui::TopBottomPanel::top("file_editor_tabs").show(ectx.ctx, |ui| {
-            let mut new_open_tab: Option<u32> = None;
+            let mut new_open_tab: Option<YKey> = None;
             ui.horizontal_wrapped(|ui| {
                 for tab in self.editor_tabs.iter() {
                     let open_tab_key = self.open_tab.expect("we have tabs, but none are open???");
@@ -163,7 +164,7 @@ impl FileEditorTabs {
         });
     }
 
-    fn draw_central_panel(&mut self, key: u32, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
+    fn draw_central_panel(&mut self, key: YKey, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
         egui::CentralPanel::default().show(ectx.ctx, |ui| {
             for tab in self.editor_tabs.iter_mut() {
                 if tab.key == key && tab.loaded {
@@ -176,7 +177,7 @@ impl FileEditorTabs {
         });
     }
 
-    fn draw_side_panel(&mut self, key: u32, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
+    fn draw_side_panel(&mut self, key: YKey, _ui: &mut egui::Ui, ectx: &mut EditorContext<'_>) {
         egui::SidePanel::left("file_entry_panel").default_width(200.0).max_width(600.0).min_width(200.0)
             .resizable(true).show(ectx.ctx, |ui| {
 

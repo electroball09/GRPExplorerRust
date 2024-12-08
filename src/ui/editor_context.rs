@@ -1,12 +1,13 @@
+use crate::metadata::YKey;
 use crate::Bigfile;
 use crate::ggl::ShaderCache;
 
 pub enum EditorResponse {
     None,
-    OpenNewTab(u32),
-    CloseTab(u32),
-    ExtractFile(u32, String),
-    GltfExport(u32),
+    OpenNewTab(YKey),
+    CloseTab(YKey),
+    ExtractFile(YKey, String),
+    GltfExport(YKey),
 }
 
 pub struct EditorContext<'a> {

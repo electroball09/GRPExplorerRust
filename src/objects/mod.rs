@@ -28,13 +28,13 @@ mod load_error; pub use load_error::*;
 
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::bigfile::metadata::{ObjectType, FileEntry};
+use crate::{bigfile::metadata::{FileEntry, ObjectType}, metadata::YKey};
 
 pub struct YetiObject {
     load_refs: u32,
-    key: u32,
+    key: YKey,
     name: String,
-    pub references: Vec<u32>,
+    pub references: Vec<YKey>,
     pub archetype: ObjectArchetype,
     pub load_error: Option<LoadError>
 }
@@ -43,7 +43,7 @@ impl Default for YetiObject {
     fn default() -> Self {
         Self {
             load_refs: 0,
-            key: 0xFFFFFFFF,
+            key: 0xFFFFFFFF.into(),
             name: String::default(),
             references: Vec::new(),
             archetype: ObjectArchetype::NoImpl,
@@ -181,7 +181,7 @@ impl YetiObject {
         self.load_refs > 0
     }
 
-    pub fn get_key(&self) -> u32 {
+    pub fn get_key(&self) -> YKey {
         self.key
     }
 

@@ -1,4 +1,4 @@
-use crate::metadata::ObjectType;
+use crate::metadata::{ObjectType, YKey};
 use crate::Bigfile;
 use byteorder::WriteBytesExt;
 use gltf_json as json;
@@ -79,12 +79,12 @@ impl GltfExportOptions {
 }
 
 struct ExportContext<'a> {
-    pub key: u32,
+    pub key: YKey,
     pub bf: &'a Bigfile,
     pub cursor: &'a mut Cursor<&'a mut Vec<u8>>,
     pub root: &'a mut json::Root,
     pub buffer_js: &'a json::Index<json::Buffer>,
-    pub index_cache: HashMap<u32, Vec<u32>>,
+    pub index_cache: HashMap<YKey, Vec<u32>>,
     pub options: GltfExportOptions,
 }
 
@@ -138,7 +138,7 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
     new_vec
 }
 
-pub fn gltf_export(key: u32, bf: &Bigfile, options: GltfExportOptions) {
+pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
     let file_name = format!("{}.glb", bf.file_table[&key].get_name());
 
     let path = match rfd::FileDialog::new().add_filter("glTF2.0", &[".glb"]).set_file_name(&file_name).save_file() {

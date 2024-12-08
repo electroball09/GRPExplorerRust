@@ -1,4 +1,4 @@
-use crate::{bigfile::{metadata::ObjectType, Bigfile}, objects::ObjectArchetype, ui::AppContext};
+use crate::{bigfile::{metadata::ObjectType, Bigfile}, metadata::YKey, objects::ObjectArchetype, ui::AppContext};
 use std::{fs::*, collections::HashSet, io::Write};
 use log::*;
 use crate::egui as egui;
@@ -51,7 +51,7 @@ fn export_zones(bf: &mut Bigfile) {
     info!("exporting zones to {}", path);
 
     if let Ok(mut file) = File::create(path) {
-        let keys: Vec<u32> = bf.file_table.iter()
+        let keys: Vec<YKey> = bf.file_table.iter()
             .filter(|ent| ent.1.object_type == ObjectType::zon)
             .map(|ent| *ent.0)
             .collect();
@@ -78,7 +78,7 @@ fn export_shader_node_ids(bf: &mut Bigfile) {
 
     info!("exporting shader node ids to {}", path);
 
-    let shd_keys: Vec<u32> = bf.file_table.iter()
+    let shd_keys: Vec<YKey> = bf.file_table.iter()
         .filter(|ent| ent.1.object_type == ObjectType::shd)
         .map(|ent| *ent.0)
         .collect();

@@ -7,18 +7,18 @@ use strum::IntoEnumIterator;
 use super::*;
 
 pub struct AmortizedLoad {
-    loaded: HashSet<u32>,
-    type_map: HashMap<ObjectType, Vec<u32>>,
-    to_load: Vec<u32>,
+    loaded: HashSet<YKey>,
+    type_map: HashMap<ObjectType, Vec<YKey>>,
+    to_load: Vec<YKey>,
 }
 
 pub trait LoadSet {
-    fn loaded_by_type(&self, obj_type: crate::bigfile::ObjectType) -> Option<&Vec<u32>>;
+    fn loaded_by_type(&self, obj_type: crate::bigfile::ObjectType) -> Option<&Vec<YKey>>;
     fn is_loaded(&self) -> bool;
 }
 
 impl LoadSet for AmortizedLoad {
-    fn loaded_by_type(&self, obj_type: crate::bigfile::ObjectType) -> Option<&Vec<u32>> {
+    fn loaded_by_type(&self, obj_type: crate::bigfile::ObjectType) -> Option<&Vec<YKey>> {
         self.type_map.get(&obj_type)
     }
 
@@ -29,12 +29,12 @@ impl LoadSet for AmortizedLoad {
 
 impl Default for AmortizedLoad {
     fn default() -> Self {
-        Self::new(0xFFFFFFFF)
+        Self::new(YKey::default())
     }
 }
 
 impl AmortizedLoad {
-    pub fn new(initial_key: u32) -> Self {
+    pub fn new(initial_key: YKey) -> Self {
         Self {
             loaded: HashSet::new(),
             to_load: vec![initial_key],
@@ -52,7 +52,7 @@ impl AmortizedLoad {
             return true;
         }
 
-        let mut tmp_to_load: Queue<u32> = Queue::new();
+        let mut tmp_to_load: Queue<YKey> = Queue::new();
 
         for key in self.to_load.drain(0..min(num as usize, self.to_load.len())) {
             let _ = tmp_to_load.add(key);

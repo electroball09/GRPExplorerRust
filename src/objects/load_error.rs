@@ -1,20 +1,22 @@
 use std::{error::Error, str::FromStr, string::FromUtf8Error};
 use core::fmt::Display;
 
+use crate::metadata::YKey;
+
 #[derive(Default, Debug)]
 pub struct LoadError {
     msg: String,
-    key: u32,
+    key: YKey,
 }
 
 impl LoadError {
-    pub fn new(msg: String, key: u32) -> Self {
+    pub fn new(msg: String, key: YKey) -> Self {
         Self {
             msg, key
         }
     }
 
-    pub fn set_key(&mut self, key: u32) {
+    pub fn set_key(&mut self, key: YKey) {
         self.key = key
     }
 }

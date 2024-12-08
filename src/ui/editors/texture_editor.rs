@@ -168,7 +168,7 @@ impl TextureMetadataEditor {
 }
 
 impl EditorImpl for TextureMetadataEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         let mut mtype = TextureMetaType::None;
         if let ObjectArchetype::TextureMetadata(tga) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             mtype = tga.meta;
@@ -277,7 +277,7 @@ impl EditorImpl for TextureMetadataEditor {
 pub struct TextureDataEditor;
 
 impl EditorImpl for TextureDataEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         if let ObjectArchetype::TextureData(txd) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             ui.label(format!("unk_01: {:#010X}", txd.unk_01));
             ui.label(format!("format: {:?}", txd.format));

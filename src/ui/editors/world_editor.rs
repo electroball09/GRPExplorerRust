@@ -4,23 +4,19 @@ use super::*;
 
 #[derive(Default)]
 pub struct WorldEditor {
-    mat_map: Option<HashMap<u32, Vec<u32>>>,
-    display_order: Vec<u32>,
+    mat_map: Option<HashMap<YKey, Vec<YKey>>>,
+    display_order: Vec<YKey>,
 }
 
 impl EditorImpl for WorldEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, tctx: &EditorTabContext) {
         if let None = self.mat_map {
             let mut mat_map = HashMap::new();
             for mat in tctx.load_set.loaded_by_type(ObjectType::mat).unwrap() {
                 let shd_key = ectx.bf.object_table[mat].references.last().unwrap();
-                if !mat_map.contains_key(shd_key) {
-                    mat_map.insert(*shd_key, vec![*mat]);
-                } else {
-                    mat_map.get_mut(shd_key).unwrap().push(*mat);
-                }
+                mat_map.entry(*shd_key).or_insert(vec![*mat]).push(*mat);
             }
-            self.display_order = mat_map.keys().map(|b| *b).collect::<Vec<u32>>();
+            self.display_order = mat_map.keys().map(|b| *b).collect::<Vec<YKey>>();
             self.display_order.sort_by(|a, b| {
                 let a = ectx.bf.file_table[a].get_name();
                 let b = ectx.bf.file_table[b].get_name();

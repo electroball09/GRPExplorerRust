@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use strum::{EnumString, AsRefStr};
+use crate::metadata::YKey;
 use crate::{bigfile::Bigfile, ui::AppContext};
 use crate::egui as egui;
 
@@ -7,8 +8,8 @@ pub struct SearchView {
     query: String,
     query_changed: bool,
     match_case: bool,
-    results: Vec<u32>,
-    clicked_file: Option<u32>,
+    results: Vec<YKey>,
+    clicked_file: Option<YKey>,
     page: usize,
     files_per_page: usize,
     sort: SortBy,
@@ -36,7 +37,7 @@ impl SearchView {
         }
     }
 
-    pub fn did_click_file(&self) -> Option<u32> {
+    pub fn did_click_file(&self) -> Option<YKey> {
         self.clicked_file
     }
 
@@ -95,12 +96,12 @@ impl super::View for SearchView {
                                     }
                                     None
                                 } else if let Ok(val) = u32::from_str_radix(&self.query.trim_start_matches("0x"), 16) {
-                                    if entry.1.offset == val || entry.1.key == val {
+                                    if entry.1.offset == val || entry.1.key == val.into() {
                                         return some;
                                     }
                                     None
                                 } else if let Ok(val) = u32::from_str_radix(&self.query, 10) {
-                                    if entry.1.offset == val || entry.1.key == val {
+                                    if entry.1.offset == val || entry.1.key == val.into() {
                                         return some;
                                     }
                                     None

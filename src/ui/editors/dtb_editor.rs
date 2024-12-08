@@ -6,7 +6,7 @@ pub struct DataTableEditor {
 }
 
 impl EditorImpl for DataTableEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         let dtb = match ectx.bf.object_table.get(&key).unwrap().archetype {
             ObjectArchetype::DataTable(ref dtb2) => dtb2,
             _ => { return; }
@@ -37,7 +37,7 @@ impl EditorImpl for DataTableEditor {
                             ui.allocate_space([15.0, 0.0].into());
                             match value {
                                 ColumnData::Asset(v) => {
-                                    if ectx.bf.is_key_valid(*v) {
+                                    if ectx.bf.is_key_valid((*v).into()) {
                                         if ui.button(format!("{}", value)).clicked() {
                                             open_new_tab = Some(*v);
                                         }
@@ -57,7 +57,7 @@ impl EditorImpl for DataTableEditor {
         });
 
         if let Some(v) = open_new_tab {
-            ectx.respond(EditorResponse::OpenNewTab(v));
+            ectx.respond(EditorResponse::OpenNewTab(v.into()));
         }
     }
 }

@@ -83,11 +83,11 @@ pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
 pub struct Bigfile {
     pub segment_header: SegmentHeader,
     pub bigfile_header: BigfileHeader,
-    pub file_table: HashMap<u32, FileEntry>,
-    pub object_table: HashMap<u32, YetiObject>,
+    pub file_table: HashMap<YKey, FileEntry>,
+    pub object_table: HashMap<YKey, YetiObject>,
     pub folder_table: HashMap<u16, FolderEntry>,
     pub io: Box<dyn BigfileIO>,
-    pub file_list_map: HashMap<u16, Box<Vec<u32>>>,
+    pub file_list_map: HashMap<u16, Box<Vec<YKey>>>,
 }
 
 impl Bigfile {
@@ -123,9 +123,9 @@ impl Bigfile {
         Ok(())
     }
 
-    pub fn load_file(&mut self, key: u32) -> Result<bool, LoadError> {
-        if let Some(file) = self.file_table.get(&key) {
-            let obj = self.object_table.get_mut(&key).unwrap();
+    pub fn load_file(&mut self, key: YKey) -> Result<bool, LoadError> {
+        if let Some(file) = self.file_table.get(&key.into()) {
+            let obj = self.object_table.get_mut(&key.into()).unwrap();
             if obj.is_loaded() { 
                 obj.add_ref();
                 return Ok(false); 
@@ -141,8 +141,8 @@ impl Bigfile {
         }
     }
 
-    pub fn unload_file(&mut self, key: u32) -> Result<(), String> {
-        if let Some(obj) = self.object_table.get_mut(&key) {
+    pub fn unload_file(&mut self, key: YKey) -> Result<(), String> {
+        if let Some(obj) = self.object_table.get_mut(&key.into()) {
             obj.unload();
             Ok(())
         } else {
@@ -150,8 +150,8 @@ impl Bigfile {
         }
     }
 
-    pub fn is_key_valid(&self, key: u32) -> bool {
-        if let Some(file) = self.file_table.get(&key) {
+    pub fn is_key_valid(&self, key: YKey) -> bool {
+        if let Some(file) = self.file_table.get(&key.into()) {
             if file.offset != 0xFFFFFFFF {
                 return true;
             }
@@ -160,13 +160,13 @@ impl Bigfile {
         return false;
     }
 
-    pub fn extract_file_to_path(&mut self, path: &str, key: u32) -> Result<(), String> {
+    pub fn extract_file_to_path(&mut self, path: &str, key: YKey) -> Result<(), String> {
         let mut file = match std::fs::File::create(path) {
             Ok(file) => file,
             Err(error) => return Err(error.to_string())
         };
 
-        let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, &self.file_table[&key])?;
+        let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, &self.file_table[&key.into()])?;
 
         let mut buf: [u8; 4] = [0; 4];
         buf.copy_from_slice(&bytes[..4]);
@@ -208,8 +208,8 @@ impl Bigfile {
         }
     }
 
-    fn build_archetype_table(&mut self) -> Result<HashMap<u32, YetiObject>, String> {
-        let mut table = HashMap::<u32, YetiObject>::new();
+    fn build_archetype_table(&mut self) -> Result<HashMap<YKey, YetiObject>, String> {
+        let mut table = HashMap::<YKey, YetiObject>::new();
         for kv in self.file_table.iter() {
             table.insert(*kv.0, YetiObject::from_file_entry(&self.file_table[kv.0]));
         };
@@ -218,7 +218,7 @@ impl Bigfile {
 
     fn build_file_tree(&mut self) -> Result<(), String> {
         info!("building file lists");
-        let mut file_list_map: HashMap<u16, Box<Vec<u32>>> = HashMap::new();
+        let mut file_list_map: HashMap<u16, Box<Vec<YKey>>> = HashMap::new();
         for file in self.file_table.values() {
             file_list_map.entry(file.parent_folder).or_insert(Box::new(Vec::with_capacity(1))).push(file.key);
         }

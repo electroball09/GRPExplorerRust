@@ -1,5 +1,6 @@
 use super::*;
 use crate::egui::Ui;
+use crate::metadata::YKey;
 use log::*;
 
 use crate::bigfile::Bigfile;
@@ -8,7 +9,7 @@ use crate::ui::*;
 pub struct FileTreeView {
     debug_folders: bool,
     debug_files: bool,
-    clicked_file: Option<u32>
+    clicked_file: Option<YKey>
 }
 
 impl FileTreeView {
@@ -20,17 +21,17 @@ impl FileTreeView {
         }
     }
 
-    pub fn did_click_file(&self) -> Option<u32> {
+    pub fn did_click_file(&self) -> Option<YKey> {
         self.clicked_file
     }
 
     fn draw_file_tree(&mut self, ui: &mut Ui, app: &mut AppContext, debug_folders: bool, debug_files: bool) {
-        fn draw_folder2(idx: &u16, bf: &Bigfile, ctx: &egui::Context, ui: &mut Ui, debug_folders: bool, debug_files: bool) -> Option<u32> {
+        fn draw_folder2(idx: &u16, bf: &Bigfile, ctx: &egui::Context, ui: &mut Ui, debug_folders: bool, debug_files: bool) -> Option<YKey> {
             if !bf.folder_table.contains_key(&idx) { return None; }
             let folder = bf.folder_table[&idx];
             let rsp = ui.collapsing(folder.get_name(), |ui| {
                 let mut child = folder.first_child;
-                let mut opt: Option<u32> = None;
+                let mut opt: Option<YKey> = None;
                 while child != 0xFFFF {
                     if let Some(key) = draw_folder2(&child, bf, ctx, ui, debug_folders, debug_files) {
                        opt = Some(key);
@@ -51,7 +52,7 @@ impl FileTreeView {
                             let btn = ui.button(file.get_name());
                             if btn.clicked() {
                                 debug!("clicked file {}", file.get_name_ext());
-                                opt = Some(key.clone());
+                                opt = Some(*key);
                             }
                             if debug_files {
                                 btn.on_hover_ui_at_pointer(|ui| {

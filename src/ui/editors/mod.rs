@@ -25,10 +25,10 @@ pub use crate::egui as egui;
 use super::editor_tabs_view::EditorTabContext;
 pub use super::{EditorContext, EditorResponse};
 
-use crate::{objects::ObjectArchetype, bigfile::metadata::ObjectType};
+use crate::{bigfile::metadata::ObjectType, metadata::YKey, objects::ObjectArchetype};
 
 pub trait EditorImpl {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, tctx: &EditorTabContext);
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, tctx: &EditorTabContext);
 }
 
 pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {

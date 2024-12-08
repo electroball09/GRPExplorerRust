@@ -4,7 +4,7 @@ use super::*;
 pub struct VertexColorsEditor;
 
 impl EditorImpl for VertexColorsEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         let vxc = match &ectx.bf.object_table.get(&key).unwrap().archetype {
             ObjectArchetype::VertexColors(ref vxc) => vxc,
             _ => { return; }

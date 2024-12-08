@@ -1,9 +1,11 @@
 use strum::{EnumIter, IntoEnumIterator};
 
+use crate::metadata::YKey;
+
 use super::*;
 
 pub struct GltfExportWindow {
-    asset_key: u32,
+    asset_key: YKey,
     asset_name: String,
     options: GltfExportOptions,
     close_requested: bool,
@@ -44,7 +46,7 @@ fn number_field(ui: &mut egui::Ui, label: &str, num: &mut f32, string: &mut Stri
 }
 
 impl GltfExportWindow {
-    pub fn new(asset_key: u32, asset_name: &str) -> Self {
+    pub fn new(asset_key: YKey, asset_name: &str) -> Self {
         Self {
             asset_key,
             asset_name: asset_name.into(),

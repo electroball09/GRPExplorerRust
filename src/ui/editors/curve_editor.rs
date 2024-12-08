@@ -41,7 +41,7 @@ impl CurveEditor {
 }
 
 impl EditorImpl for CurveEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         if let ObjectArchetype::Curve(ref mut curve) = &mut ectx.bf.object_table.get_mut(&key).unwrap().archetype {
             match &mut curve.curve {
                 CurveType::Constant(_cv) => Self::draw_constant_curve(&mut curve.curve, ui),

@@ -6,6 +6,7 @@ use byteorder::{ReadBytesExt, LittleEndian};
 use flate2::read::ZlibDecoder;
 
 use super::metadata::{SegmentHeader, BigfileHeader, FileEntry, FolderEntry};
+use super::YKey;
 
 pub fn seek_to_bigfile_header(reader: &mut impl Seek, seg_header: &SegmentHeader) -> Result<u64, Error> {
     reader.seek(SeekFrom::Start(seg_header.header_offset as u64))
@@ -28,13 +29,13 @@ pub fn seek_to_file_data(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_
     reader.seek(SeekFrom::Current((offset as i64) * 8))
 }
 
-pub fn parse_and_remove_refs(buf: &[u8]) -> (Vec<u32>, &[u8]) {
+pub fn parse_and_remove_refs(buf: &[u8]) -> (Vec<YKey>, &[u8]) {
     let mut cursor = Cursor::new(&buf);
     let num_refs = cursor.read_u32::<LittleEndian>().unwrap();
-    let mut refs: Vec<u32> = Vec::with_capacity(num_refs as usize);
+    let mut refs: Vec<YKey> = Vec::with_capacity(num_refs as usize);
     let mut i = 0;
     while i < num_refs {
-        refs.push(cursor.read_u32::<LittleEndian>().unwrap());
+        refs.push(cursor.read_u32::<LittleEndian>().unwrap().into());
         i += 1;
     }
     
@@ -49,7 +50,7 @@ pub trait BigfileIO {
 
     fn read_segment_header(&mut self) -> Result<SegmentHeader, String>;
     fn read_bigfile_header(&mut self, seg_header: &SegmentHeader) -> Result<BigfileHeader, String>;
-    fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u32, FileEntry>, String>;
+    fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<YKey, FileEntry>, String>;
     fn read_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u16, FolderEntry>, String>;
 
     fn read_file(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader, entry: &FileEntry) -> Result<Vec<u8>, String>;
@@ -103,7 +104,7 @@ impl BigfileIO for BigfileIOPacked {
         BigfileHeader::read_from(&mut self.file)
     }
 
-    fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u32, FileEntry>, String> {
+    fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<YKey, FileEntry>, String> {
         if let Err(err) = seek_to_file_table(&mut self.file, seg_header, bf_header) {
             return Err(err.to_string());
         }

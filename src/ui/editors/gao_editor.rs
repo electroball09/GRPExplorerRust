@@ -7,7 +7,7 @@ pub struct GameobjectEditor {
 }
 
 impl EditorImpl for GameobjectEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         if ui.button("Export to .glb...").clicked() {
             ectx.respond(EditorResponse::GltfExport(key));
         }
@@ -39,7 +39,7 @@ pub struct GraphicObjectTableEditor {
 }
 
 impl EditorImpl for GraphicObjectTableEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         if ui.button("Export to .glb...").clicked() {
             ectx.respond(EditorResponse::GltfExport(key));
         }

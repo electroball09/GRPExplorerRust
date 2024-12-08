@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::fmt::{Display, UpperHex};
 #[allow(dead_code)]
 
 use std::io::Read;
@@ -193,10 +193,37 @@ impl FolderEntry {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct YKey(u32);
+
+impl Default for YKey {
+    fn default() -> Self {
+        Self(0xFFFFFFFF)
+    }
+}
+
+impl From<u32> for YKey {
+    fn from(value: u32) -> Self {
+        YKey(value)
+    }
+}
+
+impl From<YKey> for u32 {
+    fn from(value: YKey) -> Self {
+        value.0
+    }
+}
+
+impl UpperHex for YKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        UpperHex::fmt(&self.0, f)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct FileEntry {
     pub offset: u32,
-    pub key: u32,
+    pub key: YKey,
     pub unk01: i32,
     pub object_type: ObjectType,
     pub parent_folder: u16,
@@ -215,7 +242,7 @@ impl Default for FileEntry {
     fn default() -> Self {
         FileEntry {
             offset: 0,
-            key: 0,
+            key: 0.into(),
             unk01: 0,
             object_type: ObjectType::null,
             parent_folder: 0,
@@ -244,7 +271,7 @@ impl FileEntry {
     pub fn read_from(reader: &mut impl Read) -> Result<FileEntry, String> {
         let mut entry = FileEntry::default();
         entry.offset = reader.read_u32::<LittleEndian>().unwrap();
-        entry.key = reader.read_u32::<LittleEndian>().unwrap();
+        entry.key = reader.read_u32::<LittleEndian>().unwrap().into();
         entry.unk01 = reader.read_i32::<LittleEndian>().unwrap();
         entry.object_type = FromPrimitive::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
         entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();

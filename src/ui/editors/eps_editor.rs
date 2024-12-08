@@ -3,7 +3,7 @@ use super::*;
 pub struct EditableParamStructEditor;
 
 impl EditorImpl for EditableParamStructEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         if let ObjectArchetype::EditableParamStruct(eps) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             ui.label(format!("unk_01: {} / {:#010X}", eps.unk_01, eps.unk_01));
             ui.label(format!("data_len: {} / {:#010X}", eps.struct_data_len, eps.struct_data_len));
@@ -21,7 +21,7 @@ impl EditorImpl for EditableParamStructEditor {
 pub struct EditableParamsListEditor;
 
 impl EditorImpl for EditableParamsListEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         let obj = &ectx.bf.object_table.get(&key).unwrap();
         if let ObjectArchetype::EditableParamsList(epl) = &obj.archetype {
             ui.label(format!("num: {}", epl.names_list.len()));

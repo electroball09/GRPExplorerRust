@@ -1,6 +1,6 @@
 use crate::{bigfile::*, objects::*};
 
-pub fn unwrap_tga_key(key: u32, bf: &Bigfile) -> Option<u32> {
+pub fn unwrap_tga_key(key: YKey, bf: &Bigfile) -> Option<YKey> {
     let mut key = key;
     while {
         match &bf.object_table[&key].archetype {

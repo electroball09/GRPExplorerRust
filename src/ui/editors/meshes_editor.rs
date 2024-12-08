@@ -5,7 +5,7 @@ use crate::export::*;
 pub struct MeshMetadataEditor;
 
 impl EditorImpl for MeshMetadataEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         let msd = if ui.button("Export to .glb").clicked() {
             Some(ectx.bf.object_table.get(&key).unwrap().references[0])
         } else {
@@ -43,7 +43,7 @@ impl EditorImpl for MeshMetadataEditor {
 pub struct MeshDataEditor;
 
 impl EditorImpl for MeshDataEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         let obj = &ectx.bf.object_table.get(&key).unwrap();
         if let ObjectArchetype::MeshData(msd) = &obj.archetype {
             ui.label(format!("unk_01: {}", msd.unk_01));

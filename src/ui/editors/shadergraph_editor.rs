@@ -7,7 +7,7 @@ use node_id_editors::*;
 pub struct ShaderGraphEditor;
 
 impl EditorImpl for ShaderGraphEditor {
-    fn draw(&mut self, key: u32, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
         if let ObjectArchetype::ShaderGraph(shd) = &mut ectx.bf.object_table.get_mut(&key).unwrap().archetype {
             ui.label(format!("version: {:#06X}", shd.version));
             ui.label(format!("flags: {:#06X} {:#018b}", shd.flags, shd.flags));
