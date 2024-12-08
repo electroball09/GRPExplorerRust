@@ -47,7 +47,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::txd => Box::new(TextureDataEditor { }),
         ObjectType::snk => Box::new(SnkEditor { }),
         ObjectType::shd => Box::new(ShaderGraphEditor { }),
-        ObjectType::ske => Box::new(SkeletonEditor { }),
+        ObjectType::ske => Box::new(SkeletonEditor::default()),
         ObjectType::eps => Box::new(EditableParamStructEditor { }),
         ObjectType::zon => Box::new(ZoneEditor { }),
         ObjectType::dbr => Box::new(DbrEditor { }),
