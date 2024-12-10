@@ -28,6 +28,7 @@ enum ExportTemplateType {
     Default,
     Blender,
     UE4,
+    UE5,
 
     Custom
 }
@@ -105,6 +106,7 @@ impl GltfExportWindow {
                         ExportTemplateType::Default => (GltfExportOptions::default(), false),
                         ExportTemplateType::Blender => (GltfExportOptions::blender(), false),
                         ExportTemplateType::UE4 => (GltfExportOptions::ue4(), false),
+                        ExportTemplateType::UE5 => (GltfExportOptions::ue5(), false),
                         ExportTemplateType::Custom => (self.options, true)
                     };
 
