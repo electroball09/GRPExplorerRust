@@ -13,20 +13,22 @@ use strum_macros::EnumString;
 #[derive(Debug, Default)]
 pub struct SegmentHeader {
     pub sig: [u8; 4],
-    pub segment: u8,
+    pub unk01: u8, // always 1
     pub num_segments: u8,
-    pub unk01: u16,
-    pub unk02: u32,
-    pub unk03: u32,
-    pub header_offset: u32,
-    pub unk04: [u8; 28],
+    pub segment: u8,
+    pub unk02: u8, // always 0
+    pub unk_seg_offset01: u64,
+    pub header_offset: u64,
+    pub unk_seg_offset02: u64,
+    pub unk_seg_offset03: u64,
+    pub last_update: u64,
 }
 
 impl Display for SegmentHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,
-        "sig: {} | segment: {:#04X} | num_segments: {:#04X} | unk01: {:#06X} | unk02: {:#010X} | unk03: {:#010X} | header_offset: {}", 
-        self.sig_to_str(), self.segment, self.num_segments, self.unk01, self.unk02, self.unk03, self.header_offset)
+        "sig: {} | unk01: {:#04X} | num_segments: {:#04X} | segment: {:#04X} | unk02: {:#04X} | unk_seg_offset01: {:#10X} | header_offset: {:#10X} | unk_seg_offset02: {:#10X} | unk_seg_offset03: {:#10X} | last_update: {:#10X}", 
+        self.sig_to_str(), self.unk01, self.num_segments, self.segment, self.unk02, self.header_offset, self.unk_seg_offset01, self.unk_seg_offset02, self.unk_seg_offset03, self.last_update)
     }
 }
 
@@ -38,12 +40,15 @@ impl SegmentHeader {
             return Err("could not read header correctly!");
         }
 
-        header.segment = read.read_u8().unwrap();
+        header.unk01 = read.read_u8().unwrap();
         header.num_segments = read.read_u8().unwrap();
-        header.unk01 = read.read_u16::<LittleEndian>().unwrap();
-        header.unk02 = read.read_u32::<LittleEndian>().unwrap();
-        header.unk03 = read.read_u32::<LittleEndian>().unwrap();
-        header.header_offset = read.read_u32::<LittleEndian>().unwrap();
+        header.segment = read.read_u8().unwrap();
+        header.unk02 = read.read_u8().unwrap();
+        header.unk_seg_offset01 = read.read_u64::<LittleEndian>().unwrap();
+        header.header_offset = read.read_u64::<LittleEndian>().unwrap();
+        header.unk_seg_offset02 = read.read_u64::<LittleEndian>().unwrap();
+        header.unk_seg_offset03 = read.read_u64::<LittleEndian>().unwrap();
+        header.last_update = read.read_u64::<LittleEndian>().unwrap();
 
         header.verify_integrity()?;
 
@@ -62,8 +67,7 @@ impl SegmentHeader {
             return Err("signature invalid!");
         }
 
-        if self.segment == 0 || self.num_segments == 0 
-            || self.segment > self.num_segments {
+        if self.num_segments == 0 || self.segment >= self.num_segments {
             return Err("segment counts invalid!");
         }
 

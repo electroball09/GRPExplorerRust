@@ -17,7 +17,7 @@ pub fn seek_to_file_table(reader: &mut impl Seek, seg_header: &SegmentHeader, _b
 }
 
 pub fn seek_to_folder_table(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<u64, Error> {
-    reader.seek(SeekFrom::Start((seg_header.header_offset + 128 + bf_header.num_files * 100) as u64))
+    reader.seek(SeekFrom::Start(seg_header.header_offset + 128u64 + bf_header.num_files as u64 * 100u64))
 }
 
 pub fn seek_to_file_data(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_header: &BigfileHeader, offset: u32) -> Result<u64, Error> {
