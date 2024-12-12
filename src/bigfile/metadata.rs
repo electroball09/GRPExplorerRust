@@ -28,7 +28,7 @@ impl Display for SegmentHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,
         "sig: {} | unk01: {:#04X} | num_segments: {:#04X} | segment: {:#04X} | unk02: {:#04X} | unk_seg_offset01: {:#10X} | header_offset: {:#10X} | unk_seg_offset02: {:#10X} | unk_seg_offset03: {:#10X} | last_update: {:#10X}", 
-        self.sig_to_str(), self.unk01, self.num_segments, self.segment, self.unk02, self.header_offset, self.unk_seg_offset01, self.unk_seg_offset02, self.unk_seg_offset03, self.last_update)
+        self.sig_to_str(), self.unk01, self.num_segments, self.segment, self.unk02, self.unk_seg_offset01, self.header_offset, self.unk_seg_offset02, self.unk_seg_offset03, self.last_update)
     }
 }
 
