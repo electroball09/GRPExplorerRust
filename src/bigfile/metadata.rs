@@ -19,16 +19,16 @@ pub struct SegmentHeader {
     pub unk02: u8, // always 0
     pub unk_seg_offset01: u64,
     pub header_offset: u64,
-    pub unk_seg_offset02: u64,
-    pub unk_seg_offset03: u64,
+    pub prev_total_data_len: u64,
+    pub total_data_len: u64,
     pub last_update: u64,
 }
 
 impl Display for SegmentHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,
-        "sig: {} | unk01: {:#04X} | num_segments: {:#04X} | segment: {:#04X} | unk02: {:#04X} | unk_seg_offset01: {:#10X} | header_offset: {:#10X} | unk_seg_offset02: {:#10X} | unk_seg_offset03: {:#10X} | last_update: {:#10X}", 
-        self.sig_to_str(), self.unk01, self.num_segments, self.segment, self.unk02, self.unk_seg_offset01, self.header_offset, self.unk_seg_offset02, self.unk_seg_offset03, self.last_update)
+        "sig: {} | unk01: {:#04X} | num_segments: {:#04X} | segment: {:#04X} | unk02: {:#04X} | unk_seg_offset01: {:#10X} | header_offset: {:#10X} | prev_total_data_len: {:#10X} | total_data_len: {:#10X} | last_update: {:#10X}", 
+        self.sig_to_str(), self.unk01, self.num_segments, self.segment, self.unk02, self.unk_seg_offset01, self.header_offset, self.prev_total_data_len, self.total_data_len, self.last_update)
     }
 }
 
@@ -46,8 +46,8 @@ impl SegmentHeader {
         header.unk02 = read.read_u8().unwrap();
         header.unk_seg_offset01 = read.read_u64::<LittleEndian>().unwrap();
         header.header_offset = read.read_u64::<LittleEndian>().unwrap();
-        header.unk_seg_offset02 = read.read_u64::<LittleEndian>().unwrap();
-        header.unk_seg_offset03 = read.read_u64::<LittleEndian>().unwrap();
+        header.prev_total_data_len = read.read_u64::<LittleEndian>().unwrap();
+        header.total_data_len = read.read_u64::<LittleEndian>().unwrap();
         header.last_update = read.read_u64::<LittleEndian>().unwrap();
 
         header.verify_integrity()?;
