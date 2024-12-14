@@ -1,4 +1,5 @@
 use std::env;
+use clap::Parser;
 use rfd::FileDialog;
 use log::*;
 use ui::explorer_init::*;
@@ -26,16 +27,26 @@ pub mod consts {
     pub const YETI_BIG: &str = "Yeti.big";
 }
 
+#[derive(Parser, Debug)]
+struct Args {
+    #[arg(short, long)]
+    pub log_level: Option<LevelFilter>
+}
+
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args = Args::parse();
+
+    info!("{:?}", args.log_level);
 
     env::set_var("RUST_BACKTRACE", "1");
 
-    let log_cfg = setup_log();
+    let log_cfg = setup_log(match args.log_level {
+        Some(level) => level,
+        None => LevelFilter::Info
+    });
     log4rs::init_config(log_cfg).unwrap();
     
     info!("app initialized");
-    debug!("args - {:?}", args);
 
     unsafe {
         explorer_app_start();

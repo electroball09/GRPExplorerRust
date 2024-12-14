@@ -174,6 +174,7 @@ impl ArchetypeImpl for GameObject {
                 },
                 _ => {
                     self.light = Light::None;
+                    //return Err(format!("weird light type?? {}", lt).into());
                     warn!("weird light type?? {}", lt);
                 }
             }

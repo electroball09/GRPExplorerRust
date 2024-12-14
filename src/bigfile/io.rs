@@ -17,15 +17,18 @@ pub fn seek_to_file_table(reader: &mut impl Seek, seg_header: &SegmentHeader, _b
 }
 
 pub fn seek_to_folder_table(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<u64, Error> {
-    reader.seek(SeekFrom::Start(seg_header.header_offset + 128u64 + bf_header.num_files as u64 * 100u64))
+    reader.seek(SeekFrom::Start(seg_header.header_offset + 128u64 + bf_header.num_files as u64 * FileEntry::struct_size(bf_header.version) as u64))
 }
 
 pub fn seek_to_file_data(reader: &mut impl Seek, seg_header: &SegmentHeader, bf_header: &BigfileHeader, offset: u32) -> Result<u64, Error> {
     seek_to_folder_table(reader, seg_header, bf_header)?;
-    let folder_data_size = bf_header.num_folders as i64 * 64;
-    reader.seek(SeekFrom::Current(folder_data_size))?;
-    let byte_pack_offset = 8 - ((reader.stream_position().unwrap()) % 8);
-    reader.seek(SeekFrom::Current(byte_pack_offset as i64))?;
+    let folder_data_size = bf_header.num_folders as u64 * FolderEntry::struct_size(bf_header.version) as u64;
+    reader.seek(SeekFrom::Current(folder_data_size as i64))?;
+    let stream_pos = reader.stream_position().unwrap();
+    let rem = stream_pos % 8;
+    if rem != 0 {
+        reader.seek(SeekFrom::Current((8u64 - rem) as i64))?;
+    }
     reader.seek(SeekFrom::Current((offset as i64) * 8))
 }
 
@@ -115,23 +118,21 @@ impl BigfileIO for BigfileIOPacked {
 
         let mut v = HashMap::with_capacity(bf_header.num_files as usize);
 
-        const FILE_BUF_SIZE: usize = 100;
-
-        let mut buf: [u8; 100 * FILE_BUF_SIZE] = [0; 100 * FILE_BUF_SIZE];
+        const BUF_SIZE: usize = 100;
+        let struct_size = FileEntry::struct_size(bf_header.version);
+        let mut buf: Vec<u8> = vec![0; BUF_SIZE * struct_size];
         let mut slice = &buf[..];
         
-        let mut i: u32 = 0;
-        while i < bf_header.num_files {
-            if i % FILE_BUF_SIZE as u32 == 0 {
+        for i in 0..bf_header.num_files {
+            if i % BUF_SIZE as u32 == 0 {
                 self.file.read(&mut buf).unwrap();
                 slice = &buf[..];
             }
 
-            let entry = FileEntry::read_from(&mut slice)?;
-            trace!("FILE ENTRY:   {}", entry);
+            let entry = FileEntry::read_from(&mut slice, bf_header.version)?;
+            debug!("FILE ENTRY:   {}", entry);
             v.insert(entry.key, entry);
-            i = i + 1;
-        };
+        }
 
         Ok(v)
     }
@@ -145,23 +146,21 @@ impl BigfileIO for BigfileIOPacked {
 
         let mut v = HashMap::with_capacity(bf_header.num_folders as usize);
 
-        const FOLDER_BUF_SIZE: usize = 100;
-
-        let mut buf: [u8; 64 * FOLDER_BUF_SIZE] = [0; 64 * FOLDER_BUF_SIZE];
+        const BUF_SIZE: usize = 100;
+        let struct_size = FolderEntry::struct_size(bf_header.version);
+        let mut buf: Vec<u8> = vec![0; BUF_SIZE * struct_size];
         let mut slice = &buf[..];
         
-        let mut i: u16 = 0;
-        while i < bf_header.num_folders {
-            if i as usize % FOLDER_BUF_SIZE == 0 {
+        for i in 0..bf_header.num_folders {
+            if i as usize % BUF_SIZE == 0 {
                 self.file.read(&mut buf).unwrap();
                 slice = &buf[..];
             }
 
-            let mut entry = FolderEntry::read_from(&mut slice)?;
+            let mut entry = FolderEntry::read_from(&mut slice, bf_header.version)?;
             entry.idx = i;
-            trace!("FOLDER ENTRY:   {}", &entry);
+            debug!("FOLDER ENTRY:   {}", &entry);
             v.insert(i, entry);
-            i = i + 1;
         }
 
         Ok(v)
@@ -173,7 +172,8 @@ impl BigfileIO for BigfileIOPacked {
             return Err(String::from("invalid offset"));
         }
 
-        if let Err(error) = seek_to_file_data(&mut self.file, seg_header, bf_header, entry.offset) {
+        let res =  seek_to_file_data(&mut self.file, seg_header, bf_header, entry.offset);
+        if let Err(error) = res {
             return Err(error.to_string());
         }
 

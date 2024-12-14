@@ -83,9 +83,16 @@ impl SegmentHeader {
     }
 }
 
+#[derive(FromPrimitive, ToPrimitive, Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub enum BigfileVersion {
+    NONE = 0x0,
+    GRO = 0x86,
+    GRFS = 0x87,
+}
+
 #[derive(Debug)]
 pub struct BigfileHeader {
-    pub version: u16,
+    pub version: BigfileVersion,
     pub num_folders: u16,
     pub num_files: u32,
     pub unk_01: [u8; 72],
@@ -98,7 +105,7 @@ pub struct BigfileHeader {
 impl Default for BigfileHeader {
     fn default() -> Self {
         Self {
-            version: 0,
+            version: BigfileVersion::NONE,
             num_folders: 0,
             num_files: 0,
             unk_01: [0; 72],
@@ -113,7 +120,7 @@ impl Default for BigfileHeader {
 impl Display for BigfileHeader {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f,
-        "version: {:#06X} | num_folders: {:#06X} | num_files: {:#010X} | load_prio: {} | auto_active: {} | data_root: {}",
+        "version: {:?} | num_folders: {:#06X} | num_files: {:#010X} | load_prio: {} | auto_active: {} | data_root: {}",
         self.version, self.num_folders, self.num_files, self.load_priority, self.auto_activate, self.data_root_str())
     }
 }
@@ -121,7 +128,7 @@ impl Display for BigfileHeader {
 impl BigfileHeader {
     pub fn read_from(reader: &mut impl Read) -> Result<BigfileHeader, String> {
         let mut header = BigfileHeader::default();
-        header.version = reader.read_u16::<LittleEndian>().unwrap();
+        header.version = BigfileVersion::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
         header.num_folders = reader.read_u16::<LittleEndian>().unwrap();
         header.num_files = reader.read_u32::<LittleEndian>().unwrap();
         reader.read(&mut header.unk_01).unwrap();
@@ -142,6 +149,7 @@ impl BigfileHeader {
 #[derive(Debug, Clone, Copy)]
 pub struct FolderEntry {
     pub idx: u16,
+
     pub unk01: u16,
     pub unk02: u16,
     pub unk03: u16,
@@ -177,16 +185,30 @@ impl Display for FolderEntry {
 }
 
 impl FolderEntry {
-    pub fn read_from(reader: &mut impl Read) -> Result<FolderEntry, String> {
+    pub fn struct_size(version: BigfileVersion) -> usize {
+        match version {
+            BigfileVersion::GRFS => 64,
+            BigfileVersion::GRO => 64,
+            BigfileVersion::NONE => panic!("wtf (this is spaghetti code don't mind me)")
+        }
+    }
+
+    pub fn read_from(reader: &mut impl Read, version: BigfileVersion) -> Result<FolderEntry, String> {
         let mut entry = FolderEntry::default();
         entry.unk01 = reader.read_u16::<LittleEndian>().unwrap();
         entry.unk02 = reader.read_u16::<LittleEndian>().unwrap();
-        entry.unk03 = reader.read_u16::<LittleEndian>().unwrap();
-        entry.unk04 = reader.read_u16::<LittleEndian>().unwrap();
+        if version == BigfileVersion::GRO {
+            entry.unk03 = reader.read_u16::<LittleEndian>().unwrap();
+            entry.unk04 = reader.read_u16::<LittleEndian>().unwrap();
+        }
         entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
         entry.first_child = reader.read_u16::<LittleEndian>().unwrap();
         entry.next_folder = reader.read_u16::<LittleEndian>().unwrap();
         reader.read(&mut entry.name).unwrap();
+        if version == BigfileVersion::GRFS {
+            entry.unk03 = reader.read_u16::<LittleEndian>().unwrap();
+            entry.unk04 = reader.read_u16::<LittleEndian>().unwrap();
+        }
 
         Ok(entry)
     }
@@ -272,12 +294,21 @@ impl Display for FileEntry {
 }
 
 impl FileEntry {
-    pub fn read_from(reader: &mut impl Read) -> Result<FileEntry, String> {
+    pub fn struct_size(version: BigfileVersion) -> usize {
+        match version {
+            BigfileVersion::GRFS => 96,
+            BigfileVersion::GRO => 100,
+            BigfileVersion::NONE => panic!("wtf")
+        }
+    }
+
+    pub fn read_from(reader: &mut impl Read, version: BigfileVersion) -> Result<FileEntry, String> {
         let mut entry = FileEntry::default();
         entry.offset = reader.read_u32::<LittleEndian>().unwrap();
         entry.key = reader.read_u32::<LittleEndian>().unwrap().into();
         entry.unk01 = reader.read_i32::<LittleEndian>().unwrap();
-        entry.object_type = FromPrimitive::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
+        let obj_type = reader.read_u16::<LittleEndian>().unwrap();
+        entry.object_type = FromPrimitive::from_u16(obj_type).unwrap();
         entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
         entry.timestamp = DateTime::from_timestamp(reader.read_i32::<LittleEndian>().unwrap() as i64, 0).unwrap(); //NaiveDateTime::from_timestamp(reader.read_i32::<LittleEndian>().unwrap() as i64, 0).unwrap();
         entry.flags = reader.read_i32::<LittleEndian>().unwrap();
@@ -285,7 +316,9 @@ impl FileEntry {
         reader.read(&mut entry.crc).unwrap();
         reader.read(&mut entry.name).unwrap();
         entry.unk03 = reader.read_i32::<LittleEndian>().unwrap();
-        entry.zip = reader.read_i32::<LittleEndian>().unwrap() == 1;
+        if version == BigfileVersion::GRO {
+            entry.zip = reader.read_i32::<LittleEndian>().unwrap() == 1;
+        }
 
         entry.tmp_name_buf[..60].clone_from_slice(&entry.name[..]);
         let idx = entry.tmp_name_buf.iter().position(|b| *b == 0).unwrap();
@@ -459,4 +492,6 @@ pub enum ObjectType {
     ttf = 0x0090,
     adf = 0x0091,
     pco = 0x0092,
+    _0x93 = 0x0093,
+    _0x94 = 0x0094
 }

@@ -27,7 +27,7 @@ impl super::View for BigfileMetadataView {
     
             ui.label("bigfile header");
             ui.indent("bf_header", |ui| {
-                ui.label(format!("version: {:#04X}", bf.bigfile_header.version));
+                ui.label(format!("version: {:?}", bf.bigfile_header.version));
                 ui.label(format!("num folders: {}", bf.bigfile_header.num_folders));
                 ui.label(format!("num files: {}", bf.bigfile_header.num_files));
                 ui.label(format!("load priority: {}", bf.bigfile_header.load_priority));
