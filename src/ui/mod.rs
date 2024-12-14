@@ -139,6 +139,7 @@ impl ExplorerApp {
                             info!("picking bigfile...");
                             let file = match FileDialog::new()
                             .add_filter("bigfile", &["big"])
+                            .add_filter("Any", &["*"])
                             .pick_file() {
                                 Some(f) => f,
                                 None => {

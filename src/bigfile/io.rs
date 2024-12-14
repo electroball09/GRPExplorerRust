@@ -101,7 +101,9 @@ impl BigfileIO for BigfileIOPacked {
 
         info!("loading bigfile header");
 
-        BigfileHeader::read_from(&mut self.file)
+        let header = BigfileHeader::read_from(&mut self.file);
+
+        header
     }
 
     fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<YKey, FileEntry>, String> {
