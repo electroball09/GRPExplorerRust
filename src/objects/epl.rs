@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 use crate::util::*;
 
 #[derive(Default)]
@@ -9,7 +9,7 @@ pub struct EditableParamsList {
 }
 
 impl ArchetypeImpl for EditableParamsList {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         let num_entries = cursor.read_u32::<LittleEndian>()?;

@@ -2,6 +2,7 @@ pub mod metadata;
 pub mod io;
 pub mod loader;
 pub mod util;
+mod io_error; pub use io_error::*;
 
 use log::*;
 
@@ -10,7 +11,7 @@ use std::collections::HashMap;
 use metadata::*;
 use io::*;
 
-use crate::objects::{YetiObject, LoadError};
+use crate::objects::YetiObject;
 
 pub fn obj_type_to_name(obj_type: &ObjectType) -> Option<&str> {
     match obj_type {
@@ -91,12 +92,9 @@ pub struct Bigfile {
 }
 
 impl Bigfile {
-    pub fn new<T: BigfileIO + 'static>(path: String) -> Result<Bigfile, String> {
+    pub fn new<T: BigfileIO + 'static>(path: String) -> Result<Bigfile, YetiIOError> {
         let path = String::from(path);
-        let io = match T::create_from_path(&path) {
-            Ok(io) => io,
-            Err(error) => return Err(error.to_string())
-        };
+        let io = T::create_from_path(&path)?;
         
         let bigfile = Bigfile {
             io: Box::new(io),
@@ -111,7 +109,7 @@ impl Bigfile {
         Ok(bigfile)
     }
 
-    pub fn load_metadata(&mut self) -> Result<(), LoadError> {
+    pub fn load_metadata(&mut self) -> Result<(), YetiIOError> {
         info!("loading metadata");
         self.segment_header = self.io.read_segment_header()?;
         self.bigfile_header = self.io.read_bigfile_header(&self.segment_header)?;
@@ -123,7 +121,7 @@ impl Bigfile {
         Ok(())
     }
 
-    pub fn load_file(&mut self, key: YKey) -> Result<bool, LoadError> {
+    pub fn load_file(&mut self, key: YKey) -> Result<bool, YetiIOError> {
         if let Some(file) = self.file_table.get(&key.into()) {
             let obj = self.object_table.get_mut(&key.into()).unwrap();
             if obj.is_loaded() { 
@@ -141,7 +139,7 @@ impl Bigfile {
         }
     }
 
-    pub fn unload_file(&mut self, key: YKey) -> Result<(), String> {
+    pub fn unload_file(&mut self, key: YKey) -> Result<(), YetiIOError> {
         if let Some(obj) = self.object_table.get_mut(&key.into()) {
             obj.unload();
             Ok(())
@@ -160,11 +158,8 @@ impl Bigfile {
         return false;
     }
 
-    pub fn extract_file_to_path(&mut self, path: &str, key: YKey) -> Result<(), String> {
-        let mut file = match std::fs::File::create(path) {
-            Ok(file) => file,
-            Err(error) => return Err(error.to_string())
-        };
+    pub fn extract_file_to_path(&mut self, path: &str, key: YKey) -> Result<(), YetiIOError> {
+        let mut file = std::fs::File::create(path)?;
 
         let bytes = self.io.read_file(&self.segment_header, &self.bigfile_header, &self.file_table[&key.into()])?;
 
@@ -174,9 +169,7 @@ impl Bigfile {
 
         let refs_len = 4 + (num_refs as usize) * 4;
 
-        if let Err(error) = std::io::Write::write(&mut file, &bytes[refs_len..]) {
-            return Err(error.to_string());
-        }
+        std::io::Write::write(&mut file, &bytes[refs_len..])?;
 
         Ok(())
     }

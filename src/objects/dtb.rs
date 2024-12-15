@@ -2,7 +2,7 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crate::util::read_nul_term_string;
 
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Default)]
 pub struct DataTable {
@@ -47,7 +47,7 @@ impl std::fmt::Display for ColumnData {
 }
 
 impl ArchetypeImpl for DataTable {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         let num_cols = cursor.read_i32::<LittleEndian>()?;

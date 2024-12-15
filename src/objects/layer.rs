@@ -1,4 +1,4 @@
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Default)]
 pub struct YetiLayer {
@@ -6,7 +6,7 @@ pub struct YetiLayer {
 }
 
 impl ArchetypeImpl for YetiLayer {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let vec: Vec<u8> = buf.iter().skip(4).map(|b| *b).take_while(|b| *b != 0).collect(); 
         self.name = match String::from_utf8(vec) {
             Ok(name) => name,

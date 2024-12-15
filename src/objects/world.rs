@@ -10,7 +10,7 @@ pub struct World {
 }
 
 impl ArchetypeImpl for World {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, _buf: &[u8]) -> Result<(), YetiIOError> {
         Ok(())
     }
 

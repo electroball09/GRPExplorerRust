@@ -26,7 +26,7 @@ pub struct SubmeshDescriptor {
 }
 
 impl ArchetypeImpl for MeshMetadata {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         self.num_submeshes = cursor.read_u8()?;
@@ -124,7 +124,7 @@ fn uvi16_to_float(v: i16) -> f32 {
 }
 
 impl ArchetypeImpl for MeshData {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         self.unk_01 = cursor.read_u32::<LittleEndian>()?;

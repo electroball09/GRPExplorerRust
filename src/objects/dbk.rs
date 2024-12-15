@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::ReadBytesExt;
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Default)]
 pub struct DynamicBank {
@@ -10,7 +10,7 @@ pub struct DynamicBank {
 }
 
 impl ArchetypeImpl for DynamicBank {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         self.bank_id = cursor.read_u8()?;

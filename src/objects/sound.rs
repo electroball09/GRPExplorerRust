@@ -42,7 +42,7 @@ pub struct SnkEntry {
 }
 
 impl ArchetypeImpl for SoundBank {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         self.snk_type = match cursor.read_u8()? {

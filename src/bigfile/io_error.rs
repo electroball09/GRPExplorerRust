@@ -4,24 +4,18 @@ use core::fmt::Display;
 use crate::metadata::YKey;
 
 #[derive(Default, Debug)]
-pub struct LoadError {
+pub struct YetiIOError {
     msg: String,
     key: YKey,
 }
 
-impl LoadError {
-    pub fn new(msg: String, key: YKey) -> Self {
-        Self {
-            msg, key
-        }
-    }
-
+impl YetiIOError {
     pub fn set_key(&mut self, key: YKey) {
         self.key = key
     }
 }
 
-impl Clone for LoadError {
+impl Clone for YetiIOError {
     fn clone(&self) -> Self {
         Self {
             msg: self.msg.clone(),
@@ -30,7 +24,7 @@ impl Clone for LoadError {
     }
 }
 
-impl From<String> for LoadError {
+impl From<String> for YetiIOError {
     fn from(msg: String) -> Self {
         Self {
             msg,
@@ -39,7 +33,7 @@ impl From<String> for LoadError {
     }
 }
 
-impl From<&str> for LoadError {
+impl From<&str> for YetiIOError {
     fn from(value: &str) -> Self {
         Self {
             msg: String::from_str(value).unwrap(),
@@ -48,7 +42,7 @@ impl From<&str> for LoadError {
     }
 }
 
-impl From<std::io::Error> for LoadError {
+impl From<std::io::Error> for YetiIOError {
     fn from(e: std::io::Error) -> Self {
         Self {
             msg: format!("{}", e),
@@ -57,7 +51,7 @@ impl From<std::io::Error> for LoadError {
     }
 }
 
-impl From<FromUtf8Error> for LoadError {
+impl From<FromUtf8Error> for YetiIOError {
     fn from(err: FromUtf8Error) -> Self {
         Self {
             msg: err.to_string(),
@@ -66,7 +60,7 @@ impl From<FromUtf8Error> for LoadError {
     }
 }
 
-impl From<xml::reader::Error> for LoadError {
+impl From<xml::reader::Error> for YetiIOError {
     fn from(value: xml::reader::Error) -> Self {
         Self {
             msg: value.to_string(),
@@ -75,13 +69,13 @@ impl From<xml::reader::Error> for LoadError {
     }
 }
 
-impl Display for LoadError {
+impl Display for YetiIOError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.msg)
     }
 }
 
-impl Error for LoadError { 
+impl Error for YetiIOError { 
     fn description(&self) -> &str {
         &self.msg
     }

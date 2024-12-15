@@ -13,7 +13,7 @@ mod epl;         pub use epl::*;
 mod meshes;      pub use meshes::*;
 mod texture;     pub use texture::*;
 mod sound;       pub use sound::*;
-mod material;    pub use material::*;
+mod material;    //pub use material::*;
 mod shader;      pub use shader::*;
 mod skeleton;    pub use skeleton::*;
 mod eps;         pub use eps::*;
@@ -24,11 +24,9 @@ mod vxt;         pub use vxt::*;
 mod world;       pub use world::*;
 mod collision;   pub use collision::*;
 
-mod load_error; pub use load_error::*;
-
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::{bigfile::metadata::{FileEntry, ObjectType}, metadata::YKey};
+use crate::{bigfile::metadata::{FileEntry, ObjectType}, metadata::YKey, YetiIOError};
 
 pub struct YetiObject {
     load_refs: u32,
@@ -36,7 +34,7 @@ pub struct YetiObject {
     name: String,
     pub references: Vec<YKey>,
     pub archetype: ObjectArchetype,
-    pub load_error: Option<LoadError>
+    pub load_error: Option<YetiIOError>
 }
 
 impl Default for YetiObject {
@@ -120,7 +118,7 @@ impl ObjectArchetype {
         return a;
     }
 
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         if let Some(arch) = self.get_impl() {
             return arch.load_from_buf(buf);
         }
@@ -193,7 +191,7 @@ impl YetiObject {
         self.load_refs += 1;
     }
 
-    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    pub fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let (refs, buf) = crate::bigfile::io::parse_and_remove_refs(buf);
         self.references = refs;
 
@@ -222,7 +220,7 @@ impl YetiObject {
 }
 
 pub trait ArchetypeImpl {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError>;
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError>;
     fn unload(&mut self);
 }
 

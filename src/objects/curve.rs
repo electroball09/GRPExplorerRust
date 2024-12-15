@@ -2,7 +2,7 @@ use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, LittleEndian};
 use num::FromPrimitive;
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Default)]
 pub struct YetiCurve {
@@ -40,7 +40,7 @@ pub struct FullCurve {
 }
 
 impl ArchetypeImpl for YetiCurve {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
         let curve_type = FromPrimitive::from_i32(cursor.read_i32::<LittleEndian>().unwrap()).unwrap();
         
@@ -71,7 +71,7 @@ impl ArchetypeImpl for YetiCurve {
 }
 
 impl YetiCurve {
-    fn load_constant_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, LoadError> {
+    fn load_constant_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, YetiIOError> {
         let y = buf.read_f32::<LittleEndian>()?;
         let point = CurvePoint {
             flags: 0,
@@ -83,7 +83,7 @@ impl YetiCurve {
         Ok(CurveType::Constant(ConstantCurve { point }))
     }
 
-    fn load_simple_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, LoadError> {
+    fn load_simple_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, YetiIOError> {
         let count = buf.read_u16::<LittleEndian>()?;
         let mut v: Vec<CurvePoint> = Vec::new();
 
@@ -104,7 +104,7 @@ impl YetiCurve {
         Ok(CurveType::Simple(SimpleCurve { points: v }))
     }
 
-    fn load_full_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, LoadError> {
+    fn load_full_curve(buf: &mut Cursor<&[u8]>) -> Result<CurveType, YetiIOError> {
         let count = buf.read_u16::<LittleEndian>()?;
         let mut v: Vec<CurvePoint> = Vec::new();
 

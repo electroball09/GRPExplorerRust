@@ -4,7 +4,7 @@ use glam::{Mat4, Vec3};
 use log::*;
 use crate::util::load_util::read_mat4;
 
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Zone {
@@ -28,7 +28,7 @@ pub enum ZoneType {
 }
 
 pub trait ZoneTypeTrait {
-    fn load_from_buf(&mut self, cursor: &mut Cursor<&[u8]>) -> Result<(), LoadError>;
+    fn load_from_buf(&mut self, cursor: &mut Cursor<&[u8]>) -> Result<(), YetiIOError>;
 }
 
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -40,7 +40,7 @@ pub struct ZoneSphere {
 }
 
 impl ZoneTypeTrait for ZoneSphere {
-    fn load_from_buf(&mut self, cursor: &mut Cursor<&[u8]>) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, cursor: &mut Cursor<&[u8]>) -> Result<(), YetiIOError> {
         self.x = cursor.read_f32::<LittleEndian>()?;
         self.y = cursor.read_f32::<LittleEndian>()?;
         self.z = cursor.read_f32::<LittleEndian>()?;
@@ -57,7 +57,7 @@ pub struct ZoneOBox {
 }
 
 impl ZoneTypeTrait for ZoneOBox {
-    fn load_from_buf(&mut self, cursor: &mut Cursor<&[u8]>) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, cursor: &mut Cursor<&[u8]>) -> Result<(), YetiIOError> {
         self.matrix = read_mat4(cursor)?;
         self.extents = Vec3::new(
             cursor.read_f32::<LittleEndian>()?,
@@ -81,7 +81,7 @@ pub enum ZoneModType {
 }
 
 impl ArchetypeImpl for Zone {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
         self.unk_01 = cursor.read_u8()?;
         self.unk_02 = match cursor.read_u8()? {

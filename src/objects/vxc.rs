@@ -9,7 +9,7 @@ pub struct VertexColors {
 }
 
 impl ArchetypeImpl for VertexColors {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         let num_vtx = cursor.read_u16::<LittleEndian>()?;

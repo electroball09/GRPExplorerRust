@@ -5,6 +5,8 @@ use std::collections::HashMap;
 use byteorder::{ReadBytesExt, LittleEndian};
 use flate2::read::ZlibDecoder;
 
+use crate::YetiIOError;
+
 use super::metadata::{SegmentHeader, BigfileHeader, FileEntry, FolderEntry};
 use super::YKey;
 
@@ -51,12 +53,12 @@ pub trait BigfileIO {
 
     fn get_path(&self) -> &str;
 
-    fn read_segment_header(&mut self) -> Result<SegmentHeader, String>;
-    fn read_bigfile_header(&mut self, seg_header: &SegmentHeader) -> Result<BigfileHeader, String>;
-    fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<YKey, FileEntry>, String>;
-    fn read_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u16, FolderEntry>, String>;
+    fn read_segment_header(&mut self) -> Result<SegmentHeader, YetiIOError>;
+    fn read_bigfile_header(&mut self, seg_header: &SegmentHeader) -> Result<BigfileHeader, YetiIOError>;
+    fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<YKey, FileEntry>, YetiIOError>;
+    fn read_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u16, FolderEntry>, YetiIOError>;
 
-    fn read_file(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader, entry: &FileEntry) -> Result<Vec<u8>, String>;
+    fn read_file(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader, entry: &FileEntry) -> Result<Vec<u8>, YetiIOError>;
 }
 
 #[derive(Debug)]
@@ -80,39 +82,31 @@ impl BigfileIO for BigfileIOPacked {
         &self.path
     }
 
-    fn read_segment_header(& mut self) -> Result<SegmentHeader,String> {
-        if let Err(err) = self.file.seek(SeekFrom::Start(0)) {
-            return Err(err.to_string());
-        }
+    fn read_segment_header(& mut self) -> Result<SegmentHeader, YetiIOError> {
+        self.file.seek(SeekFrom::Start(0))?;
 
         info!("loading segment header");
 
-        let seg_header = match SegmentHeader::read_from(&mut self.file) {
-            Ok(header) => header,
-            Err(error) => return Err(error.to_string())
-        };
+
+        let seg_header = SegmentHeader::read_from(&mut self.file)?;
 
         trace!("{}", seg_header);
 
         Ok(seg_header)
     }
 
-    fn read_bigfile_header(&mut self, seg_header: &SegmentHeader) -> Result<BigfileHeader, String> {
-        if let Err(err) = seek_to_bigfile_header(&mut self.file, seg_header) {
-            return Err(err.to_string());
-        }
+    fn read_bigfile_header(&mut self, seg_header: &SegmentHeader) -> Result<BigfileHeader, YetiIOError> {
+        seek_to_bigfile_header(&mut self.file, seg_header)?;
 
         info!("loading bigfile header");
 
-        let header = BigfileHeader::read_from(&mut self.file);
+        let header = BigfileHeader::read_from(&mut self.file)?;
 
-        header
+        Ok(header)
     }
 
-    fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<YKey, FileEntry>, String> {
-        if let Err(err) = seek_to_file_table(&mut self.file, seg_header, bf_header) {
-            return Err(err.to_string());
-        }
+    fn read_file_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<YKey, FileEntry>, YetiIOError> {
+        seek_to_file_table(&mut self.file, seg_header, bf_header)?;
 
         info!("loading file table, num_files={}", bf_header.num_files);
 
@@ -137,10 +131,8 @@ impl BigfileIO for BigfileIOPacked {
         Ok(v)
     }
 
-    fn read_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u16, FolderEntry>, String> {
-        if let Err(err) = seek_to_folder_table(&mut self.file, seg_header, bf_header) {
-            return Err(err.to_string());
-        }
+    fn read_folder_table(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader) -> Result<HashMap<u16, FolderEntry>, YetiIOError> {
+        seek_to_folder_table(&mut self.file, seg_header, bf_header)?;
 
         info!("loading folder table, num_folders={}", bf_header.num_folders);
 
@@ -166,16 +158,13 @@ impl BigfileIO for BigfileIOPacked {
         Ok(v)
     }
 
-    fn read_file(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader, entry: &FileEntry) -> Result<Vec<u8>, String> {
+    fn read_file(&mut self, seg_header: &SegmentHeader, bf_header: &BigfileHeader, entry: &FileEntry) -> Result<Vec<u8>, YetiIOError> {
         if entry.offset == 0xFFFFFFFF {
             //warn!("could not seek, offset is invalid");
-            return Err(String::from("invalid offset"));
+            return Err("invalid offset".into());
         }
 
-        let res =  seek_to_file_data(&mut self.file, seg_header, bf_header, entry.offset);
-        if let Err(error) = res {
-            return Err(error.to_string());
-        }
+        seek_to_file_data(&mut self.file, seg_header, bf_header, entry.offset)?;
 
         if entry.zip {
             let _compressed_size = self.file.read_u32::<LittleEndian>().unwrap();

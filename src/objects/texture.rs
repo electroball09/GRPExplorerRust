@@ -67,7 +67,7 @@ impl TextureMetadata {
 }
 
 impl ArchetypeImpl for TextureMetadataObject {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         if buf.len() < 6 {
             self.meta = TextureMetaType::Passthrough;
             return Ok(());
@@ -112,7 +112,7 @@ pub struct TextureData {
 }
 
 impl ArchetypeImpl for TextureData {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
         self.unk_01 = cursor.read_u32::<LittleEndian>()?;
         self.fmt_id = cursor.read_u8()?;

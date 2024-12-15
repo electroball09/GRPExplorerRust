@@ -1,6 +1,6 @@
 use std::io::Cursor;
 use byteorder::{ReadBytesExt, LittleEndian};
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Default)]
 pub struct Feu {
@@ -11,7 +11,7 @@ pub struct Feu {
 }
 
 impl ArchetypeImpl for Feu {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         self.unk_01 = cursor.read_u32::<LittleEndian>()?;

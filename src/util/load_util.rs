@@ -1,9 +1,9 @@
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::*;
-use crate::objects::LoadError;
+use crate::YetiIOError;
 
-pub fn read_mat4(cursor: &mut Cursor<&[u8]>) -> Result<Mat4, LoadError> {
+pub fn read_mat4(cursor: &mut Cursor<&[u8]>) -> Result<Mat4, YetiIOError> {
     Ok(Mat4 {
         x_axis: Vec4::new(
             cursor.read_f32::<LittleEndian>()?,

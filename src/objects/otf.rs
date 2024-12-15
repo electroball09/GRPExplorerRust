@@ -1,14 +1,14 @@
 use std::borrow::Cow;
 
 use crate::egui as egui;
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 pub struct Otf {
     pub font: Option<egui::FontData>,
 }
 
 impl ArchetypeImpl for Otf {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut v: Vec<u8> = vec![0; buf.len()];
         v.copy_from_slice(buf);
 

@@ -9,6 +9,8 @@ use num::FromPrimitive;
 use strum::{AsRefStr, EnumIter};
 use strum_macros::EnumString;
 
+use crate::YetiIOError;
+
 #[allow(unused)]
 #[derive(Debug, Default)]
 pub struct SegmentHeader {
@@ -33,11 +35,11 @@ impl Display for SegmentHeader {
 }
 
 impl SegmentHeader {
-    pub fn read_from(read: &mut impl Read) -> Result<SegmentHeader, &'static str> {
+    pub fn read_from(read: &mut impl Read) -> Result<SegmentHeader, YetiIOError> {
         let mut header = SegmentHeader::default();
 
         if read.read(&mut header.sig).expect("error reading signature!") != 4 {
-            return Err("could not read header correctly!");
+            return Err("could not read header correctly!".into());
         }
 
         header.unk01 = read.read_u8().unwrap();

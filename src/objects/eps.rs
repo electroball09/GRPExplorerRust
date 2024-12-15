@@ -1,6 +1,6 @@
-use std::{io::{Cursor, Seek, SeekFrom}};
+use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 use crate::util::*;
 
 #[derive(Default)]
@@ -19,7 +19,7 @@ pub struct StructEntry {
 }
 
 impl ArchetypeImpl for EditableParamStruct {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
         self.unk_01 = cursor.read_u32::<LittleEndian>()?;
         self.struct_data_len = cursor.read_u32::<LittleEndian>()?;

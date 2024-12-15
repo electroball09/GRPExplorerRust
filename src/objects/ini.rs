@@ -1,7 +1,7 @@
 use std::io::{Read, Cursor};
 
 use byteorder::{ReadBytesExt, LittleEndian};
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Default)]
 pub struct YetiIni {
@@ -15,7 +15,7 @@ pub enum IniEntry {
 }
 
 impl YetiIni {
-    fn load_from_reader(&self, reader: &mut impl Read) -> Result<Vec<IniEntry>, LoadError> {
+    fn load_from_reader(&self, reader: &mut impl Read) -> Result<Vec<IniEntry>, YetiIOError> {
         let mut entries: Vec<IniEntry> = Vec::new();
         let num_entries = reader.read_u32::<LittleEndian>()?;
         let mut i = 0;
@@ -47,7 +47,7 @@ impl YetiIni {
 }
 
 impl ArchetypeImpl for YetiIni {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
         self.entries = self.load_from_reader(&mut cursor)?;
         Ok(())

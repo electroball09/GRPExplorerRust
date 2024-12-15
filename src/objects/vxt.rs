@@ -10,7 +10,7 @@ pub struct Vxt {
 }
 
 impl ArchetypeImpl for Vxt {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
         cursor.read(&mut self.header)?;
 

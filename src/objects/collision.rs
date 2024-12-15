@@ -25,7 +25,7 @@ impl CollisionObject {
 }
 
 impl ArchetypeImpl for CollisionObject {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         let num_pos = cursor.read_u16::<LittleEndian>()?;
@@ -65,7 +65,7 @@ pub struct CollisionObjectTable {
 }
 
 impl ArchetypeImpl for CollisionObjectTable {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         self.num_collisions = Cursor::new(buf).read_u32::<LittleEndian>()?;
 
         Ok(())

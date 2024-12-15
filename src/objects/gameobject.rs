@@ -4,7 +4,7 @@ use byteorder::{ReadBytesExt, LittleEndian};
 use glam::*;
 use bitflags::bitflags;
 use log::warn;
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 use crate::util::load_util::*;
 
 #[derive(Default)]
@@ -106,7 +106,7 @@ impl GameObject {
 }
 
 impl ArchetypeImpl for GameObject {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         self.zero = cursor.read_u32::<LittleEndian>()?;
@@ -196,7 +196,7 @@ pub struct GraphicObjectTable {
 }
 
 impl ArchetypeImpl for GraphicObjectTable {
-    fn load_from_buf(&mut self, _buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, _buf: &[u8]) -> Result<(), YetiIOError> {
         Ok(())
     }
 

@@ -4,7 +4,7 @@ use std::io::{Read, Seek, Cursor, SeekFrom};
 use byteorder::{ReadBytesExt, LittleEndian};
 use node_ids::*;
 
-use super::{ArchetypeImpl, LoadError};
+use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Default)]
 pub struct VisualShader {
@@ -36,7 +36,7 @@ impl ShaderNode {
 }
 
 impl ArchetypeImpl for VisualShader {
-    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), LoadError> {
+    fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
 
         self.version = cursor.read_u16::<LittleEndian>()?;
@@ -61,7 +61,7 @@ impl ArchetypeImpl for VisualShader {
 }
 
 impl VisualShader {
-    fn read_graph<T: Seek + Read>(rdr: &mut T) -> Result<ShaderGraph, LoadError> {
+    fn read_graph<T: Seek + Read>(rdr: &mut T) -> Result<ShaderGraph, YetiIOError> {
         let mut graph = ShaderGraph {
             unk_01: rdr.read_u32::<LittleEndian>()?,
             unk_02: rdr.read_u32::<LittleEndian>()?,
@@ -84,7 +84,7 @@ impl VisualShader {
         Ok(graph)
     }
 
-    fn read_node_id(rdr: &mut impl Read) -> Result<String, LoadError> {
+    fn read_node_id(rdr: &mut impl Read) -> Result<String, YetiIOError> {
         let len = rdr.read_u32::<LittleEndian>()? as usize;
 
         let mut buf: [u8; 256] = [0; 256];
@@ -94,7 +94,7 @@ impl VisualShader {
         Ok(id)
     }
 
-    fn read_node<T: Read + Seek>(rdr: &mut T) -> Result<ShaderNode, LoadError> {
+    fn read_node<T: Read + Seek>(rdr: &mut T) -> Result<ShaderNode, YetiIOError> {
         let id = Self::read_node_id(rdr)?;
         let unk_01 = rdr.read_u32::<LittleEndian>()?;
 
