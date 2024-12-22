@@ -2,7 +2,7 @@ use super::*;
 use gltf_json as json;
 use json::validation::Checked::Valid;
 use rgeometry::algorithms::polygonization::two_opt_moves;
-use rgeometry::data::Point;
+use rgeometry::data::{Point, Polygon};
 
 pub fn gltf_wal<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let mut nodes = Vec::new();
@@ -25,16 +25,11 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             let p = ct.bf.object_table[key].archetype.as_game_object().unwrap().position();
             pos.push(p);
             z = f32::min(z, p.z);
-
-            // ct_with_key!(ct, *key, {
-            //     nodes.append(&mut gltf_gao(ct, false));
-            // });
         }
     };
 
     let points: Vec<Point<f32>> = pos.iter().map(|v| Point::<f32>::new([v.x.into(), v.y.into()])).collect();
-    let poly = two_opt_moves(points, &mut rand::thread_rng()).expect("uh oh");
-    
+    let poly = Polygon::<f32>::new(points).expect("polygon error!");
 
     let vtx_start = ct.cursor.position();
 
@@ -133,7 +128,6 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     });
 
     let node = ct.root.push(json::Node {
-        //children: Some(nodes),
         name: Some(name),
         mesh: Some(mesh),
         ..Default::default()
