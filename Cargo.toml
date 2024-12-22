@@ -38,6 +38,7 @@ enum-as-inner = "0.6.1"
 clap = { version = "4.5.23", features = ["derive"] }
 delaunator = "1.0.2"
 rgeometry = "0.10.1"
+rand = "0.8.5"
 
 [dependencies.strum]
 version = "0.24.1"

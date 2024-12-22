@@ -1,8 +1,8 @@
 use super::*;
-use delaunator::Point;
 use gltf_json as json;
 use json::validation::Checked::Valid;
 use rgeometry::algorithms::polygonization::two_opt_moves;
+use rgeometry::data::Point;
 
 pub fn gltf_wal<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let mut nodes = Vec::new();
@@ -18,7 +18,6 @@ pub fn gltf_wal<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let name = ct.bf.file_table[&ct.key].get_name_ext().to_string();
 
-    let mut nodes = Vec::new();
     let mut pos = Vec::new();
     let mut z = 9999999.0;
     for key in &ct.bf.object_table[&ct.key].references {
@@ -33,11 +32,12 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         }
     };
 
-    let points: Vec<Point> = pos.iter().map(|v| Point { x: v.x.into(), y: v.y.into()}).collect();
-    let triangulation = delaunator::triangulate(&points);
+    let points: Vec<Point<f32>> = pos.iter().map(|v| Point::<f32>::new([v.x.into(), v.y.into()])).collect();
+    let poly = two_opt_moves(points, &mut rand::thread_rng()).expect("uh oh");
+    
 
     let vtx_start = ct.cursor.position();
-    
+
     for p in &pos {
         ct.cursor.write_f32::<ENDIAN>(-p.x).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(z).expect("write error");
@@ -47,9 +47,14 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let vtx_len = ct.cursor.position() - vtx_start;
     let idx_start = ct.cursor.position();
 
-    for idx in &triangulation.triangles {
-        ct.cursor.write_u32::<ENDIAN>(*idx as u32).expect("write error");
+    let mut num_idx = 0;
+    for idx in poly.triangulate() {
+        ct.cursor.write_u32::<ENDIAN>(idx.0.point_id().usize() as u32).expect("write error");
+        ct.cursor.write_u32::<ENDIAN>(idx.1.point_id().usize() as u32).expect("write error");
+        ct.cursor.write_u32::<ENDIAN>(idx.2.point_id().usize() as u32).expect("write error");
+        num_idx += 3;
     }
+    let num_idx = num_idx;
 
     let idx_len = ct.cursor.position() - idx_start;
 
@@ -93,7 +98,7 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let idx_acc = ct.root.push(json::Accessor {
         buffer_view: Some(idx_view),
         byte_offset: Some(USize64(0)),
-        count: USize64::from(triangulation.triangles.len()),
+        count: USize64::from(num_idx as usize),
         component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::U32)),
         extensions: Default::default(),
         extras: Default::default(),
@@ -128,7 +133,7 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     });
 
     let node = ct.root.push(json::Node {
-        children: Some(nodes),
+        //children: Some(nodes),
         name: Some(name),
         mesh: Some(mesh),
         ..Default::default()
