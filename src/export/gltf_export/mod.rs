@@ -17,6 +17,7 @@ mod exp_gao; use exp_gao::*;
 mod exp_texture; use exp_texture::*;
 mod exp_mat; use exp_mat::*;
 mod exp_col; use exp_col::*;
+mod exp_way; use exp_way::*;
 mod gltf_export_window; pub use gltf_export_window::*;
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -32,6 +33,8 @@ pub struct GltfExportOptions {
     pub invert_spot_lights                      : bool,
 
     pub export_collision                        : bool,
+
+    pub export_empty_gaos                       : bool,
 }
 
 impl Default for GltfExportOptions {
@@ -46,6 +49,7 @@ impl Default for GltfExportOptions {
             invert_directional_lights: false,
             invert_spot_lights: false,
             export_collision: true,
+            export_empty_gaos: false,
         }
     }
 }
@@ -62,6 +66,7 @@ impl GltfExportOptions {
             invert_directional_lights: true,
             invert_spot_lights: true,
             export_collision: false,
+            ..Default::default()
         }
     }
 
@@ -112,7 +117,7 @@ macro_rules! gltf_export_init {
         }
     }
 }
-pub(crate) use gltf_export_init;
+pub(self) use gltf_export_init;
 macro_rules! insert_cache {
     ($ct:expr, $key:expr, $index:expr) => {
         let value = $index.value() as u32;
@@ -123,7 +128,7 @@ macro_rules! insert_cache {
         }
     }
 }
-pub(in self) use insert_cache;
+pub(self) use insert_cache;
 macro_rules! ct_with_key {
     ($ct:expr, $key:expr, $code:block) => {
         let old_key = $ct.key;
@@ -132,7 +137,7 @@ macro_rules! ct_with_key {
         $ct.key = old_key;
     }
 }
-pub(in self) use ct_with_key;
+pub(self) use ct_with_key;
 
 fn align_to_multiple_of_four(n: usize) -> usize {
     (n + 3) & !3
@@ -188,7 +193,7 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
         root: &mut root,
         buffer_js: &mut buffer_idx,
         index_cache: HashMap::new(),
-        options: options,
+        options,
     };
 
     match bf.file_table[&key].object_type {
@@ -208,7 +213,7 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
             nodes = gltf_got(&mut ct);
         },
         ObjectType::gao => {
-            nodes = gltf_gao(&mut ct);
+            nodes = gltf_gao(&mut ct, true);
         },
         ObjectType::wor => {
             nodes = gltf_wor(&mut ct);

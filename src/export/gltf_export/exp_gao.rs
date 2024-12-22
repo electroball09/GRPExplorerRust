@@ -52,49 +52,48 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
     let mut nodes = Vec::new();
 
-    let old_key = ct.key;
     for kv in map.iter() {
-        ct.key = *kv.0;
-        let meshes = super::gltf_msh(ct);
-        let mats = {
-            let mut mats = Vec::new();
-            for key in kv.1.iter() {
-                ct.key = *key;
-                let midx = gltf_mat(ct);
-                if midx.len() > 0 {
-                    mats.push(midx[0]);
+        ct_with_key!(ct, *kv.0, {
+            let meshes = super::gltf_msh(ct);
+            let mats = {
+                let mut mats = Vec::new();
+                for key in kv.1.iter() {
+                    ct.key = *key;
+                    let midx = gltf_mat(ct);
+                    if midx.len() > 0 {
+                        mats.push(midx[0]);
+                    }
                 }
-            }
-            mats
-        };
-        for i in 0..meshes.len() {
-            let mesh = &meshes[i];
-            for j in 0..ct.root.meshes[mesh.value()].primitives.len() {
-                if mats.len() > 0 {
-                    let mat_idx = {
-                        if j >= mats.len() {
-                            mats.len() - 1
-                        } else {
-                            j
-                        }
-                    };
-                    ct.root.meshes[mesh.value()].primitives[j].material = Some(mats[mat_idx]);
+                mats
+            };
+            for i in 0..meshes.len() {
+                let mesh = &meshes[i];
+                for j in 0..ct.root.meshes[mesh.value()].primitives.len() {
+                    if mats.len() > 0 {
+                        let mat_idx = {
+                            if j >= mats.len() {
+                                mats.len() - 1
+                            } else {
+                                j
+                            }
+                        };
+                        ct.root.meshes[mesh.value()].primitives[j].material = Some(mats[mat_idx]);
+                    }
                 }
+    
+                nodes.push(ct.root.push(json::Node {
+                    mesh: Some(*mesh),
+                    name: ct.root.meshes[mesh.value()].name.clone(),
+                    ..Default::default()
+                }));
             }
-
-            nodes.push(ct.root.push(json::Node {
-                mesh: Some(*mesh),
-                name: ct.root.meshes[mesh.value()].name.clone(),
-                ..Default::default()
-            }));
-        }
+        });
     }
-    ct.key = old_key;
 
     nodes
 }
 
-pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
+pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool) -> Vec<json::Index<json::Node>> {
     gltf_export_init!(ct);
 
     let gao = match &ct.bf.object_table[&ct.key].archetype {
@@ -206,7 +205,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     };
 
 
-    if nodes.len() == 0 && light == None { // skip exporting empty/childless/implementationless gaos
+    if nodes.len() == 0 && light == None && !ct.options.export_empty_gaos && !skip_empty_gaos_if_possible { // skip exporting empty/childless/implementationless gaos
         log::debug!("skipping {} due to no data", name);
         return Vec::new();
     }

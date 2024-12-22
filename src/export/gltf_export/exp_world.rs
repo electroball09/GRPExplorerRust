@@ -21,9 +21,7 @@ pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             match ct.bf.file_table[key].object_type {
                 ObjectType::gol => {
                     ct_with_key!(ct, *key, {
-                        for node in gltf_gol(ct).drain(..) {
-                            nodes.push(node);
-                        }
+                        nodes.append(&mut gltf_gol(ct));
                     });
                 },
                 ObjectType::wil => {
@@ -39,6 +37,11 @@ pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                         }
                     }
                 },
+                ObjectType::wal => {
+                    ct_with_key!(ct, *key, {
+                        nodes.append(&mut gltf_wal(ct));
+                    });
+                }
                 _ => { }
             };
         }
@@ -58,7 +61,7 @@ pub fn gltf_gol<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     for key in refs {
         if ct.bf.is_key_valid(*key) {
             ct_with_key!(ct, *key, {
-                let mut subnodes = gltf_gao(ct);
+                let mut subnodes = gltf_gao(ct, true);
                 for node in subnodes.drain(..) {
                     nodes.push(node);
                 }
