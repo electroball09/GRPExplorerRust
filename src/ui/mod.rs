@@ -28,6 +28,8 @@ pub mod editors;
 mod editor_context; pub use editor_context::*;
 mod file_diff_tool; use file_diff_tool::*;
 
+mod util; pub use util::*;
+
 pub struct AppContext<'a> {
     pub bigfile: Option<&'a mut Bigfile>,
     pub shader_cache: &'a mut ShaderCache,

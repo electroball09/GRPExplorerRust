@@ -1,7 +1,4 @@
-use strum::{EnumIter, IntoEnumIterator};
-
 use crate::metadata::YKey;
-
 use super::*;
 
 pub struct GltfExportWindow {
@@ -23,7 +20,7 @@ struct OptionStrings {
     pub skybox_emissive_multiplier              : String,
 }
 
-#[derive(Debug, strum_macros::Display, EnumIter, PartialEq, Clone, Copy)]
+#[derive(Debug, strum_macros::Display, strum::EnumIter, PartialEq, Clone, Copy)]
 enum ExportTemplateType {
     Default,
     Blender,
@@ -34,16 +31,10 @@ enum ExportTemplateType {
 }
 
 fn number_field(ui: &mut egui::Ui, label: &str, num: &mut f32, string: &mut String) {
-    let rsp = ui.horizontal(|ui| {
+    ui.horizontal(|ui| {
         ui.label(label);
-        ui.text_edit_singleline(string)
-    }).inner;
-    if rsp.lost_focus() {
-        if let Ok(n) = string.parse::<f32>() {
-            *num = n;
-        }
-        *string = format!("{}", num);
-    }
+        ui.number_field(num, string);
+    });
 }
 
 impl GltfExportWindow {
@@ -97,9 +88,7 @@ impl GltfExportWindow {
                     ui.label(format!("Export Template: {}", self.template));
 
                     ui.horizontal_wrapped(|ui| {
-                        for e in ExportTemplateType::iter() {
-                            ui.radio_value(&mut self.template, e.clone(), e.to_string());
-                        }
+                        ui.enum_selector(&mut self.template);
                     });
 
                     let (mut options, edit_enabled) = match self.template {
@@ -114,7 +103,10 @@ impl GltfExportWindow {
                         Self::opt_to_strings(&options, &mut self.edit_strings);
                     }
 
+                    ui.separator();
+
                     ui.add_enabled_ui(edit_enabled, |ui| {
+                        ui.label("LIGHTS");
                         number_field(ui, "Dir. Light Multiplier"        , &mut options.directional_light_intensity_multiplier     , &mut self.edit_strings.directional_light_intensity_multiplier );
                         ui.checkbox(&mut options.invert_directional_lights, "Invert Dir. Lights");
                         number_field(ui, "Spot Light Multiplier"        , &mut options.spot_light_intentisy_multiplier            , &mut self.edit_strings.spot_light_intentisy_multiplier        );
@@ -123,8 +115,16 @@ impl GltfExportWindow {
                         number_field(ui, "Point Light Multiplier"       , &mut options.point_light_intensity_multiplier           , &mut self.edit_strings.point_light_intensity_multiplier       );
                         number_field(ui, "Point Light Range Multiplier" , &mut options.point_light_range_multiplier               , &mut self.edit_strings.point_light_range_multiplier           );
                         number_field(ui, "Skybox Brighness Multiplier"  , &mut options.skybox_emissive_multiplier                 , &mut self.edit_strings.skybox_emissive_multiplier             );
+
+                        ui.separator();
+
+                        ui.label("EXPORT OPTIONS");
                         ui.checkbox(&mut options.export_collision, "Export Collision");
                         ui.checkbox(&mut options.export_empty_gaos, "Export Empty GAOs");
+                        ui.horizontal_wrapped(|ui| {
+                            ui.label("Way Export: ");
+                            ui.enum_selector(&mut options.way_export_strategy);
+                        });
                     });
 
                     self.options = options;

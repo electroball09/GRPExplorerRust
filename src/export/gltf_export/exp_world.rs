@@ -2,6 +2,10 @@ use super::*;
 use gltf_json as json;
 
 pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
+    if ct.key == 0xB00214E8.into() {
+        return vec![];
+    }
+
     gltf_export_init!(ct);
 
     let refs = &ct.bf.object_table[&ct.key].references;
@@ -25,9 +29,10 @@ pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                     });
                 },
                 ObjectType::wil => {
-                    for subworld in &ct.bf.object_table[key].references {
-                        if ct.bf.is_key_valid(*subworld) {
-                            if !ct.index_cache.contains_key(subworld) {
+                    if ct.export_subworlds {
+                        ct.export_subworlds = false;
+                        for subworld in &ct.bf.object_table[key].references {
+                            if ct.bf.is_key_valid(*subworld) && !ct.index_cache.contains_key(subworld) {
                                 ct_with_key!(ct, *subworld, {
                                     for node in gltf_wor(ct).drain(..) {
                                         nodes.push(node);

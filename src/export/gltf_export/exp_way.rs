@@ -1,8 +1,8 @@
 use super::*;
+use glam::Vec3;
 use gltf_json as json;
 use json::validation::Checked::Valid;
-use rgeometry::algorithms::polygonization::two_opt_moves;
-use rgeometry::data::{Point, Polygon};
+use rgeometry::{algorithms::polygonization::two_opt_moves, data::Point};
 
 pub fn gltf_wal<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let mut nodes = Vec::new();
@@ -18,38 +18,86 @@ pub fn gltf_wal<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let name = ct.bf.file_table[&ct.key].get_name_ext().to_string();
 
+    if ct.options.way_export_strategy.is_none() {
+        return vec![];
+    }
+
     let mut pos = Vec::new();
     let mut z = 9999999.0;
+    let mut is_snd_way = false;
     for key in &ct.bf.object_table[&ct.key].references {
         if ct.bf.is_key_valid(*key) && ct.bf.file_table[key].object_type.is_gao() {
             let p = ct.bf.object_table[key].archetype.as_game_object().unwrap().position();
             pos.push(p);
             z = f32::min(z, p.z);
+        } else {
+            is_snd_way = true;
         }
     };
+    if is_snd_way {
+        return vec![];
+    }
+
+    for p in &mut pos {
+        p.z = z;
+    }
 
     let points: Vec<Point<f32>> = pos.iter().map(|v| Point::<f32>::new([v.x.into(), v.y.into()])).collect();
-    let poly = Polygon::<f32>::new(points).expect("polygon error!");
+    let poly = two_opt_moves(points, &mut rand::thread_rng()).expect("uh oh");
+
+    let mut indices: Vec<u32> = poly.triangulate().flat_map(|f| {
+        let (f0, f1, f2) = if ct.options.way_export_strategy.is_extrude() {
+            (f.0.point_id().usize() as u32, f.2.point_id().usize() as u32, f.1.point_id().usize() as u32) // swap face 2 and 1 to flip normal
+        } else {
+            (f.0.point_id().usize() as u32, f.1.point_id().usize() as u32, f.2.point_id().usize() as u32)
+        };
+        [f0, f1, f2]
+    }).collect();
+
+    //just use the triangulated mesh
+
+    if ct.options.way_export_strategy.is_extrude() {
+        let num_pos = pos.len() as u32;
+        let side_pos_start = 0;
+        indices.append(&mut indices.chunks_exact(3).flat_map(|chk| {
+            [chk[0], chk[2], chk[1]]
+        }).map(|idx| idx + side_pos_start + num_pos).collect()); // the top of the extruded mesh
+        indices.append(&mut pos.iter().rev().enumerate().flat_map(|(i, _)| {
+            let i = side_pos_start + i as u32;
+            let next1 = i + num_pos;
+            let prev1 =  match i {
+                0 => side_pos_start + num_pos * 2 - 1,
+                _ => next1 - 1
+            };
+            let next2 = if i == num_pos - 1 {
+                side_pos_start
+            } else {
+                i + 1
+            };
+    
+            //[i, prev1, next1, i, next1, next2]
+            [i, next1, prev1, i, next2, next1]
+        }).collect());
+        let mut top_pos: Vec<Vec3> = pos.iter().map(|p| Vec3::new(p.x, p.y, z + 5.0)).collect();
+        // pos.append(&mut pos.clone());
+        // pos.append(&mut top_pos.clone());
+        pos.append(&mut top_pos);
+    }
 
     let vtx_start = ct.cursor.position();
 
     for p in &pos {
         ct.cursor.write_f32::<ENDIAN>(-p.x).expect("write error");
-        ct.cursor.write_f32::<ENDIAN>(z).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(p.z).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(p.y).expect("write error");
     }
 
     let vtx_len = ct.cursor.position() - vtx_start;
     let idx_start = ct.cursor.position();
 
-    let mut num_idx = 0;
-    for idx in poly.triangulate() {
-        ct.cursor.write_u32::<ENDIAN>(idx.0.point_id().usize() as u32).expect("write error");
-        ct.cursor.write_u32::<ENDIAN>(idx.1.point_id().usize() as u32).expect("write error");
-        ct.cursor.write_u32::<ENDIAN>(idx.2.point_id().usize() as u32).expect("write error");
-        num_idx += 3;
+    for idx in &indices {
+        ct.cursor.write_u32::<ENDIAN>(*idx).expect("write error");
     }
-    let num_idx = num_idx;
 
     let idx_len = ct.cursor.position() - idx_start;
 
@@ -93,7 +141,7 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let idx_acc = ct.root.push(json::Accessor {
         buffer_view: Some(idx_view),
         byte_offset: Some(USize64(0)),
-        count: USize64::from(num_idx as usize),
+        count: USize64::from(indices.len()),
         component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::U32)),
         extensions: Default::default(),
         extras: Default::default(),

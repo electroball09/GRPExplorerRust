@@ -1,6 +1,7 @@
 use crate::metadata::{ObjectType, YKey};
 use crate::Bigfile;
 use byteorder::WriteBytesExt;
+use enum_as_inner::EnumAsInner;
 use gltf_json as json;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Cursor;
@@ -8,6 +9,7 @@ use std::mem;
 use json::validation::USize64;
 use std::borrow::Cow;
 use byte_unit::*;
+use crate::ui::*;
 
 use byteorder::LittleEndian as ENDIAN;
 
@@ -20,21 +22,29 @@ mod exp_col; use exp_col::*;
 mod exp_way; use exp_way::*;
 mod gltf_export_window; pub use gltf_export_window::*;
 
+#[derive(Debug, strum_macros::Display, strum::EnumIter, EnumAsInner, PartialEq, PartialOrd, Clone, Copy)]
+pub enum WayExportStrategy {
+    None,
+    Triangulate,
+    Extrude
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct GltfExportOptions {
     pub directional_light_intensity_multiplier  : f32,
+    pub invert_directional_lights               : bool,
     pub spot_light_intentisy_multiplier         : f32,
     pub spot_light_range_multiplier             : f32,
+    pub invert_spot_lights                      : bool,
     pub point_light_intensity_multiplier        : f32,
     pub point_light_range_multiplier            : f32,
     pub skybox_emissive_multiplier              : f32,
 
-    pub invert_directional_lights               : bool,
-    pub invert_spot_lights                      : bool,
-
     pub export_collision                        : bool,
 
     pub export_empty_gaos                       : bool,
+
+    pub way_export_strategy                     : WayExportStrategy,
 }
 
 impl Default for GltfExportOptions {
@@ -50,6 +60,7 @@ impl Default for GltfExportOptions {
             invert_spot_lights: false,
             export_collision: true,
             export_empty_gaos: false,
+            way_export_strategy: WayExportStrategy::None,
         }
     }
 }
@@ -78,6 +89,7 @@ impl GltfExportOptions {
             invert_directional_lights: false,
             invert_spot_lights: false,
             export_collision: true,
+            way_export_strategy: WayExportStrategy::Extrude,
             ..Default::default()
         }
     }
@@ -90,6 +102,7 @@ impl GltfExportOptions {
             invert_directional_lights: false,
             invert_spot_lights: false,
             export_collision: true,
+            way_export_strategy: WayExportStrategy::Extrude,
             ..Default::default()
         }
     }
@@ -103,6 +116,7 @@ struct ExportContext<'a> {
     pub buffer_js: &'a json::Index<json::Buffer>,
     pub index_cache: HashMap<YKey, Vec<u32>>,
     pub options: GltfExportOptions,
+    pub export_subworlds: bool,
 }
 
 macro_rules! gltf_export_init {
@@ -194,6 +208,7 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
         buffer_js: &mut buffer_idx,
         index_cache: HashMap::new(),
         options,
+        export_subworlds: true,
     };
 
     match bf.file_table[&key].object_type {
