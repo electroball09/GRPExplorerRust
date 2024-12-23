@@ -42,6 +42,23 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         p.z = z;
     }
 
+    // this will probably fail in edge cases but it's good enough for the game i think
+    let is_clockwise = {
+        let p0 = pos[0];
+        let p1 = pos[1];
+
+        let avg = pos.iter().sum::<Vec3>() / pos.len() as f32;
+        
+        let d0 = (p0 - avg).normalize();
+        let d1 = (p1 - avg).normalize();
+
+        d0.cross(d1).z >= 0.0
+    };
+
+    if !is_clockwise {
+        pos = pos.iter().map(|p| *p).rev().collect();
+    }
+
     let points: Vec<Point<f32>> = pos.iter().map(|v| Point::<f32>::new([v.x.into(), v.y.into()])).collect();
     let poly = two_opt_moves(points, &mut rand::thread_rng()).expect("uh oh");
 
@@ -58,11 +75,11 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
     if ct.options.way_export_strategy.is_extrude() {
         let num_pos = pos.len() as u32;
-        let side_pos_start = 0;
+        let side_pos_start = num_pos;
         indices.append(&mut indices.chunks_exact(3).flat_map(|chk| {
             [chk[0], chk[2], chk[1]]
         }).map(|idx| idx + side_pos_start + num_pos).collect()); // the top of the extruded mesh
-        indices.append(&mut pos.iter().rev().enumerate().flat_map(|(i, _)| {
+        indices.append(&mut pos.iter().enumerate().flat_map(|(i, _)| {
             let i = side_pos_start + i as u32;
             let next1 = i + num_pos;
             let prev1 =  match i {
@@ -79,8 +96,8 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             [i, next1, prev1, i, next2, next1]
         }).collect());
         let mut top_pos: Vec<Vec3> = pos.iter().map(|p| Vec3::new(p.x, p.y, z + 5.0)).collect();
-        // pos.append(&mut pos.clone());
-        // pos.append(&mut top_pos.clone());
+        pos.append(&mut pos.clone());
+        pos.append(&mut top_pos.clone());
         pos.append(&mut top_pos);
     }
 
