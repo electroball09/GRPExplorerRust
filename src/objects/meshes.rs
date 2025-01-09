@@ -89,9 +89,9 @@ pub struct MeshData {
 
 #[derive(Default)]
 pub struct FaceData {
-    pub f0: u16,
-    pub f1: u16,
-    pub f2: u16
+    pub f0: u32,
+    pub f1: u32,
+    pub f2: u32
 }
 
 #[derive(Default, Debug, Clone, Copy)]
@@ -232,9 +232,9 @@ impl ArchetypeImpl for MeshData {
 
         for _ in 0..self.num_indices / 3 {
             self.faces.push(FaceData {
-                f0: cursor.read_u16::<LittleEndian>()?,
-                f1: cursor.read_u16::<LittleEndian>()?,
-                f2: cursor.read_u16::<LittleEndian>()?
+                f0: cursor.read_u16::<LittleEndian>()? as u32,
+                f1: cursor.read_u16::<LittleEndian>()? as u32,
+                f2: cursor.read_u16::<LittleEndian>()? as u32
             });
         }
 

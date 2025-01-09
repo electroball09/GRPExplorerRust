@@ -1,7 +1,6 @@
-use crate::objects::{Light, ObjectArchetype};
+use crate::{objects::{Light, ObjectArchetype}, util::transform_yeti_matrix};
 
 use super::*;
-use glam::Mat4;
 use gltf_json as json;
 use json::validation::Checked::Valid;
 
@@ -103,15 +102,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
 
     let name = ct.bf.file_table[&ct.key].get_name().to_string();
     
-    // https://stackoverflow.com/questions/1263072/changing-a-matrix-from-right-handed-to-left-handed-coordinate-system
-    let yeti_matrix = gao.matrix;
-    let toggle_matrix = Mat4 {
-        x_axis: [-1.0, 0.0, 0.0, 0.0].into(), // flip the x axis
-        y_axis: [0.0, 0.0, 1.0, 0.0].into(), // swap y and z axis
-        z_axis: [0.0, 1.0, 0.0, 0.0].into(), // swap y and z axis
-        w_axis: [0.0, 0.0, 0.0, 1.0].into(),
-    };
-    let mut final_matrix = toggle_matrix * yeti_matrix * toggle_matrix; // this switches y and z coords and flips x coord, same as in exp_mesh.rs
+    let mut final_matrix = transform_yeti_matrix(&gao.matrix);
     match gao.light { // directional and spot lights are flipped in gltf
         Light::Directional(_) => {
             if ct.options.invert_directional_lights {
@@ -134,11 +125,20 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
         for key in &ct.bf.object_table[&ct.key].references {
             if ct.bf.is_key_valid(*key) {
                 ct_with_key!(ct, *key, {
+                    let colors = match ct.bf.object_table[&ct.key].references.iter().find(|key| ct.bf.is_key_valid(**key) && ct.bf.file_table[key].object_type.is_vxc()) {
+                        Some(vxc_key) => {
+                            let vxc = ct.bf.object_table[&vxc_key].archetype.as_vertex_colors().unwrap();
+                            Some(vxc.colors.clone())
+                        },
+                        None => None
+                    };
+                    ct.sub_context.vertex_colors = colors;
                     match ct.bf.file_table[key].object_type {
                         ObjectType::got => nodes.append(&mut gltf_got(ct)),
                         ObjectType::cot => nodes.append(&mut gltf_cot(ct)),
                         _ => { }
                     };
+                    ct.sub_context.vertex_colors = None;
                 });
             }
         }

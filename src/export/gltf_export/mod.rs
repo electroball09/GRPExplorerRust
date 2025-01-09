@@ -2,6 +2,7 @@ use crate::metadata::{ObjectType, YKey};
 use crate::Bigfile;
 use byteorder::WriteBytesExt;
 use enum_as_inner::EnumAsInner;
+use glam::Vec4;
 use gltf_json as json;
 use std::collections::{BTreeMap, HashMap};
 use std::io::Cursor;
@@ -21,12 +22,30 @@ mod exp_mat; use exp_mat::*;
 mod exp_col; use exp_col::*;
 mod exp_way; use exp_way::*;
 mod gltf_export_window; pub use gltf_export_window::*;
+mod util; use util::*;
 
 #[derive(Debug, strum_macros::Display, strum::EnumIter, EnumAsInner, PartialEq, PartialOrd, Clone, Copy)]
 pub enum WayExportStrategy {
     None,
     Triangulate,
-    Extrude
+    Extrude,
+    Both
+}
+
+impl WayExportStrategy {
+    pub fn should_export_triangles(&self) -> bool {
+        match self {
+            WayExportStrategy::Both | WayExportStrategy::Triangulate => true,
+            _ => false
+        }
+    }
+
+    pub fn should_export_extrude(&self) -> bool {
+        match self {
+            WayExportStrategy::Both | WayExportStrategy::Extrude => true,
+            _ => false
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -89,7 +108,7 @@ impl GltfExportOptions {
             invert_directional_lights: false,
             invert_spot_lights: false,
             export_collision: true,
-            way_export_strategy: WayExportStrategy::Extrude,
+            way_export_strategy: WayExportStrategy::Triangulate,
             ..Default::default()
         }
     }
@@ -102,7 +121,6 @@ impl GltfExportOptions {
             invert_directional_lights: false,
             invert_spot_lights: false,
             export_collision: true,
-            way_export_strategy: WayExportStrategy::Extrude,
             ..Default::default()
         }
     }
@@ -117,6 +135,12 @@ struct ExportContext<'a> {
     pub index_cache: HashMap<YKey, Vec<u32>>,
     pub options: GltfExportOptions,
     pub export_subworlds: bool,
+    pub sub_context: SubContext
+}
+
+#[derive(Default)]
+struct SubContext {
+    pub vertex_colors: Option<Vec<Vec4>>
 }
 
 macro_rules! gltf_export_init {
@@ -209,6 +233,7 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
         index_cache: HashMap::new(),
         options,
         export_subworlds: true,
+        sub_context: SubContext::default(),
     };
 
     match bf.file_table[&key].object_type {
@@ -235,6 +260,9 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
         },
         ObjectType::col => {
             nodes = gltf_col(&mut ct);
+        },
+        ObjectType::way => {
+            nodes = gltf_way(&mut ct);
         }
         _ => { }
     };
