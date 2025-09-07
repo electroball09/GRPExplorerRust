@@ -1,5 +1,6 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 use crate::egui as egui;
 use crate::ggl::ShaderCache;
@@ -70,7 +71,7 @@ impl ExplorerApp {
         };
 
         let mut m = BTreeMap::new();
-        m.insert(String::from("Cascadia Mono"), f_data);
+        m.insert(String::from("Cascadia Mono"), Arc::new(f_data));
 
         let mut m2 = BTreeMap::new();
         m2.insert(egui::FontFamily::Monospace, vec![String::from("Cascadia Mono")]);

@@ -6,6 +6,7 @@ pub mod search_view;
 pub mod tools;
 
 use super::AppContext;
+use eframe::egui;
 
 pub trait View {
     fn draw<'a>(&mut self, ui: &mut egui::Ui, app: AppContext);

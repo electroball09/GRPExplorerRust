@@ -1,6 +1,7 @@
 use crate::metadata::YKey;
 use crate::Bigfile;
 use crate::ggl::ShaderCache;
+use eframe::egui;
 
 pub enum EditorResponse {
     None,

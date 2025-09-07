@@ -5,7 +5,7 @@ pub trait AppUiUtil {
     fn number_field(&mut self, num: &mut f32, storage_string: &mut String);
 }
 
-impl AppUiUtil for egui::Ui {
+impl AppUiUtil for eframe::egui::Ui {
     fn enum_selector<T: strum::IntoEnumIterator + Clone + Display + PartialEq>(&mut self, value: &mut T) {
         for e in T::iter() {
             self.radio_value(value, e.clone(), e.to_string());

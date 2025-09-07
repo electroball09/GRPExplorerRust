@@ -13,11 +13,9 @@ mod objects;
 mod util;
 mod export;
 mod ggl;
-#[macro_use] extern crate num_derive;
-extern crate strum_macros;
 
 #[cfg(feature = "eframe")]
-pub use eframe::egui as egui;
+pub use eframe::egui;
 #[cfg(feature = "eframe")]
 pub use eframe::glow as glow;
 #[cfg(feature = "miniquad")]

@@ -20,7 +20,7 @@ pub struct GameObject {
 }
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
     pub struct IdentityFlags: u32 {
         const ENTITY_FLAG            = 1 << 0;
         const HAS_ATTACHMENTS        = 1 << 1;

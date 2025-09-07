@@ -116,7 +116,7 @@ impl DdsHeader {
     pub fn write_to(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
         writer.write_u32::<LittleEndian>(self.dwMagic)?;
         writer.write_u32::<LittleEndian>(self.dwSize)?;
-        writer.write_u32::<LittleEndian>(self.dwFlags.bits)?;
+        writer.write_u32::<LittleEndian>(self.dwFlags.bits())?;
         writer.write_u32::<LittleEndian>(self.dwHeight)?;
         writer.write_u32::<LittleEndian>(self.dwWidth)?;
         writer.write_u32::<LittleEndian>(self.dwPitchOrLinearSize)?;
@@ -217,7 +217,7 @@ impl DdsPixelformat {
 
     pub fn write_to(&self, writer: &mut impl Write) -> Result<(), std::io::Error> {
         writer.write_u32::<LittleEndian>(self.dwSize)?;
-        writer.write_u32::<LittleEndian>(self.dwFlags.bits)?;
+        writer.write_u32::<LittleEndian>(self.dwFlags.bits())?;
         writer.write_u32::<LittleEndian>(self.dwFourCC)?;
         writer.write_u32::<LittleEndian>(self.dwRGBBitCount)?;
         writer.write_u32::<LittleEndian>(self.dwRBitMask)?;

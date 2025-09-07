@@ -2,6 +2,7 @@ use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::{Mat4, Vec3};
 use log::*;
+use strum::FromRepr;
 use crate::util::load_util::read_mat4;
 
 use super::{ArchetypeImpl, YetiIOError};
@@ -68,7 +69,8 @@ impl ZoneTypeTrait for ZoneOBox {
     }
 }
 
-#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(FromRepr, Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 pub enum ZoneModType {
     #[default]
     Invalid = 0,

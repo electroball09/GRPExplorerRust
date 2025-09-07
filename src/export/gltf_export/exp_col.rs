@@ -1,7 +1,7 @@
 use crate::objects::ObjectArchetype;
 
 use super::*;
-use gltf_json as json;
+use serde_json::json;
 use json::validation::Checked::Valid;
 
 pub fn gltf_cot<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
@@ -23,7 +23,7 @@ pub fn gltf_cot<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
 pub fn gltf_col<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     if !ct.options.export_collision {
-        return Vec::new();
+        return vec![];
     }
 
     gltf_export_init!(ct);
@@ -128,9 +128,28 @@ pub fn gltf_col<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         weights: None
     });
 
+    let name = format!("{:#010X} {}", ct.key, col_name);
+
+    // TODO there has to be a flag somewhere in the file itself to determine this right??
+    let col_type = {
+        if name.contains("RT") {
+            "complex"
+        } else if name.contains("CN") {
+            "simple"
+        } else {
+            ""
+        }
+    };
+
+    let extras = Some(json!({
+        "type": "collision",
+        "collision_type": col_type
+    }));
+
     let node = ct.root.push(json::Node {
         mesh: Some(mesh),
-        name: Some(format!("{:#010X} {}", ct.key, col_name)),
+        name: Some(name),
+        extras: extras.map(|v| serde_json::value::to_raw_value(&v).unwrap()),
         ..Default::default()
     });
 

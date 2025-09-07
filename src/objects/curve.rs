@@ -1,7 +1,6 @@
 use std::io::Cursor;
 
 use byteorder::{ReadBytesExt, LittleEndian};
-use num::FromPrimitive;
 use super::{ArchetypeImpl, YetiIOError};
 
 #[derive(Default)]
@@ -9,6 +8,7 @@ pub struct YetiCurve {
     pub curve: CurveType,
 }
 
+#[derive(Default)]
 pub struct CurvePoint {
     pub flags: u8,
     pub x: f32,
@@ -26,14 +26,17 @@ pub enum CurveType {
     Full(FullCurve)
 }
 
+#[derive(Default)]
 pub struct ConstantCurve {
     pub point: CurvePoint
 }
 
+#[derive(Default)]
 pub struct SimpleCurve {
     pub points: Vec<CurvePoint>
 }
 
+#[derive(Default)]
 pub struct FullCurve {
     pub flags: u8,
     pub points: Vec<CurvePoint>
@@ -42,14 +45,13 @@ pub struct FullCurve {
 impl ArchetypeImpl for YetiCurve {
     fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), YetiIOError> {
         let mut cursor = Cursor::new(buf);
-        let curve_type = FromPrimitive::from_i32(cursor.read_i32::<LittleEndian>().unwrap()).unwrap();
         
-        let curve = match curve_type {
+        let curve = match cursor.read_i32::<LittleEndian>().unwrap() {
             0 => Self::load_constant_curve(&mut cursor),
             2 => Self::load_simple_curve(&mut cursor),
             4 => Self::load_full_curve(&mut cursor),
-            _ => {
-                Err(format!("Invalid curve type: {}", curve_type).into())
+            v => {
+                Err(format!("Invalid curve type: {}", v).into())
             }
         };
 

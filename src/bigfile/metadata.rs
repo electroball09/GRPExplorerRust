@@ -5,8 +5,7 @@ use std::io::Read;
 use byteorder::{ReadBytesExt, LittleEndian};
 use chrono::{DateTime, Utc};
 use enum_as_inner::EnumAsInner;
-use num::FromPrimitive;
-use strum::{AsRefStr, EnumIter};
+use strum::{AsRefStr, EnumIter, FromRepr};
 use strum_macros::EnumString;
 
 use crate::YetiIOError;
@@ -85,7 +84,8 @@ impl SegmentHeader {
     }
 }
 
-#[derive(FromPrimitive, ToPrimitive, Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(FromRepr, Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[repr(u16)]
 pub enum BigfileVersion {
     NONE = 0x0,
     GRO = 0x86,
@@ -130,7 +130,7 @@ impl Display for BigfileHeader {
 impl BigfileHeader {
     pub fn read_from(reader: &mut impl Read) -> Result<BigfileHeader, String> {
         let mut header = BigfileHeader::default();
-        header.version = BigfileVersion::from_u16(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
+        header.version = BigfileVersion::from_repr(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
         header.num_folders = reader.read_u16::<LittleEndian>().unwrap();
         header.num_files = reader.read_u32::<LittleEndian>().unwrap();
         reader.read(&mut header.unk_01).unwrap();
@@ -309,8 +309,7 @@ impl FileEntry {
         entry.offset = reader.read_u32::<LittleEndian>().unwrap();
         entry.key = reader.read_u32::<LittleEndian>().unwrap().into();
         entry.unk01 = reader.read_i32::<LittleEndian>().unwrap();
-        let obj_type = reader.read_u16::<LittleEndian>().unwrap();
-        entry.object_type = FromPrimitive::from_u16(obj_type).unwrap();
+        entry.object_type = ObjectType::from_repr(reader.read_u16::<LittleEndian>().unwrap()).unwrap();
         entry.parent_folder = reader.read_u16::<LittleEndian>().unwrap();
         entry.timestamp = DateTime::from_timestamp(reader.read_i32::<LittleEndian>().unwrap() as i64, 0).unwrap(); //NaiveDateTime::from_timestamp(reader.read_i32::<LittleEndian>().unwrap() as i64, 0).unwrap();
         entry.flags = reader.read_i32::<LittleEndian>().unwrap();
@@ -344,12 +343,13 @@ impl FileEntry {
 }
 
 #[allow(non_camel_case_types)]
-#[derive(FromPrimitive, ToPrimitive, Debug, Default, Clone, Copy, EnumString, EnumIter, EnumAsInner, PartialEq, Eq, AsRefStr, Hash)]
+#[derive(FromRepr, Debug, Default, Clone, Copy, EnumString, EnumIter, EnumAsInner, PartialEq, Eq, AsRefStr, Hash)]
+#[repr(u16)]
 pub enum ObjectType {
     #[default]
     null = 0,
     ini = 0x0001, //yeti - ini file
-    _0x2 = 0x0002,
+    t_0x2 = 0x0002,
     dup = 0x0003, //duplicate files
     wor = 0x0004, //world - world
     wot = 0x0005,
@@ -373,7 +373,7 @@ pub enum ObjectType {
     vgg = 0x0017,
     ssq = 0x0018, //sequence - ???
     got = 0x0019, //object - graphic object table
-    _0x1A = 0x001A,
+    t_0x1A = 0x001A,
     msh = 0x001B, //visual - mesh metadata
     vxc = 0x001C, //visual - something about vertex buffer ???
     vxt = 0x001D,
@@ -381,7 +381,7 @@ pub enum ObjectType {
     sha = 0x001F, //visual - shader
     tga = 0x0020, //visual - texture metadata
     txs = 0x0021,
-    _0x22 = 0x0022,
+    t_0x22 = 0x0022,
     ske = 0x0023,
     sfx = 0x0024,
     vid = 0x0025,
@@ -400,24 +400,24 @@ pub enum ObjectType {
     ani = 0x0032, //animation - animation
     aev = 0x0033, //animation - animation events
     snk = 0x0034, //sound - sound bank
-    _0x35 = 0x0035,
-    _0x36 = 0x0036,
-    _0x37 = 0x0037,
-    _0x38 = 0x0038,
-    _0x39 = 0x0039,
-    _0x3A = 0x003A,
-    _0x3B = 0x003B,
+    t_0x35 = 0x0035,
+    t_0x36 = 0x0036,
+    t_0x37 = 0x0037,
+    t_0x38 = 0x0038,
+    t_0x39 = 0x0039,
+    t_0x3A = 0x003A,
+    t_0x3B = 0x003B,
     end = 0x003C, //?? - enumerable descriptor
     sam = 0x003D, //sound - ambience
     sin = 0x003E, //sound - config
     smx = 0x003F, //sound - sound mix
     svs = 0x0040, //sound - volumetric object
-    _0x41 = 0x0041,
-    _0x42 = 0x0042,
-    _0x43 = 0x0043,
-    _0x44 = 0x0044,
-    _0x45 = 0x0045,
-    _0x46 = 0x0046,
+    t_0x41 = 0x0041,
+    t_0x42 = 0x0042,
+    t_0x43 = 0x0043,
+    t_0x44 = 0x0044,
+    t_0x45 = 0x0045,
+    t_0x46 = 0x0046,
     ai  = 0x0047, //ai - ai model
     aid = 0x0048,
     ste = 0x0049,
@@ -432,7 +432,7 @@ pub enum ObjectType {
     gml = 0x0052, //visual - game material list
     gmt = 0x0053, //visual - game material
     phs = 0x0054, //object - physics structure ?
-    _0x55 = 0x0055,
+    t_0x55 = 0x0055,
     ccm = 0x0056, //object - cooked collision mesh?
     dbk = 0x0057, //dynamic bank - bank
     dbl = 0x0058, //dynamic bank - bank list
@@ -443,9 +443,9 @@ pub enum ObjectType {
     his = 0x005D,
     mta = 0x005E,
     wil = 0x005F, //world - world include list
-    _0x60 = 0x0060,
+    t_0x60 = 0x0060,
     ymf = 0x0061,
-    _0x62 = 0x0062,
+    t_0x62 = 0x0062,
     fbx = 0x0063,
     dds = 0x0064,
     png = 0x0065,
@@ -494,6 +494,6 @@ pub enum ObjectType {
     ttf = 0x0090,
     adf = 0x0091,
     pco = 0x0092,
-    _0x93 = 0x0093,
-    _0x94 = 0x0094
+    t_0x93 = 0x0093,
+    t_0x94 = 0x0094
 }

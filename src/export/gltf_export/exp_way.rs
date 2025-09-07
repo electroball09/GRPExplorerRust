@@ -1,9 +1,47 @@
-use crate::util::transform_yeti_matrix;
+use crate::{util::transform_yeti_matrix};
 
 use super::*;
 use glam::{Mat4, Vec3};
-use gltf_json as json;
 use rgeometry::{algorithms::polygonization::two_opt_moves, data::Point};
+use serde::Deserialize;
+use serde_json::json;
+use log::*;
+
+#[derive(Deserialize, Debug)]
+pub struct WayConfig {
+    pub capture_ids: HashMap<String, CaptureWay>,
+    pub spawn_zone_ids: HashMap<String, SpawnZoneWay>
+}
+
+#[derive(Deserialize, Debug)]
+pub struct CaptureWay {
+    pub name: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SpawnZoneWay {
+    pub name: String,
+    pub team: i32,
+}
+
+fn bounding_box(points: &[Vec3]) -> Option<(Vec3, Vec3)> {
+    if points.is_empty() {
+        return None;
+    }
+    let mut min = points[0];
+    let mut max = points[0];
+
+    for &p in points.iter().skip(1) {
+        min = min.min(p);
+        max = max.max(p);
+    }
+
+    Some((min, max)) // (min corner, max corner)
+}
+
+fn center(min: Vec3, max: Vec3) -> Vec3 {
+    (min + max) * 0.5
+}
 
 pub fn gltf_wal<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let mut nodes = Vec::new();
@@ -25,22 +63,35 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
     let mut pos = Vec::new();
     let mut z = 9999999.0;
+    let mut way_rot_mat = None;
     for key in &ct.bf.object_table[&ct.key].references {
         if ct.bf.is_key_valid(*key) && ct.bf.file_table[key].object_type.is_gao() {
-            let p = ct.bf.object_table[key].archetype.as_game_object().unwrap().position();
+            let gao = ct.bf.object_table[key].archetype.as_game_object().unwrap();
+
+            if way_rot_mat.is_none() {
+                way_rot_mat = Some(Mat4::from_quat(gao.rotation()));
+            }
+
+            let p = gao.position();
             pos.push(p);
             z = f32::min(z, p.z);
         } else {
             return vec![];
         }
     };
+    let way_rot_mat = way_rot_mat.unwrap_or(Mat4::IDENTITY);
 
-    let center_pos = pos.iter().sum::<Vec3>() / (pos.len() as f32);
+    let bounds = bounding_box(&pos).unwrap();
+    let center_pos = center(bounds.0, bounds.1);
 
     for p in &mut pos {
         p.x = center_pos.x - p.x;
         p.y = center_pos.y - p.y;
         p.z = z - center_pos.z;
+
+        // this rotates the whole thing by the inverse amount specified by the tentpole gao
+        // then below, we add the rotation to the base gltf node
+        *p = (-way_rot_mat).transform_point3(*p);
     }
 
     // this will probably fail in edge cases but it's good enough for the game i think
@@ -111,6 +162,34 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             colors: None
         }));
     }
+
+    let extras = ct.bf.object_table.get(&ct.key)
+        .and_then(|obj| obj.references.get(0))                   
+        .filter(|&&key| ct.bf.is_key_valid(key))                
+        .and_then(|&gao_key| ct.bf.object_table.get(&gao_key)
+            .and_then(|gao_obj| gao_obj.references.get(1))      
+            .map(|&zc_key| zc_key)
+        ).and_then(|zc_key| {
+            let hex_key = format!("{:#010X}", zc_key);
+            ct.way_config.capture_ids.get(&hex_key)
+                .map(|capture| {
+                    info!("exporting capture point {}", &hex_key);
+                    json!({ 
+                        "type": "capture", 
+                        "name": capture.name 
+                    })
+                }).or_else(|| {
+                    ct.way_config.spawn_zone_ids.get(&hex_key)
+                        .map(|spawn_zone| {
+                            info!("exporting spawn zone {}", &hex_key);
+                            json!({
+                                "type": "spawn_zone",
+                                "name": spawn_zone.name,
+                                "team": spawn_zone.team
+                            })
+                        })
+                })
+    });
     
     let mesh = ct.root.push(json::Mesh {
         extensions: Default::default(),
@@ -120,12 +199,16 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         weights: None
     });
 
-    let matrix = transform_yeti_matrix(&Mat4::from_translation(center_pos));
+    let way_mat = Mat4::from_translation(center_pos);
+    let matrix = transform_yeti_matrix(&(way_mat * way_rot_mat));
+
+    //dbg!(matrix);
 
     let node = ct.root.push(json::Node {
         matrix: Some(matrix.to_cols_array()),
         name: Some(name),
         mesh: Some(mesh),
+        extras: extras.map(|v| serde_json::value::to_raw_value(&v).unwrap()),
         ..Default::default()
     });
 

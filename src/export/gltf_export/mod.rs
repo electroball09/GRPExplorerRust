@@ -5,8 +5,8 @@ use enum_as_inner::EnumAsInner;
 use glam::Vec4;
 use gltf_json as json;
 use std::collections::{BTreeMap, HashMap};
-use std::io::Cursor;
-use std::mem;
+use std::io::{Cursor, Error};
+use std::{env, mem};
 use json::validation::USize64;
 use std::borrow::Cow;
 use byte_unit::*;
@@ -135,7 +135,8 @@ struct ExportContext<'a> {
     pub index_cache: HashMap<YKey, Vec<u32>>,
     pub options: GltfExportOptions,
     pub export_subworlds: bool,
-    pub sub_context: SubContext
+    pub sub_context: SubContext,
+    pub way_config: WayConfig
 }
 
 #[derive(Default)]
@@ -193,6 +194,16 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
     new_vec
 }
 
+fn load_way_config() -> anyhow::Result<WayConfig> {
+    let path = env::current_dir().unwrap().join("cfg\\way_ids.json");
+
+    let json = std::fs::read_to_string(path)?;
+
+    let v = serde_json::from_str(&json)?;
+    
+    Ok(v)
+}
+
 pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
     let file_name = format!("{}.glb", bf.file_table[&key].get_name());
 
@@ -234,6 +245,7 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
         options,
         export_subworlds: true,
         sub_context: SubContext::default(),
+        way_config: load_way_config().expect("fail to load way config!"),
     };
 
     match bf.file_table[&key].object_type {
