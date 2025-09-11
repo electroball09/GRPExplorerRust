@@ -5,12 +5,13 @@ use enum_as_inner::EnumAsInner;
 use glam::Vec4;
 use gltf_json as json;
 use std::collections::{BTreeMap, HashMap};
-use std::io::{Cursor, Error};
+use std::io::Cursor;
 use std::{env, mem};
 use json::validation::USize64;
 use std::borrow::Cow;
 use byte_unit::*;
 use crate::ui::*;
+use serde_json::json;
 
 use byteorder::LittleEndian as ENDIAN;
 
@@ -48,7 +49,7 @@ impl WayExportStrategy {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
 pub struct GltfExportOptions {
     pub directional_light_intensity_multiplier  : f32,
     pub invert_directional_lights               : bool,
@@ -64,6 +65,8 @@ pub struct GltfExportOptions {
     pub export_empty_gaos                       : bool,
 
     pub way_export_strategy                     : WayExportStrategy,
+
+    pub map_name                                : String,
 }
 
 impl Default for GltfExportOptions {
@@ -80,6 +83,7 @@ impl Default for GltfExportOptions {
             export_collision: true,
             export_empty_gaos: false,
             way_export_strategy: WayExportStrategy::None,
+            map_name: String::new(),
         }
     }
 }
@@ -204,12 +208,12 @@ fn load_way_config() -> anyhow::Result<WayConfig> {
     Ok(v)
 }
 
-pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
+pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool {
     let file_name = format!("{}.glb", bf.file_table[&key].get_name());
 
     let path = match rfd::FileDialog::new().add_filter("glTF2.0", &[".glb"]).set_file_name(&file_name).save_file() {
         Some(path) => { path },
-        None => return
+        None => return false
     };
 
     log::info!("begin glTF export to file {}", &path.display());
@@ -234,6 +238,8 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
         extensions: Default::default(),
         extras: Default::default()
     });
+
+    let map_name = options.map_name.clone();
 
     let mut ct = ExportContext {
         key,
@@ -284,10 +290,15 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
 
     log::info!("exported {} nodes", ct.root.nodes.len());
     log::info!("buffer size: {:#}", Byte::from_u64(ct.cursor.position()));
+    log::info!("map name: {}", &map_name);
+
+    let extras = json!({
+        "map_name": &map_name
+    });
 
     ct.root.push(json::Scene {
         extensions: Default::default(),
-        extras: Default::default(),
+        extras: serde_json::value::to_raw_value(&extras).ok(),
         name: None,
         nodes,
     });
@@ -307,4 +318,5 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) {
     glb.to_writer(writer).unwrap();
 
     log::info!("glTF export finished!");
+    true
 }

@@ -9,6 +9,7 @@ pub struct GltfExportWindow {
     close_requested: bool,
     template: ExportTemplateType,
     edit_strings: OptionStrings,
+    map_name: String,
 }
 
 #[derive(Default)]
@@ -51,6 +52,7 @@ impl GltfExportWindow {
                 Self::opt_to_strings(&GltfExportOptions::default(), &mut strings);
                 strings
             },
+            map_name: String::new(),
         }
     }
 
@@ -61,6 +63,10 @@ impl GltfExportWindow {
         strings.point_light_intensity_multiplier       = format!("{}", options.point_light_intensity_multiplier         );
         strings.point_light_range_multiplier           = format!("{}", options.point_light_range_multiplier             );
         strings.skybox_emissive_multiplier             = format!("{}", options.skybox_emissive_multiplier               );
+    }
+
+    fn is_valid(&self) -> bool {
+        !self.map_name.is_empty()
     }
 
     pub fn draw(&mut self, ctx: &egui::Context, bf: &Bigfile) -> bool {
@@ -97,7 +103,7 @@ impl GltfExportWindow {
                         ExportTemplateType::Blender => (GltfExportOptions::blender(), false),
                         ExportTemplateType::UE4 => (GltfExportOptions::ue4(), false),
                         ExportTemplateType::UE5 => (GltfExportOptions::ue5(), false),
-                        ExportTemplateType::Custom => (self.options, true)
+                        ExportTemplateType::Custom => (std::mem::take(&mut self.options), true)
                     };
 
                     if options != self.options {
@@ -128,13 +134,21 @@ impl GltfExportWindow {
                         });
                     });
 
-                    self.options = options;
+                    ui.separator();
+
+                    ui.label("Map Name");
+                    ui.text_edit_singleline(&mut self.map_name);
 
                     ui.separator();
-                    if ui.button("Export...").clicked() {
-                        crate::export::gltf_export(self.asset_key, bf, self.options);
-                        self.close_requested = true;
-                    }
+
+                    self.options = options;
+                    ui.add_enabled_ui(self.is_valid(), |ui| {
+                        if ui.button("Export...").clicked() {
+                            self.options.map_name = self.map_name.clone();
+                            crate::export::gltf_export(self.asset_key, bf, self.options.clone());
+                            self.close_requested = true;
+                        }
+                    });
                 });
             }
         );
