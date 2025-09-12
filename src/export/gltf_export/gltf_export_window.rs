@@ -128,6 +128,7 @@ impl GltfExportWindow {
                         ui.label("EXPORT OPTIONS");
                         ui.checkbox(&mut options.export_collision, "Export Collision");
                         ui.checkbox(&mut options.export_empty_gaos, "Export Empty GAOs");
+                        ui.checkbox(&mut options.export_key_map, "Export Keymap");
                         ui.horizontal_wrapped(|ui| {
                             ui.label("Way Export: ");
                             ui.enum_selector(&mut options.way_export_strategy);

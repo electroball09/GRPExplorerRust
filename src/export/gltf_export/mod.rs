@@ -12,6 +12,7 @@ use std::borrow::Cow;
 use byte_unit::*;
 use crate::ui::*;
 use serde_json::json;
+use std::io::Write;
 
 use byteorder::LittleEndian as ENDIAN;
 
@@ -61,8 +62,8 @@ pub struct GltfExportOptions {
     pub skybox_emissive_multiplier              : f32,
 
     pub export_collision                        : bool,
-
     pub export_empty_gaos                       : bool,
+    pub export_key_map                          : bool,
 
     pub way_export_strategy                     : WayExportStrategy,
 
@@ -84,6 +85,7 @@ impl Default for GltfExportOptions {
             export_empty_gaos: false,
             way_export_strategy: WayExportStrategy::None,
             map_name: String::new(),
+            export_key_map: false,
         }
     }
 }
@@ -151,13 +153,12 @@ struct SubContext {
 macro_rules! gltf_export_init {
     ($ct:expr) => {
         if $ct.index_cache.contains_key(&$ct.key) {
-            //log::info!("hit cached key {:#010X}", $ct.key);
             let mut vec = Vec::new();
             for idx in $ct.index_cache.get(&$ct.key).unwrap() {
                 vec.push(json::Index::new(*idx));
             }
             return vec;
-        }
+        } 
     }
 }
 pub(self) use gltf_export_init;
@@ -181,6 +182,24 @@ macro_rules! ct_with_key {
     }
 }
 pub(self) use ct_with_key;
+const BUF_VALUES: [usize; 5] = [59, 61, 75, 89, 99];
+macro_rules! check_buffer_view {
+    ($ct:expr, $name:expr) => {
+        if BUF_VALUES.contains(&($ct.root.buffer_views.len() - 1)) {
+            log::info!("buffer {} key {:#010X} loc: {}", $ct.root.buffer_views.len(), $ct.key, $name);
+        }
+    }
+}
+pub(self) use check_buffer_view;
+const ACC_VALUES: [usize; 5] = [4766, 4762, 4758, 4756, 4750];
+macro_rules! check_buffer_accessor {
+    ($ct:expr, $name:expr) => {
+        if ACC_VALUES.contains(&($ct.root.accessors.len() - 1)) {
+            log::info!("accessor {} key {:#010X} loc: {}", $ct.root.accessors.len(), $ct.key, $name);
+        }
+    }
+}
+pub(self) use check_buffer_accessor;
 
 fn align_to_multiple_of_four(n: usize) -> usize {
     (n + 3) & !3
@@ -220,7 +239,11 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool 
     log::debug!("options: {:?}", &options);
 
     let mut root = json::Root {
-        extensions_used: vec!["KHR_lights_punctual".into()],
+        extensions_used: vec![
+            "KHR_lights_punctual".into(), 
+            "KHR_materials_specular".into(),
+            "KHR_materials_emissive_strength".into(),
+        ],
         extensions: Some(json::extensions::Root {
             khr_lights_punctual: Some(json::extensions::root::KhrLightsPunctual::default())
         }),
@@ -276,9 +299,6 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool 
         ObjectType::wor => {
             nodes = gltf_wor(&mut ct);
         },
-        ObjectType::col => {
-            nodes = gltf_col(&mut ct);
-        },
         ObjectType::way => {
             nodes = gltf_way(&mut ct);
         }
@@ -296,12 +316,19 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool 
         "map_name": &map_name
     });
 
+    let extras = serde_json::value::to_raw_value(&extras).ok();
+
+    assert!(extras.is_some());
+
     ct.root.push(json::Scene {
         extensions: Default::default(),
-        extras: serde_json::value::to_raw_value(&extras).ok(),
+        extras,
         name: None,
         nodes,
     });
+
+    let export_key_map = ct.options.export_key_map;
+    let index_cache = std::mem::take(&mut ct.index_cache);
 
     let json_string = json::serialize::to_string(ct.root).unwrap();
     let json_offset = align_to_multiple_of_four(json_string.len());
@@ -314,8 +341,22 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool 
         bin: Some(Cow::Owned(to_padded_byte_vector(buf))),
         json: Cow::Owned(json_string.into_bytes())
     };
-    let writer = std::fs::File::create(path).unwrap();
+    let writer = std::fs::File::create(&path).unwrap();
     glb.to_writer(writer).unwrap();
+
+    if export_key_map {
+        let mut path = path.clone();
+        path.set_extension("glb.keymap");
+
+        log::info!("writing keymap to {:?}", &path);
+
+        let mut file = std::fs::File::create(path).unwrap();
+
+        for pair in &index_cache {
+            let nodes = pair.1.iter().map(|n| n.to_string()).collect::<Vec<_>>().join(" ");
+            writeln!(file, "{} {}", pair.0, nodes).expect("write keymap error!");
+        }
+    }
 
     log::info!("glTF export finished!");
     true

@@ -17,9 +17,22 @@ pub struct GltfPrimitiveBuild<'a> {
 pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> json::mesh::Primitive {
     let mut attributes: BTreeMap<Checked<Semantic>, json::Index<json::Accessor>> = BTreeMap::new();
 
-    let vtx_start = ct.cursor.position();
+    while ct.cursor.position() % 4 != 0 {
+        ct.cursor.write_u8(0).unwrap();
+    }
 
+    let vtx_start = ct.cursor.position();
+    
+    assert!(vtx_start % 4 == 0);
+
+    let mut min = Vec3::splat(f32::INFINITY);
+    let mut max = Vec3::splat(-f32::INFINITY);
     for p in build.pos_pre_transformed {
+        let p = Vec3::new(-p.x, p.z, p.y);
+
+        min = min.min(p);
+        max = max.max(p);
+
         ct.cursor.write_f32::<ENDIAN>(-p.x).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(p.z).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(p.y).expect("write error");
@@ -37,6 +50,8 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         extensions: None,
         extras: None
     });
+    
+    check_buffer_view!(ct, "vtx_view");
 
     let pos_acc = ct.root.push(json::Accessor {
         buffer_view: Some(vtx_view),
@@ -46,12 +61,13 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         extensions: Default::default(),
         extras: Default::default(),
         type_: Valid(json::accessor::Type::Vec3),
-        min: None,
-        max: None,
+        min: Some(json::Value::from(min.to_array()).into()),
+        max: Some(json::Value::from(max.to_array()).into()),
         name: None,
         normalized: false,
         sparse: None
     });
+    check_buffer_accessor!(ct, "pos_acc");
     attributes.insert(Checked::Valid(Semantic::Positions), pos_acc);
 
     if let Some(uv0) = build.uv0 {
@@ -73,6 +89,8 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
             extras: None
         });
     
+        check_buffer_view!(ct, "uv0_view");
+    
         let uv0_acc = ct.root.push(json::Accessor {
             buffer_view: Some(uv0_view),
             byte_offset: Some(USize64(0)),
@@ -87,6 +105,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
             normalized: false,
             sparse: None
         });
+        check_buffer_accessor!(ct, "uv0_acc");
         attributes.insert(Checked::Valid(Semantic::TexCoords(0)), uv0_acc);
     }
 
@@ -109,6 +128,8 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
             extras: None
         });
     
+        check_buffer_view!(ct, "uv1_view");
+    
         let uv1_acc = ct.root.push(json::Accessor {
             buffer_view: Some(uv1_view),
             byte_offset: Some(USize64(0)),
@@ -123,6 +144,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
             normalized: false,
             sparse: None
         });
+        check_buffer_accessor!(ct, "uv1_acc");
         attributes.insert(Checked::Valid(Semantic::TexCoords(1)), uv1_acc);
     }
 
@@ -134,18 +156,20 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
             ct.cursor.write_f32::<ENDIAN>(color.z).expect("write error");
             ct.cursor.write_f32::<ENDIAN>(color.w).expect("write error");
         }
-        let colors_start = ct.cursor.position() - colors_start;
+        let colors_len = ct.cursor.position() - colors_start;
 
         let colors_view = ct.root.push(json::buffer::View {
             buffer: *ct.buffer_js,
-            byte_length: USize64(colors_start.into()),
-            byte_offset: Some(colors_start.into()),
+            byte_length: USize64(colors_len.into()),
+            byte_offset: Some(colors_len.into()),
             byte_stride: Some(json::buffer::Stride(16)),
             name: None,
             target: Some(Valid(json::buffer::Target::ArrayBuffer)),
             extensions: None,
             extras: None
         });
+    
+        check_buffer_view!(ct, "colors_view");
     
         let colors_acc = ct.root.push(json::Accessor {
             buffer_view: Some(colors_view),
@@ -161,7 +185,8 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
             normalized: false,
             sparse: None
         });
-        attributes.insert(Checked::Valid(Semantic::TexCoords(1)), colors_acc);
+        check_buffer_accessor!(ct, "col_acc");
+        attributes.insert(Checked::Valid(Semantic::Colors(0)), colors_acc);
     }
     
     let idx_start = ct.cursor.position();
@@ -176,12 +201,14 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         buffer: *ct.buffer_js,
         byte_length: USize64(idx_len),
         byte_offset: Some(USize64(idx_start)),
-        byte_stride: Some(json::buffer::Stride(std::mem::size_of::<u32>())),
+        byte_stride: None, // index buffers are tightly packed, no stride is needed.
         name: None,
-        target: Some(Valid(json::buffer::Target::ArrayBuffer)),
+        target: Some(Valid(json::buffer::Target::ElementArrayBuffer)),
         extensions: None,
         extras: None
     });
+    
+    check_buffer_view!(ct, "idx_view");
 
     let idx_acc = ct.root.push(json::Accessor {
         buffer_view: Some(idx_view),
@@ -197,6 +224,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         normalized: false,
         sparse: None
     });
+    check_buffer_accessor!(ct, "idx_acc");
         
     let primitive = json::mesh::Primitive {
         attributes,
@@ -208,5 +236,5 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         targets: None
     };
 
-    return primitive;
+    primitive
 }

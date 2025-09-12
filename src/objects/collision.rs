@@ -10,14 +10,12 @@ pub struct CollisionObject {
 
 impl CollisionObject {
     pub fn bounding_box(&self) -> (Vec3, Vec3) {
-        let mut min = Vec3::new(0.0, 0.0, 0.0);
-        let mut max = Vec3::new(0.0, 0.0, 0.0);
+        let mut min = Vec3::splat(f32::INFINITY);
+        let mut max = Vec3::splat(-f32::INFINITY);
 
         for pos in self.positions.iter() {
-            for i in 0..3 {
-                min[i] = f32::min(min[i], pos[i]);
-                max[i] = f32::max(max[i], pos[i]);
-            }
+            min = min.min(*pos);
+            max = max.max(*pos);
         }
 
         (min, max)

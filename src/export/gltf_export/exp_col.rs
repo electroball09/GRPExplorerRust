@@ -1,6 +1,7 @@
 use crate::objects::ObjectArchetype;
 
 use super::*;
+use glam::Vec3;
 use serde_json::json;
 use json::validation::Checked::Valid;
 
@@ -28,14 +29,26 @@ pub fn gltf_col<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
     gltf_export_init!(ct);
 
+    while ct.cursor.position() % 4 != 0 {
+        ct.cursor.write_u8(0).unwrap();
+    }
+
     let col_name = ct.bf.file_table[&ct.key].get_name_ext().to_string();
     let col = match &ct.bf.object_table[&ct.key].archetype {
         ObjectArchetype::CollisionObject(col) => col,
         _ => panic!("wrong object type!")
     };
 
+    let mut min = Vec3::splat(f32::INFINITY);
+    let mut max = Vec3::splat(-f32::INFINITY);
+
     let vtx_start = ct.cursor.position();
     for pos in &col.positions {
+        let pos = Vec3::new(-pos.x, pos.z, pos.y);
+
+        min = min.min(pos);
+        max = max.max(pos);
+
         ct.cursor.write_f32::<ENDIAN>(-pos.x).unwrap(); // invert x and swap y and z for gltf
         ct.cursor.write_f32::<ENDIAN>(pos.z).unwrap();
         ct.cursor.write_f32::<ENDIAN>(pos.y).unwrap();
@@ -62,20 +75,21 @@ pub fn gltf_col<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         target: Some(Valid(json::buffer::Target::ArrayBuffer))
     });
 
+    check_buffer_view!(ct, "vtx_view");
+
     let ind_view = ct.root.push(json::buffer::View {
         buffer: *ct.buffer_js,
         byte_length: USize64::from(ind_len),
         byte_offset: Some(USize64::from(ind_start)),
-        byte_stride: Some(json::buffer::Stride(2)),
+        byte_stride: None, // index buffers are tightly packed, no stride is needed.
         extensions: Default::default(),
         extras: Default::default(),
         name: None,
-        target: Some(Valid(json::buffer::Target::ArrayBuffer))
+        target: Some(Valid(json::buffer::Target::ElementArrayBuffer))
     });
 
-    let (min, max) = col.bounding_box();
-    let min: &[f32] = &min.to_array();
-    let max: &[f32] = &max.to_array();
+    check_buffer_view!(ct, "ind_view");
+
     let pos_acc = ct.root.push(json::Accessor {
         buffer_view: Some(vtx_view),
         byte_offset: Some(USize64(0)),
@@ -84,12 +98,13 @@ pub fn gltf_col<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         extensions: Default::default(),
         extras: Default::default(),
         type_: Valid(json::accessor::Type::Vec3),
-        min: Some(json::Value::from(min)),
-        max: Some(json::Value::from(max)),
+        min: Some(json::Value::from(min.to_array()).into()),
+        max: Some(json::Value::from(max.to_array()).into()),
         name: None,
         normalized: false,
         sparse: None
     });
+    check_buffer_accessor!(ct, "pos_acc for col");
     
     let ind_acc = ct.root.push(json::Accessor {
         buffer_view: Some(ind_view),
@@ -153,7 +168,7 @@ pub fn gltf_col<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         ..Default::default()
     });
 
-    insert_cache!(ct, &ct.key, node);
+    //insert_cache!(ct, &ct.key, node);
 
     vec![node]
 }

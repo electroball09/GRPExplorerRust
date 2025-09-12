@@ -1,5 +1,5 @@
 use crate::{bigfile::{metadata::ObjectType, Bigfile}, metadata::YKey, objects::ObjectArchetype, ui::AppContext};
-use std::{fs::*, collections::HashSet, io::Write};
+use std::{collections::HashSet, fs::{self, *}, io::{self, Write}};
 use log::*;
 use crate::egui as egui;
 
@@ -24,6 +24,9 @@ impl super::View for ToolsView {
             if ui.button("Export Zones").clicked() {
                 export_zones(bf);
             }
+            if ui.button("Export node hierarchy for .glb file").clicked() {
+                export_node_hierarchy();
+            }
         }
     }
 }
@@ -37,6 +40,48 @@ fn make_path(file: &str) -> std::io::Result<String> {
     }
 
     Ok(path + file)
+}
+
+fn export_node_hierarchy() {
+    let path = match rfd::FileDialog::new().add_filter("glTF2.0", &["glb"]).pick_file() {
+        Some(path) => { path },
+        None => return
+    };
+
+    let output_name = make_path(&(path.file_name().unwrap().to_str().unwrap().to_string() + ".txt")).unwrap();
+
+    let mut output_file = fs::File::create(output_name).unwrap();
+
+    run_export_hierarchy(path.to_str().unwrap(), &mut output_file);
+}
+
+fn print_tree(node: &gltf::Node, depth: i32, output_file: &mut File) {
+    for _ in 0..(depth - 1) {
+        write!(output_file, "  ").unwrap();
+    }
+    write!(output_file, " -").unwrap();
+    write!(output_file, " Node {}", node.index()).unwrap();
+    if let Some(v) = node.extras() {
+        write!(output_file, " Extras {}", v.to_string()).unwrap();
+    }
+    writeln!(output_file).unwrap();
+
+    for child in node.children() {
+        print_tree(&child, depth + 1, output_file);
+    }
+}
+
+fn run_export_hierarchy(path: &str, output_file: &mut File) {
+    let file = fs::File::open(path).unwrap();
+    let reader = io::BufReader::new(file);
+    let gltf = gltf::Gltf::from_reader(reader).unwrap();
+    for scene in gltf.scenes() {
+        write!(output_file, "Scene {}", scene.index()).unwrap();
+        writeln!(output_file).unwrap();
+        for node in scene.nodes() {
+            print_tree(&node, 1, output_file);
+        }
+    }
 }
 
 fn export_zones(bf: &mut Bigfile) {

@@ -230,6 +230,12 @@ impl Default for YKey {
     }
 }
 
+impl Display for YKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#010X}", self.0)
+    }
+}
+
 impl From<u32> for YKey {
     fn from(value: u32) -> Self {
         YKey(value)

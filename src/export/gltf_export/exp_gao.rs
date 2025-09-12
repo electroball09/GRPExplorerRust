@@ -1,12 +1,11 @@
 use crate::{objects::{Light, ObjectArchetype}, util::transform_yeti_matrix};
 
 use super::*;
+use glam::Mat4;
 use gltf_json as json;
 use json::validation::Checked::Valid;
 
 pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
-    gltf_export_init!(ct);
-
     let map = {
         let mut map = HashMap::new();
         let mut curr_mesh = None;
@@ -119,6 +118,13 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
         _ => { }
     };
 
+    // gltf validation best practice is to omit transform when transform is identity
+    let final_matrix = if final_matrix == Mat4::IDENTITY {
+        None
+    } else {
+        Some(final_matrix)
+    };
+
     let nodes = {
         let old_key = ct.key;
         let mut nodes = Vec::new();
@@ -205,13 +211,13 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
     };
 
 
-    if nodes.len() == 0 && light == None && !ct.options.export_empty_gaos && !skip_empty_gaos_if_possible { // skip exporting empty/childless/implementationless gaos
+    if nodes.len() == 0 && light == None && !ct.options.export_empty_gaos && skip_empty_gaos_if_possible { // skip exporting empty/childless/implementationless gaos
         log::debug!("skipping {} due to no data", name);
         return Vec::new();
     }
 
     let node = ct.root.push(json::Node {
-        matrix: Some(final_matrix.to_cols_array()),
+        matrix: final_matrix.and_then(|m| Some(m.to_cols_array())),
         children: Some(nodes),
         name: Some(name),
         extensions: {
@@ -227,7 +233,6 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
         },
         ..Default::default()
     });
-    
 
     insert_cache!(ct, &ct.key, node);
 

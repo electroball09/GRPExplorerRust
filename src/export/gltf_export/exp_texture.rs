@@ -35,6 +35,10 @@ impl TextureChannelIdentifier {
 pub fn gltf_tga<'a>(ct: &'a mut ExportContext, hint: TextureTransformHint) -> Vec<json::Index<json::Texture>> {
     gltf_export_init!(ct);
 
+    while ct.cursor.position() % 4 != 0 {
+        ct.cursor.write_u8(0).unwrap();
+    }
+
     let key = match unwrap_tga_key(ct.key, ct.bf) {
         Some(key) => key,
         None => return Vec::new()
@@ -64,7 +68,7 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext, hint: TextureTransformHint) -> Ve
         TextureTransformHint::ChannelToAlphaInvertAndClear(orig_channel) => 
             data.chunks_exact(4).flat_map(|ch| [255, 255, 255, 255 - ch[orig_channel]]).collect(),
         TextureTransformHint::ChannelModify(cr, cg, cb, ca) =>
-            data.chunks_exact(4).flat_map(|ch| [cr.transform_value(0, ch), cr.transform_value(0, ch), cr.transform_value(0, ch), cr.transform_value(0, ch)]).collect(),
+            data.chunks_exact(4).flat_map(|ch| [cr.transform_value(0, ch), cg.transform_value(0, ch), cb.transform_value(0, ch), ca.transform_value(0, ch)]).collect(),
     };
 
     if meta.is_normal_map() != (hint == TextureTransformHint::NormalMap) {
@@ -83,12 +87,14 @@ pub fn gltf_tga<'a>(ct: &'a mut ExportContext, hint: TextureTransformHint) -> Ve
         buffer: *ct.buffer_js,
         byte_length: USize64(tex_end - tex_start),
         byte_offset: Some(USize64(tex_start)),
-        target: Some(Valid(json::buffer::Target::ArrayBuffer)),
-        byte_stride: Some(json::buffer::Stride(16)),
+        target: None, // byte_stride and target must be None for image buffers
+        byte_stride: None,
         name: name.clone(), 
         extensions: Default::default(),
         extras: Default::default()
     });
+
+    check_buffer_view!(ct, "tex_view");
 
     let source = ct.root.push(json::Image {
         buffer_view: Some(tex_view),
