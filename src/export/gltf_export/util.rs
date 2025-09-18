@@ -33,9 +33,9 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         min = min.min(p);
         max = max.max(p);
 
-        ct.cursor.write_f32::<ENDIAN>(-p.x).expect("write error");
-        ct.cursor.write_f32::<ENDIAN>(p.z).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(p.x).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(p.y).expect("write error");
+        ct.cursor.write_f32::<ENDIAN>(p.z).expect("write error");
     }
 
     let vtx_len = ct.cursor.position() - vtx_start;

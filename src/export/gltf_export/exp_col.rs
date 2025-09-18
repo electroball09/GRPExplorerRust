@@ -49,9 +49,9 @@ pub fn gltf_col<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         min = min.min(pos);
         max = max.max(pos);
 
-        ct.cursor.write_f32::<ENDIAN>(-pos.x).unwrap(); // invert x and swap y and z for gltf
-        ct.cursor.write_f32::<ENDIAN>(pos.z).unwrap();
+        ct.cursor.write_f32::<ENDIAN>(pos.x).unwrap(); // invert x and swap y and z for gltf
         ct.cursor.write_f32::<ENDIAN>(pos.y).unwrap();
+        ct.cursor.write_f32::<ENDIAN>(pos.z).unwrap();
     }
     let vbuf_len = ct.cursor.position() - vtx_start;
 
