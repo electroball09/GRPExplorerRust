@@ -3,6 +3,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 use glam::*;
 use std::ops::Range;
+use crate::util::mesh_util::*;
 
 #[derive(Default)]
 pub struct MeshMetadata {
@@ -107,20 +108,8 @@ pub struct VertexData {
     pub uv0: Vec<Vec2>,
     pub uv1: Vec<Vec2>,
     pub weights: Vec<[Weight; 4]>,
-    pub uv2: Vec<Vec2>,
-    pub uv3: Vec<Vec2>,
-}
-
-fn snorm16_to_float(v: i16) -> f32 {
-    f32::max((v as f32) / 32767.0, -1.0)
-}
-
-fn snorm8_to_float(v: i8) -> f32 {
-    f32::max((v as f32) / 127.0, -1.0)
-}
-
-fn uvi16_to_float(v: i16) -> f32 {
-    f32::from(v) / 1024.0
+    pub tangents: Vec<Vec3>,
+    pub normals: Vec<Vec3>,
 }
 
 impl ArchetypeImpl for MeshData {
@@ -154,15 +143,16 @@ impl ArchetypeImpl for MeshData {
 
         cursor.seek(SeekFrom::Start((0x47 + self.data_offset) as u64))?;
 
+        let mut vbuf: [u8; 32] = [0; 32];
+        let mut tnbuf: [u8; 8] = [0; 8];
         let mut bufs: Vec<[u8; 32]> = Vec::with_capacity(self.num_vertices as usize);
         let mut pos: Vec<Vec3> = Vec::with_capacity(self.num_vertices as usize);
         let mut uv0: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
         let mut uv1: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
         let mut weights: Vec<[Weight; 4]> = Vec::with_capacity(self.num_vertices as usize);
-        let mut uv2: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
-        let mut uv3: Vec<Vec2> = Vec::with_capacity(self.num_vertices as usize);
-        for _i in 0..self.num_vertices {
-            let mut vbuf: [u8; 32] = [0; 32];
+        let mut tangents: Vec<Vec3> = Vec::with_capacity(self.num_vertices as usize);
+        let mut normals: Vec<Vec3> = Vec::with_capacity(self.num_vertices as usize);
+        for _ in 0..self.num_vertices {
             cursor.read(&mut vbuf)?;
             let mut vbufr: &[u8] = &vbuf;
             pos.push((Vec3::new(
@@ -194,28 +184,16 @@ impl ArchetypeImpl for MeshData {
                 }
                 weights
             });
-            uv2.push(
-                 Vec2::new(
-                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
-                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
-            ));
-            uv3.push(
-                 Vec2::new(
-                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
-                    snorm16_to_float(vbufr.read_i16::<LittleEndian>()?),
-            ));
-            // uv2.push(
-            //     Vec2::new(
-            //         { let b = snorm8_to_float(vbufr.read_i8()?); snorm8_to_float(vbufr.read_i8()?); b },
-            //         { let b = snorm8_to_float(vbufr.read_i8()?); snorm8_to_float(vbufr.read_i8()?); b }
-            //     )
-            // );
-            // uv3.push(
-            //     Vec2::new(
-            //         { let b = snorm8_to_float(vbufr.read_i8()?); snorm8_to_float(vbufr.read_i8()?); b },
-            //         { let b = snorm8_to_float(vbufr.read_i8()?); snorm8_to_float(vbufr.read_i8()?); b }
-            //     )
-            // );
+
+            // TODO: figure out why normals/tangents are flipped for some models??
+            // {
+            //     vbufr.read_exact(&mut tnbuf)?;
+            //     let (normal, tangent, _) = bytes_to_rgb10_a2_tnb_with_a(&tnbuf);
+
+            //     tangents.push(tangent.truncate());
+            //     normals.push(normal.truncate());
+            // }
+            
             bufs.push(vbuf);
         }
         self.vertex_data = VertexData {
@@ -224,8 +202,8 @@ impl ArchetypeImpl for MeshData {
             uv0,
             uv1,
             weights,
-            uv2,
-            uv3,
+            tangents,
+            normals,
         };
 
         self.faces = Vec::with_capacity(self.num_indices as usize);

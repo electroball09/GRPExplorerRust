@@ -64,7 +64,7 @@ impl EditorImpl for MeshDataEditor {
                 }
             }
 
-            egui::ScrollArea::vertical().auto_shrink(true).show(ui, |ui| {
+            egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
                 for v in 0..msd.num_vertices as usize {
                     ui.collapsing(format!("vertex {}", v), |ui| {
                         let str = msd.vertex_data.bufs[v].chunks_exact(8).map(|c| format!("{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7])).collect::<Vec<String>>().join("\r\n");
@@ -72,8 +72,9 @@ impl EditorImpl for MeshDataEditor {
                         ui.label(format!("pos: {}", msd.vertex_data.pos[v]));
                         ui.label(format!("uv0: {}", msd.vertex_data.uv0[v]));
                         ui.label(format!("uv1: {}", msd.vertex_data.uv1[v]));
-                        ui.label(format!("uv2: {}", msd.vertex_data.uv2[v]));
-                        ui.label(format!("uv3: {}", msd.vertex_data.uv3[v]));
+                        ui.label(format!("tan: {}", msd.vertex_data.tangents[v]));
+                        ui.label(format!("nrm: {}", msd.vertex_data.normals[v]));
+                        
                         ui.label("bones: ");
                         let bone = &msd.vertex_data.weights[v];
                         for b in 0..bone.len() {

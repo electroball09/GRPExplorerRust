@@ -36,6 +36,14 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
                 0 => None,
                 _ => Some(&msd.vertex_data.uv1)
             },
+            tangents: match msd.vertex_data.tangents.len() {
+                0 => None,
+                _ => Some(&msd.vertex_data.tangents)
+            },
+            normals: match msd.vertex_data.normals.len() {
+                0 => None,
+                _ => Some(&msd.vertex_data.normals)
+            },
             colors: colors.as_deref()
         });
 

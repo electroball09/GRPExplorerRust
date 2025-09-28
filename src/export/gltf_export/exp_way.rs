@@ -124,6 +124,8 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             indices: &indices,
             uv0: None,
             uv1: None,
+            tangents: None,
+            normals: None,
             colors: None
         }));
     }
@@ -159,6 +161,8 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             indices: &indices,
             uv0: None,
             uv1: None,
+            tangents: None,
+            normals: None,
             colors: None
         }));
     }

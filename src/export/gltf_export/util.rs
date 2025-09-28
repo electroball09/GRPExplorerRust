@@ -9,8 +9,8 @@ pub struct GltfPrimitiveBuild<'a> {
     pub indices: &'a [u32],
     pub uv0: Option<&'a [Vec2]>,
     pub uv1: Option<&'a [Vec2]>,
-    // pub normals:  Option<&'a Vec<Vec3>>,
-    // pub tangents: Option<&'a Vec<Vec3>>,
+    pub normals:  Option<&'a Vec<Vec3>>,
+    pub tangents: Option<&'a Vec<Vec3>>,
     pub colors: Option<&'a [Vec4]>,
 }
 
@@ -148,6 +148,91 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         attributes.insert(Checked::Valid(Semantic::TexCoords(1)), uv1_acc);
     }
 
+    // glTF spec says tangents must be VEC4
+    //  xyz for tangent
+    //  w for bitangent handedness
+    //  idgaf about any of this so im just using 1 for w yolo
+    if let Some(tangents) = build.tangents {
+        let tangents_start = ct.cursor.position();
+        for tangent in tangents {
+            ct.cursor.write_f32::<ENDIAN>(tangent.x).expect("write error");
+            ct.cursor.write_f32::<ENDIAN>(tangent.y).expect("write error");
+            ct.cursor.write_f32::<ENDIAN>(tangent.z).expect("write error");
+            ct.cursor.write_f32::<ENDIAN>(1.0).expect("write error");
+        }
+        let tangents_len = ct.cursor.position() - tangents_start;
+
+        let tangents_view = ct.root.push(json::buffer::View {
+            buffer: *ct.buffer_js,
+            byte_length: USize64(tangents_len.into()),
+            byte_offset: Some(tangents_start.into()),
+            byte_stride: Some(json::buffer::Stride(16)),
+            name: None,
+            target: Some(Valid(json::buffer::Target::ArrayBuffer)),
+            extensions: None,
+            extras: None
+        });
+
+        check_buffer_view!(ct, "tangents_view");
+
+        let tangents_acc = ct.root.push(json::Accessor {
+            buffer_view: Some(tangents_view),
+            byte_offset: Some(USize64(0)),
+            count: USize64::from(build.pos_pre_transformed.len()),
+            component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+            extensions: Default::default(),
+            extras: Default::default(),
+            type_: Valid(json::accessor::Type::Vec4),
+            min: None,
+            max: None,
+            name: None,
+            normalized: false,
+            sparse: None
+        });
+        check_buffer_accessor!(ct, "tan_acc");
+        attributes.insert(Checked::Valid(Semantic::Tangents), tangents_acc);
+    }
+
+    if let Some(normals) = build.normals {
+        let normals_start = ct.cursor.position();
+        for normal in normals {
+            ct.cursor.write_f32::<ENDIAN>(normal.x).expect("write error");
+            ct.cursor.write_f32::<ENDIAN>(normal.y).expect("write error");
+            ct.cursor.write_f32::<ENDIAN>(normal.z).expect("write error");
+        }
+        let normals_len = ct.cursor.position() - normals_start;
+
+        let normals_view = ct.root.push(json::buffer::View {
+            buffer: *ct.buffer_js,
+            byte_length: USize64(normals_len.into()),
+            byte_offset: Some(normals_start.into()),
+            byte_stride: Some(json::buffer::Stride(12)),
+            name: None,
+            target: Some(Valid(json::buffer::Target::ArrayBuffer)),
+            extensions: None,
+            extras: None
+        });
+
+        check_buffer_view!(ct, "normals_view");
+
+        let normals_acc = ct.root.push(json::Accessor {
+            buffer_view: Some(normals_view),
+            byte_offset: Some(USize64(0)),
+            count: USize64::from(build.pos_pre_transformed.len()),
+            component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+            extensions: Default::default(),
+            extras: Default::default(),
+            type_: Valid(json::accessor::Type::Vec3),
+            min: None,
+            max: None,
+            name: None,
+            normalized: false,
+            sparse: None
+        });
+        check_buffer_accessor!(ct, "nrm_acc");
+        attributes.insert(Checked::Valid(Semantic::Normals), normals_acc);
+    }
+
     if let Some(colors) = build.colors {
         let colors_start = ct.cursor.position();
         for color in colors {
@@ -161,7 +246,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         let colors_view = ct.root.push(json::buffer::View {
             buffer: *ct.buffer_js,
             byte_length: USize64(colors_len.into()),
-            byte_offset: Some(colors_len.into()),
+            byte_offset: Some(colors_start.into()),
             byte_stride: Some(json::buffer::Stride(16)),
             name: None,
             target: Some(Valid(json::buffer::Target::ArrayBuffer)),
