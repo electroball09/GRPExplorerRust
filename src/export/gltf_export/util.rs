@@ -155,6 +155,8 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
     if let Some(tangents) = build.tangents {
         let tangents_start = ct.cursor.position();
         for tangent in tangents {
+            let tangent = Vec3::new(-tangent.x, tangent.z, tangent.y);
+
             ct.cursor.write_f32::<ENDIAN>(tangent.x).expect("write error");
             ct.cursor.write_f32::<ENDIAN>(tangent.y).expect("write error");
             ct.cursor.write_f32::<ENDIAN>(tangent.z).expect("write error");
@@ -196,6 +198,8 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
     if let Some(normals) = build.normals {
         let normals_start = ct.cursor.position();
         for normal in normals {
+            let normal = Vec3::new(-normal.x, normal.z, normal.y);
+
             ct.cursor.write_f32::<ENDIAN>(normal.x).expect("write error");
             ct.cursor.write_f32::<ENDIAN>(normal.y).expect("write error");
             ct.cursor.write_f32::<ENDIAN>(normal.z).expect("write error");

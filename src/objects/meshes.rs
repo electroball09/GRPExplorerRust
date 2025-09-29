@@ -185,14 +185,13 @@ impl ArchetypeImpl for MeshData {
                 weights
             });
 
-            // TODO: figure out why normals/tangents are flipped for some models??
-            // {
-            //     vbufr.read_exact(&mut tnbuf)?;
-            //     let (normal, tangent, _) = bytes_to_rgb10_a2_tnb_with_a(&tnbuf);
+            {
+                vbufr.read_exact(&mut tnbuf)?;
+                let (normal, tangent, _) = bytes_to_rgb10_a2_tnb_with_a(&tnbuf);
 
-            //     tangents.push(tangent.truncate());
-            //     normals.push(normal.truncate());
-            // }
+                tangents.push(tangent.truncate());
+                normals.push(normal.truncate());
+            }
             
             bufs.push(vbuf);
         }
