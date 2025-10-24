@@ -254,6 +254,12 @@ impl UpperHex for YKey {
     }
 }
 
+impl YKey {
+    pub fn to_string(&self) -> String {
+        format!("{}", self)
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct FileEntry {
     pub offset: u32,

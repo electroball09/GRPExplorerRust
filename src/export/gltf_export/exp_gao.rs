@@ -51,7 +51,8 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let mut nodes = Vec::new();
 
     for kv in map.iter() {
-        ct_with_key!(ct, *kv.0, {
+        let sub_context = std::mem::take(&mut ct.sub_context);
+        do_sub_ct!(ct, *kv.0, {
             let meshes = super::gltf_msh(ct);
             let mats = {
                 let mut mats = Vec::new();
@@ -78,10 +79,26 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                         ct.root.meshes[mesh.value()].primitives[j].material = Some(mats[mat_idx]);
                     }
                 }
+
+                let extras = {
+                    let mut extras = Default::default();
+                    if let Some(sub_context) = &sub_context {
+                        if !sub_context.capture_visual_for.is_empty() {
+                            extras = Some(json!({
+                                "type": "capture_visual",
+                                "for_point": sub_context.capture_visual_for
+                            }));
+                            //log::info!("{:?}", extras);
+                        }
+                    }
+                    extras
+                };
+                
     
                 nodes.push(ct.root.push(json::Node {
                     mesh: Some(*mesh),
                     name: ct.root.meshes[mesh.value()].name.clone(),
+                    extras: extras.map(|v| serde_json::value::to_raw_value(&v).unwrap()),
                     ..Default::default()
                 }));
             }
@@ -125,26 +142,47 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
         Some(final_matrix)
     };
 
+    let mut script = None;
+    for key in &ct.bf.object_table[&ct.key].references {
+        if ct.bf.is_key_valid(*key) && ct.bf.file_table[key].object_type.is_zc() {
+            script = Some(*key);
+            break;
+        }
+    }
+
+    let mut capture_visual_for = String::new();
+    if let Some(key) = script {
+        if let Some(data) = ct.export_config.capture_visual_scripts.get(&key.to_string()) {
+            capture_visual_for = data.for_point.clone();
+            //log::info!("capture visual {} for_point {}", &name, &capture_visual_for);
+        }
+    }
+
+    let mut colors = vec!();
+    for key in &ct.bf.object_table[&ct.key].references {
+        if ct.bf.is_key_valid(*key) && ct.bf.file_table[key].object_type.is_vxc() {
+            colors = ct.bf.object_table[key].archetype.as_vertex_colors().unwrap().colors.clone();
+            break;
+        }
+    }
+
     let nodes = {
         let old_key = ct.key;
         let mut nodes = Vec::new();
         for key in &ct.bf.object_table[&ct.key].references {
             if ct.bf.is_key_valid(*key) {
-                ct_with_key!(ct, *key, {
-                    let colors = match ct.bf.object_table[&ct.key].references.iter().find(|key| ct.bf.is_key_valid(**key) && ct.bf.file_table[key].object_type.is_vxc()) {
-                        Some(vxc_key) => {
-                            let vxc = ct.bf.object_table[&vxc_key].archetype.as_vertex_colors().unwrap();
-                            Some(vxc.colors.clone())
-                        },
-                        None => None
-                    };
-                    ct.sub_context.vertex_colors = colors;
+                do_sub_ct!(ct, *key, {
+                    if !colors.is_empty() || !capture_visual_for.is_empty() {
+                        ct.sub_context = Some(SubContext {
+                            vertex_colors: colors.clone(),
+                            capture_visual_for: capture_visual_for.clone()
+                        });
+                    }
                     match ct.bf.file_table[key].object_type {
                         ObjectType::got => nodes.append(&mut gltf_got(ct)),
                         ObjectType::cot => nodes.append(&mut gltf_cot(ct)),
                         _ => { }
                     };
-                    ct.sub_context.vertex_colors = None;
                 });
             }
         }
@@ -174,7 +212,7 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
                             color: [spot.color.x, spot.color.y, spot.color.z],
                             extensions: None,
                             extras: Default::default(),
-                            intensity: spot.intensity * ct.options.spot_light_intentisy_multiplier,
+                            intensity: spot.intensity * ct.options.spot_light_intensity_multiplier,
                             name: Some(name.clone()),
                             range: Some(spot.range * ct.options.spot_light_range_multiplier),
                             spot: Some(json::extensions::scene::khr_lights_punctual::Spot {

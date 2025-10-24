@@ -24,7 +24,7 @@ pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         if ct.bf.is_key_valid(*key) {
             match ct.bf.file_table[key].object_type {
                 ObjectType::gol => {
-                    ct_with_key!(ct, *key, {
+                    do_sub_ct!(ct, *key, {
                         nodes.append(&mut gltf_gol(ct));
                     });
                 },
@@ -33,7 +33,7 @@ pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                         ct.export_subworlds = false;
                         for subworld in &ct.bf.object_table[key].references {
                             if ct.bf.is_key_valid(*subworld) && !ct.index_cache.contains_key(subworld) {
-                                ct_with_key!(ct, *subworld, {
+                                do_sub_ct!(ct, *subworld, {
                                     for node in gltf_wor(ct).drain(..) {
                                         nodes.push(node);
                                     }
@@ -43,7 +43,7 @@ pub fn gltf_wor<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                     }
                 },
                 ObjectType::wal => {
-                    ct_with_key!(ct, *key, {
+                    do_sub_ct!(ct, *key, {
                         nodes.append(&mut gltf_wal(ct));
                     });
                 }
@@ -65,7 +65,7 @@ pub fn gltf_gol<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
     for key in refs {
         if ct.bf.is_key_valid(*key) {
-            ct_with_key!(ct, *key, {
+            do_sub_ct!(ct, *key, {
                 let mut subnodes = gltf_gao(ct, true);
                 for node in subnodes.drain(..) {
                     nodes.push(node);

@@ -25,6 +25,7 @@ mod exp_col; use exp_col::*;
 mod exp_way; use exp_way::*;
 mod gltf_export_window; pub use gltf_export_window::*;
 mod util; use util::*;
+mod config; use config::*;
 
 #[derive(Debug, strum_macros::Display, strum::EnumIter, EnumAsInner, PartialEq, PartialOrd, Clone, Copy)]
 pub enum WayExportStrategy {
@@ -54,7 +55,7 @@ impl WayExportStrategy {
 pub struct GltfExportOptions {
     pub directional_light_intensity_multiplier  : f32,
     pub invert_directional_lights               : bool,
-    pub spot_light_intentisy_multiplier         : f32,
+    pub spot_light_intensity_multiplier         : f32,
     pub spot_light_range_multiplier             : f32,
     pub invert_spot_lights                      : bool,
     pub point_light_intensity_multiplier        : f32,
@@ -74,7 +75,7 @@ impl Default for GltfExportOptions {
     fn default() -> Self {
         Self {
             directional_light_intensity_multiplier: 1.0,
-            spot_light_intentisy_multiplier: 1.0,
+            spot_light_intensity_multiplier: 1.0,
             point_light_intensity_multiplier: 1.0,
             skybox_emissive_multiplier: 1.0,
             spot_light_range_multiplier: 1.0,
@@ -94,7 +95,7 @@ impl GltfExportOptions {
     pub fn blender() -> Self {
         Self {
             directional_light_intensity_multiplier: 10000.0,
-            spot_light_intentisy_multiplier: 8000.0,
+            spot_light_intensity_multiplier: 8000.0,
             point_light_intensity_multiplier: 8000.0,
             skybox_emissive_multiplier: 1.5,
             spot_light_range_multiplier: 1000.0,
@@ -109,8 +110,10 @@ impl GltfExportOptions {
     pub fn ue4() -> Self {
         Self {
             directional_light_intensity_multiplier: 4.0,
-            spot_light_intentisy_multiplier: 3.5,
+            spot_light_intensity_multiplier: 3.5,
+            spot_light_range_multiplier: 10.0,
             point_light_intensity_multiplier: 3.5,
+            point_light_range_multiplier: 10.0,
             invert_directional_lights: false,
             invert_spot_lights: false,
             export_collision: true,
@@ -122,7 +125,7 @@ impl GltfExportOptions {
     pub fn ue5() -> Self {
         Self {
             directional_light_intensity_multiplier: 1.0,
-            spot_light_intentisy_multiplier: 1.5,
+            spot_light_intensity_multiplier: 1.5,
             point_light_intensity_multiplier: 1.5,
             invert_directional_lights: false,
             invert_spot_lights: false,
@@ -133,6 +136,7 @@ impl GltfExportOptions {
 }
 
 struct ExportContext<'a> {
+    pub is_nested: bool,
     pub key: YKey,
     pub bf: &'a Bigfile,
     pub cursor: &'a mut Cursor<&'a mut Vec<u8>>,
@@ -141,13 +145,14 @@ struct ExportContext<'a> {
     pub index_cache: HashMap<YKey, Vec<u32>>,
     pub options: GltfExportOptions,
     pub export_subworlds: bool,
-    pub sub_context: SubContext,
-    pub way_config: WayConfig
+    pub sub_context: Option<SubContext>,
+    pub export_config: ExportConfig
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 struct SubContext {
-    pub vertex_colors: Option<Vec<Vec4>>
+    pub vertex_colors: Vec<Vec4>,
+    pub capture_visual_for: String
 }
 
 macro_rules! gltf_export_init {
@@ -173,20 +178,25 @@ macro_rules! insert_cache {
     }
 }
 pub(self) use insert_cache;
-macro_rules! ct_with_key {
+macro_rules! do_sub_ct {
     ($ct:expr, $key:expr, $code:block) => {
         let old_key = $ct.key;
+        let old_is_nested = $ct.is_nested;
         $ct.key = $key;
+        $ct.is_nested = true;
         $code;
         $ct.key = old_key;
+        if !old_is_nested {
+            $ct.sub_context = None;
+        }
     }
 }
-pub(self) use ct_with_key;
+pub(self) use do_sub_ct;
 const BUF_VALUES: [usize; 5] = [59, 61, 75, 89, 99];
 macro_rules! check_buffer_view {
     ($ct:expr, $name:expr) => {
         if BUF_VALUES.contains(&($ct.root.buffer_views.len() - 1)) {
-            log::info!("buffer {} key {:#010X} loc: {}", $ct.root.buffer_views.len(), $ct.key, $name);
+            //log::info!("buffer {} key {:#010X} loc: {}", $ct.root.buffer_views.len(), $ct.key, $name);
         }
     }
 }
@@ -195,7 +205,7 @@ const ACC_VALUES: [usize; 5] = [4766, 4762, 4758, 4756, 4750];
 macro_rules! check_buffer_accessor {
     ($ct:expr, $name:expr) => {
         if ACC_VALUES.contains(&($ct.root.accessors.len() - 1)) {
-            log::info!("accessor {} key {:#010X} loc: {}", $ct.root.accessors.len(), $ct.key, $name);
+            //log::info!("accessor {} key {:#010X} loc: {}", $ct.root.accessors.len(), $ct.key, $name);
         }
     }
 }
@@ -217,8 +227,8 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
     new_vec
 }
 
-fn load_way_config() -> anyhow::Result<WayConfig> {
-    let path = env::current_dir().unwrap().join("cfg\\way_ids.json");
+fn load_export_config() -> anyhow::Result<ExportConfig> {
+    let path = env::current_dir().unwrap().join("cfg\\gltf_export_config.json");
 
     let json = std::fs::read_to_string(path)?;
 
@@ -265,6 +275,7 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool 
     let map_name = options.map_name.clone();
 
     let mut ct = ExportContext {
+        is_nested: false,
         key,
         bf: &*bf,
         cursor: &mut cursor,
@@ -273,8 +284,8 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool 
         index_cache: HashMap::new(),
         options,
         export_subworlds: true,
-        sub_context: SubContext::default(),
-        way_config: load_way_config().expect("fail to load way config!"),
+        sub_context: None,
+        export_config: load_export_config().expect("fail to load way config!"),
     };
 
     match bf.file_table[&key].object_type {

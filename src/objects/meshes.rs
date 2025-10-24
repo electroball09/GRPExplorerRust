@@ -98,7 +98,7 @@ pub struct FaceData {
 #[derive(Default, Debug, Clone, Copy)]
 pub struct Weight {
     pub bone: u8,
-    pub weight: u8,//f32,
+    pub weight: u8,
 }
 
 #[derive(Default)]

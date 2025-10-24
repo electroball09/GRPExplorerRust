@@ -18,13 +18,20 @@
         "0x9D8C181A": { "name": "E" }
     },
     "spawn_zone_ids": {
-        "0x0880011A": { "name": "A", "team": 1 },
-        "0x0880011B": { "name": "B", "team": 1 },
-        "0x0880011E": { "name": "B", "team": 2 },
-        "0x0880011C": { "name": "C", "team": 1 },
-        "0x0880011F": { "name": "C", "team": 2 },
-        "0x0880011D": { "name": "D", "team": 1 },
-        "0x08800120": { "name": "D", "team": 2 },
-        "0x08800121": { "name": "E", "team": 2 }
+        "0x0880011A": { "name": "A", "team": 0 },
+        "0x0880011B": { "name": "B", "team": 0 },
+        "0x0880011E": { "name": "B", "team": 1 },
+        "0x0880011C": { "name": "C", "team": 0 },
+        "0x0880011F": { "name": "C", "team": 1 },
+        "0x0880011D": { "name": "D", "team": 0 },
+        "0x08800120": { "name": "D", "team": 1 },
+        "0x08800121": { "name": "E", "team": 1 }
+    },
+    "capture_visual_scripts": {
+        "0x088001CB": { "for_point": "A" },
+        "0x088001CC": { "for_point": "B" },
+        "0x088001CD": { "for_point": "C" },
+        "0x088001CE": { "for_point": "D" },
+        "0x088001CF": { "for_point": "E" }
     }
 }

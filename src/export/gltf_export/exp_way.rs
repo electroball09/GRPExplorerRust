@@ -3,26 +3,8 @@ use crate::{util::transform_yeti_matrix};
 use super::*;
 use glam::{Mat4, Vec3};
 use rgeometry::{algorithms::polygonization::two_opt_moves, data::Point};
-use serde::Deserialize;
 use serde_json::json;
 use log::*;
-
-#[derive(Deserialize, Debug)]
-pub struct WayConfig {
-    pub capture_ids: HashMap<String, CaptureWay>,
-    pub spawn_zone_ids: HashMap<String, SpawnZoneWay>
-}
-
-#[derive(Deserialize, Debug)]
-pub struct CaptureWay {
-    pub name: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct SpawnZoneWay {
-    pub name: String,
-    pub team: i32,
-}
 
 fn bounding_box(points: &[Vec3]) -> Option<(Vec3, Vec3)> {
     if points.is_empty() {
@@ -46,7 +28,7 @@ fn center(min: Vec3, max: Vec3) -> Vec3 {
 pub fn gltf_wal<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     let mut nodes = Vec::new();
     for key in &ct.bf.object_table[&ct.key].references {
-        ct_with_key!(ct, *key, {
+        do_sub_ct!(ct, *key, {
             nodes.append(&mut gltf_way(ct));
         });
     };
@@ -174,20 +156,21 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             .and_then(|gao_obj| gao_obj.references.get(1))      
             .map(|&zc_key| zc_key)
         ).and_then(|zc_key| {
-            let hex_key = format!("{:#010X}", zc_key);
-            ct.way_config.capture_ids.get(&hex_key)
+            let hex_key = zc_key.to_string();
+            ct.export_config.capture_ids.get(&hex_key)
                 .map(|capture| {
                     info!("exporting capture point {}", &hex_key);
                     json!({ 
                         "type": "capture", 
-                        "name": capture.name 
+                        "name": capture.name,
+                        "use_visual": false
                     })
                 }).or_else(|| {
-                    ct.way_config.spawn_zone_ids.get(&hex_key)
+                    ct.export_config.spawn_zone_ids.get(&hex_key)
                         .map(|spawn_zone| {
                             info!("exporting spawn zone {}", &hex_key);
                             json!({
-                                "type": "spawn_zone",
+                                "type": "spawn_area",
                                 "name": spawn_zone.name,
                                 "team": spawn_zone.team
                             })

@@ -100,7 +100,7 @@ fn load_standard_shader<'a>(material: &mut json::Material, ct: &'a mut ExportCon
     //log::info!("{} {:?} {:?} {:?}", textures.count(), bkey, skey, nkey);
 
     if let Some(key) = bkey {
-        ct_with_key!(ct, key, {
+        do_sub_ct!(ct, key, {
             let textures = gltf_tga(ct, TextureTransformHint::None);
             if textures.len() > 0 {
                 material.pbr_metallic_roughness.base_color_texture = Some(json::texture::Info {
@@ -113,7 +113,7 @@ fn load_standard_shader<'a>(material: &mut json::Material, ct: &'a mut ExportCon
         });
     }
     if let Some(key) = skey {
-        ct_with_key!(ct, key, {
+        do_sub_ct!(ct, key, {
             material.extensions = Some(json::extensions::material::Material {
                 specular: Some(json::extensions::material::Specular {
                     specular_color_factor: json::extensions::material::SpecularColorFactor([1.0, 1.0, 1.0]),
@@ -139,7 +139,7 @@ fn load_standard_shader<'a>(material: &mut json::Material, ct: &'a mut ExportCon
         });
     }
     if let Some(key) = nkey {
-        ct_with_key!(ct, key, {
+        do_sub_ct!(ct, key, {
             let textures = gltf_tga(ct, TextureTransformHint::NormalMap);
             if textures.len() > 0 {
                 material.normal_texture = Some(json::material::NormalTexture {
@@ -203,7 +203,7 @@ fn transform_invcoloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut
     };
 
     let mut texture = None;
-    ct_with_key!(ct, txd_key, {
+    do_sub_ct!(ct, txd_key, {
         texture = Some(gltf_tga(ct, TextureTransformHint::ChannelToAlphaInvertAndClear(0))[0]);
     });
 
@@ -226,7 +226,7 @@ fn transform_coloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut Ex
     };
 
     let mut texture = None;
-    ct_with_key!(ct, txd_key, {
+    do_sub_ct!(ct, txd_key, {
         texture = Some(gltf_tga(ct, TextureTransformHint::ChannelToAlphaAndClear(0, alpha_scale))[0]);
     });
 

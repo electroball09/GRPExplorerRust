@@ -58,7 +58,7 @@ impl GltfExportWindow {
 
     fn opt_to_strings(options: &GltfExportOptions, strings: &mut OptionStrings) {
         strings.directional_light_intensity_multiplier = format!("{}", options.directional_light_intensity_multiplier   );
-        strings.spot_light_intentisy_multiplier        = format!("{}", options.spot_light_intentisy_multiplier          );
+        strings.spot_light_intentisy_multiplier        = format!("{}", options.spot_light_intensity_multiplier          );
         strings.spot_light_range_multiplier            = format!("{}", options.spot_light_range_multiplier              );
         strings.point_light_intensity_multiplier       = format!("{}", options.point_light_intensity_multiplier         );
         strings.point_light_range_multiplier           = format!("{}", options.point_light_range_multiplier             );
@@ -116,7 +116,7 @@ impl GltfExportWindow {
                         ui.label("LIGHTS");
                         number_field(ui, "Dir. Light Multiplier"        , &mut options.directional_light_intensity_multiplier     , &mut self.edit_strings.directional_light_intensity_multiplier );
                         ui.checkbox(&mut options.invert_directional_lights, "Invert Dir. Lights");
-                        number_field(ui, "Spot Light Multiplier"        , &mut options.spot_light_intentisy_multiplier            , &mut self.edit_strings.spot_light_intentisy_multiplier        );
+                        number_field(ui, "Spot Light Multiplier"        , &mut options.spot_light_intensity_multiplier            , &mut self.edit_strings.spot_light_intentisy_multiplier        );
                         number_field(ui, "Spot Light Range Multiplier"  , &mut options.spot_light_range_multiplier                , &mut self.edit_strings.spot_light_range_multiplier            );
                         ui.checkbox(&mut options.invert_spot_lights, "Invert Spot Lights");
                         number_field(ui, "Point Light Multiplier"       , &mut options.point_light_intensity_multiplier           , &mut self.edit_strings.point_light_intensity_multiplier       );

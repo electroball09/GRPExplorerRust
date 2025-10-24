@@ -1,5 +1,4 @@
 use std::env;
-use std::ffi::OsString;
 use std::fs;
 use std::path::Path;
 use fs_extra::dir::{self, *};

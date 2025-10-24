@@ -20,7 +20,11 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
     let _msd_name = ct.bf.file_table[&msd_key].get_name().to_string();
 
     let mut prims = Vec::new();
-    let colors = std::mem::take(&mut ct.sub_context.vertex_colors);
+
+    let sub_context = std::mem::take(&mut ct.sub_context);
+    let _colors = sub_context.as_ref().and_then(|sc| {
+        Some(&sc.vertex_colors)
+    });
 
     for idx in 0..msh.submeshes.len() {
         let submesh = &msh.submeshes[idx];
@@ -44,7 +48,7 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
                 0 => None,
                 _ => Some(&msd.vertex_data.normals)
             },
-            colors: colors.as_deref()
+            colors:None// colors.map(|v| &**v)
         });
 
         prims.push(primitive);

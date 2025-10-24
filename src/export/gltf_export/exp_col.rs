@@ -12,7 +12,7 @@ pub fn gltf_cot<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     for key in ct.bf.object_table[&ct.key].references.iter() {
         if ct.bf.is_key_valid(*key) {
             if ct.bf.file_table[key].object_type.is_col() {
-                ct_with_key!(ct, *key, {
+                do_sub_ct!(ct, *key, {
                     nodes.append(&mut gltf_col(ct));
                 });
             }
