@@ -295,9 +295,9 @@ impl View for FileEditorTabs {
                     ectx.bf.extract_file_to_path(&path, key).expect("could not extract file!");
                 },
                 EditorResponse::GltfExport(key) => {
-                    //crate::export::gltf_export(key, ectx.bf);
-
-                    let window = GltfExportWindow::new(key, ectx.bf.file_table[&key].get_name_ext());
+                    let object_type = ectx.bf.file_table[&key].object_type;
+                    let name = ectx.bf.file_table[&key].get_name_ext();
+                    let window = GltfExportWindow::new(key, object_type, name);
                     self.open_exports.push(window);
                 }
             }

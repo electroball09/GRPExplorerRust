@@ -110,10 +110,10 @@ impl GltfExportOptions {
     pub fn ue4() -> Self {
         Self {
             directional_light_intensity_multiplier: 4.0,
-            spot_light_intensity_multiplier: 3.5,
-            spot_light_range_multiplier: 10.0,
-            point_light_intensity_multiplier: 3.5,
-            point_light_range_multiplier: 10.0,
+            spot_light_intensity_multiplier: 7.5,
+            spot_light_range_multiplier: 2.0,
+            point_light_intensity_multiplier: 7.5,
+            point_light_range_multiplier: 2.0,
             invert_directional_lights: false,
             invert_spot_lights: false,
             export_collision: true,

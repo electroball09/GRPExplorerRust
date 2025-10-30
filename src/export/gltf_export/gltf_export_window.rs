@@ -4,6 +4,7 @@ use super::*;
 
 pub struct GltfExportWindow {
     asset_key: YKey,
+    asset_type: ObjectType,
     asset_name: String,
     options: GltfExportOptions,
     close_requested: bool,
@@ -40,9 +41,10 @@ fn number_field(ui: &mut egui::Ui, label: &str, num: &mut f32, string: &mut Stri
 }
 
 impl GltfExportWindow {
-    pub fn new(asset_key: YKey, asset_name: &str) -> Self {
+    pub fn new(asset_key: YKey, asset_type: ObjectType, asset_name: &str) -> Self {
         Self {
             asset_key,
+            asset_type,
             asset_name: asset_name.into(),
             options: Default::default(),
             close_requested: false,
@@ -66,7 +68,7 @@ impl GltfExportWindow {
     }
 
     fn is_valid(&self) -> bool {
-        !self.map_name.is_empty()
+        !self.asset_type.is_wor() || !self.map_name.is_empty()
     }
 
     pub fn draw(&mut self, ctx: &egui::Context, bf: &Bigfile) -> bool {
@@ -137,10 +139,12 @@ impl GltfExportWindow {
 
                     ui.separator();
 
-                    ui.label("Map Name");
-                    ui.text_edit_singleline(&mut self.map_name);
+                    if self.asset_type.is_wor() {
+                        ui.label("Map Name");
+                        ui.text_edit_singleline(&mut self.map_name);
 
-                    ui.separator();
+                        ui.separator();
+                    }
 
                     self.options = options;
                     ui.add_enabled_ui(self.is_valid(), |ui| {

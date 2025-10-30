@@ -33,5 +33,15 @@
         "0x088001CD": { "for_point": "C" },
         "0x088001CE": { "for_point": "D" },
         "0x088001CF": { "for_point": "E" }
+    },
+    "material_shader_type_ids": {
+        "alphatest": ["0xDF729407", "0xAD00B686", "0xAD008F52", "0xAD010D7A", "0xAD00961F", "0xAD00994C", "0xAD028FB7", "0x9203E4C5", "0xB0800098"],
+        "alphablend_emissive": ["0xA4802C06", "0xA4801CC1", "0xA480258D", "0xA3810A9D", "0xA4801AEE", "0xA4802A74", "0xA4802AE7"],
+        "alphablend": ["0xA4802C05", "0x6B800408", "0xA4801CC0", "0xA480258C", "0xA3810A9C", "0xA4801AEC", "0xA4802A75", "0xA4802AE6", "0xAD00E77D", "0xAD00E7B3", "0x80866577", "0x8086B1CC", "0x808666DA", "0xAD0149E9", "0x61031807", "0xAD02A99B", "0x0D815201", "0x0D815CF7", "0xAD00F51D", "0xAD008934", "0xAD008825", "0xAD028F84", "0xAD00892E"],
+        "invcoloralpha": ["0xAD00A2AD"],
+        "coloralpha": ["0xAD00F0A4", "0x11800B53"],
+        "skybox": ["0xAD00F62A", "0x0D8151FE", "0xAD027A32", "0xAD027A1C"],
+        "submarine": ["0x6F800200"],
+        "standard": ["0xDF729421", "0x21041136", "0x21041137", "0x6F87E15B"]
     }
 }

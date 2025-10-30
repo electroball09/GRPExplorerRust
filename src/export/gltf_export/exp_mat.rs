@@ -33,26 +33,47 @@ pub fn gltf_mat<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Material
     };
 
     // we want to set texture modes per material, and if not, per shader
-    match ct.key.into() {
-        0xDF729407 => transform_alphatest_shader(&mut material, ct, true),
-        0xA4802C06 | 0xA4801CC1 | 0xA480258D | 0xA3810A9D | 0xA4801AEE | 0xA4802A74 | 0xA4802AE7 => transform_alphablend_emissive_shader(&mut material, ct),
-        0xA4802C05 | 0x6B800408 | 0xA4801CC0 | 0xA480258C | 0xA3810A9C | 0xA4801AEC | 0xA4802A75 | 0xA4802AE6 => transform_alphablend_shader(&mut material, ct),
-        0x6F800200 => transform_submarine_material(&mut material, ct),
-        0xdf729421 | 0x21041136 | 0x21041137 | 0x6F87E15B => transform_standard_shader(&mut material, ct),
-        _ => {
-            match (*shd_key).into() {
-                0xAD00A2AD => transform_invcoloralpha_shader(&mut material, ct, [0.05, 0.05, 0.05, 1.0]), // decals like wall grime and footprints
-                0xAD00F0A4 | 0x11800B53 => transform_coloralpha_shader(&mut material, ct, [1.0, 0.817, 0.514, 1.0], 0.1), // godrays
-                0xAD00F62A | 0x0D8151FE | 0xAD027A32 | 0xAD027A1C => transform_skybox_shader(&mut material, ct), // skyboxes
-                0xAD00E77D | 0xAD00E7B3 | 0x80866577 | 0x8086B1CC | 0x808666DA | 0xAD0149E9 | 0x61031807 | 0xAD02A99B | 0x0D815201 | 0x0D815CF7 | 0xAD00F51D | 0xAD008934 |
-                 0xAD008825 | 0xAD028F84 | 0xAD00892E 
-                     => transform_alphablend_shader(&mut material, ct),
-                0xAD00B686 | 0xAD008F52  | 0xAD010D7A | 0xAD00961F | 0xAD00994C | 0xAD028FB7 | 0x9203E4C5 | 0xB0800098
-                    => transform_alphatest_shader(&mut material, ct, false),
-                _ => transform_standard_shader(&mut material, ct),
-            };
-        }
-    };
+    let mat_key = &ct.key;
+
+    if ct.export_config.material_shader_type_ids.has_standard(mat_key, shd_key) {
+        transform_standard_shader(&mut material, ct);
+    } else if ct.export_config.material_shader_type_ids.has_alphatest_key(mat_key, shd_key){ 
+        transform_alphatest_shader(&mut material, ct, true);
+    } else if ct.export_config.material_shader_type_ids.has_alphablend(mat_key, shd_key) {
+        transform_alphablend_shader(&mut material, ct);
+    } else if ct.export_config.material_shader_type_ids.has_alphablend_emissive_key(mat_key, shd_key) {
+        transform_alphablend_emissive_shader(&mut material, ct);
+    } else if ct.export_config.material_shader_type_ids.has_coloralpha(mat_key, shd_key) {
+        transform_coloralpha_shader(&mut material, ct, [1.0, 0.817, 0.514, 1.0]);
+    } else if ct.export_config.material_shader_type_ids.has_invcoloralpha(mat_key, shd_key) {
+        transform_invcoloralpha_shader(&mut material, ct, [0.05, 0.05, 0.05, 1.0]);
+    } else if ct.export_config.material_shader_type_ids.has_skybox(mat_key, shd_key) {
+        transform_skybox_shader(&mut material, ct);
+    } else if ct.export_config.material_shader_type_ids.has_submarine(mat_key, shd_key) {
+        transform_submarine_material(&mut material, ct);
+    } else {
+        transform_standard_shader(&mut material, ct);
+    }
+    // match ct.key.into() {
+    //     0xDF729407 => transform_alphatest_shader(&mut material, ct, true),
+    //     0xA4802C06 | 0xA4801CC1 | 0xA480258D | 0xA3810A9D | 0xA4801AEE | 0xA4802A74 | 0xA4802AE7 => transform_alphablend_emissive_shader(&mut material, ct),
+    //     0xA4802C05 | 0x6B800408 | 0xA4801CC0 | 0xA480258C | 0xA3810A9C | 0xA4801AEC | 0xA4802A75 | 0xA4802AE6 => transform_alphablend_shader(&mut material, ct),
+    //     0x6F800200 => transform_submarine_material(&mut material, ct),
+    //     0xdf729421 | 0x21041136 | 0x21041137 | 0x6F87E15B => transform_standard_shader(&mut material, ct),
+    //     _ => {
+    //         match (*shd_key).into() {
+    //             0xAD00A2AD => transform_invcoloralpha_shader(&mut material, ct, [0.05, 0.05, 0.05, 1.0]), // decals like wall grime and footprints
+    //             0xAD00F0A4 | 0x11800B53 => transform_coloralpha_shader(&mut material, ct, [1.0, 0.817, 0.514, 1.0]), // godrays
+    //             0xAD00F62A | 0x0D8151FE | 0xAD027A32 | 0xAD027A1C => transform_skybox_shader(&mut material, ct), // skyboxes
+    //             0xAD00E77D | 0xAD00E7B3 | 0x80866577 | 0x8086B1CC | 0x808666DA | 0xAD0149E9 | 0x61031807 | 0xAD02A99B | 0x0D815201 | 0x0D815CF7 | 0xAD00F51D | 0xAD008934 |
+    //              0xAD008825 | 0xAD028F84 | 0xAD00892E 
+    //                  => transform_alphablend_shader(&mut material, ct),
+    //             0xAD00B686 | 0xAD008F52  | 0xAD010D7A | 0xAD00961F | 0xAD00994C | 0xAD028FB7 | 0x9203E4C5 | 0xB0800098
+    //                 => transform_alphatest_shader(&mut material, ct, false),
+    //             _ => transform_standard_shader(&mut material, ct),
+    //         };
+    //     }
+    // };
 
     let material = ct.root.push(material);
 
@@ -202,14 +223,18 @@ fn transform_invcoloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut
             None => return
     };
 
-    let mut texture = None;
-    do_sub_ct!(ct, txd_key, {
-        texture = Some(gltf_tga(ct, TextureTransformHint::ChannelToAlphaInvertAndClear(0))[0]);
-    });
+    #[allow(unused_assignments)]
+    let texture = {
+        let mut texture = None;
+        do_sub_ct!(ct, txd_key, {
+            texture = Some(gltf_tga(ct, TextureTransformHint::ChannelToAlphaInvertAndClear(0))[0]);
+        });
+        texture.expect("texture not loaded correctly?")
+    };
 
     material.alpha_mode = Valid(json::material::AlphaMode::Blend);
     material.pbr_metallic_roughness.base_color_texture = Some(json::texture::Info {
-        index: texture.unwrap(),
+        index: texture,
         tex_coord: 0,
         extensions: Default::default(),
         extras: Default::default()
@@ -217,7 +242,7 @@ fn transform_invcoloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut
     material.pbr_metallic_roughness.base_color_factor = json::material::PbrBaseColorFactor(base_color_factor);
 }
 
-fn transform_coloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext, base_color_factor: [f32; 4], alpha_scale: f32) {
+fn transform_coloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut ExportContext, base_color_factor: [f32; 4]) {
     let txd_key = match ct.bf.object_table[&ct.key].references.iter()
         .filter(|key| ct.bf.is_key_valid(**key))
         .find(|key| ct.bf.file_table[key].object_type.is_tga()) {
@@ -225,14 +250,18 @@ fn transform_coloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut Ex
             None => return
     };
 
-    let mut texture = None;
-    do_sub_ct!(ct, txd_key, {
-        texture = Some(gltf_tga(ct, TextureTransformHint::ChannelToAlphaAndClear(0, alpha_scale))[0]);
-    });
+    #[allow(unused_assignments)]
+    let texture = {
+        let mut texture = None;
+        do_sub_ct!(ct, txd_key, {
+            texture = Some(gltf_tga(ct, TextureTransformHint::ChannelToAlphaInvertAndClear(0))[0]);
+        });
+        texture.expect("texture not loaded correctly?")
+    };
 
     material.alpha_mode = Valid(json::material::AlphaMode::Blend);
     material.pbr_metallic_roughness.base_color_texture = Some(json::texture::Info {
-        index: texture.unwrap(),
+        index: texture,
         tex_coord: 0,
         extensions: Default::default(),
         extras: Default::default()
@@ -243,5 +272,5 @@ fn transform_coloralpha_shader<'a>(material: &mut json::Material, ct: &'a mut Ex
 fn transform_submarine_material<'a>(material: &mut json::Material, ct: &'a mut ExportContext) {
     transform_standard_shader(material, ct);
 
-    material.pbr_metallic_roughness.base_color_texture.as_mut().unwrap().tex_coord = 1; // wtf ubisoft
+    material.pbr_metallic_roughness.base_color_texture.as_mut().unwrap().tex_coord = 1; 
 }
