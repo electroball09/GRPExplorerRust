@@ -71,7 +71,7 @@ impl TextureMetadataEditor {
             .chunks_exact(4)
             .map(|p| egui::Color32::from_rgba_premultiplied(p[0], p[1], p[2], p[3]))
             .collect();
-        Ok(egui::ColorImage { size, pixels })
+        Ok(egui::ColorImage::new(size, pixels))
     }
 
     fn from_brga(size: [usize; 2], brga: &[u8]) -> Result<egui::ColorImage, String> {
@@ -83,7 +83,7 @@ impl TextureMetadataEditor {
             .chunks_exact(4)
             .map(|p| egui::Color32::from_rgba_premultiplied(p[1], p[2], p[0], p[3]))
             .collect();
-        Ok(egui::ColorImage { size, pixels })
+        Ok(egui::ColorImage::new(size, pixels))
     }
 
     fn from_normal_map(size: [usize; 2], brga: &[u8]) -> Result<egui::ColorImage, String> {
@@ -100,7 +100,7 @@ impl TextureMetadataEditor {
                 let a = 255; // clear alpha channel
                 egui::Color32::from_rgba_premultiplied(r,g,b,a)
             }).collect();
-        Ok(egui::ColorImage { size, pixels })
+        Ok(egui::ColorImage::new(size, pixels))
     }
 
     fn image_to_buf(img: &egui::ColorImage) -> Vec<u8> {
@@ -128,22 +128,22 @@ impl TextureMetadataEditor {
         }
     }
 
-    fn make_image_combinations(image: &egui::ColorImage) -> ImageCombinations {
+    fn make_image_combinations(src: &egui::ColorImage) -> ImageCombinations {
         ImageCombinations {
-            rgb: egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), c32.b(), 0)).collect() },
-            rba: egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, c32.b(), c32.a())).collect() },
-            rga: egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), 0, c32.a())).collect() },
-            gba: egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), c32.b(), c32.a())).collect() },
-            rg : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), 0, 0)).collect() },
-            rb : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, c32.b(), 0)).collect() },
-            ra : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, 0, c32.a())).collect() },
-            gb : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), c32.b(), 0)).collect() },
-            ga : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), 0, c32.a())).collect() },
-            ba : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, 0, c32.b(), c32.a())).collect() },
-            r  : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, 0, 0)).collect() },
-            g  : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), 0, 0)).collect() },
-            b  : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, 0, c32.b(), 0)).collect() },
-            a  : egui::ColorImage { size: image.size, pixels: image.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.a(), c32.a(), c32.a(), 0)).collect() },
+            rgb: egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), c32.b(), 0)).collect()),
+            rba: egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, c32.b(), c32.a())).collect()),
+            rga: egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), 0, c32.a())).collect()),
+            gba: egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), c32.b(), c32.a())).collect()),
+            rg : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), c32.g(), 0, 0)).collect()),
+            rb : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, c32.b(), 0)).collect()),
+            ra : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, 0, c32.a())).collect()),
+            gb : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), c32.b(), 0)).collect()),
+            ga : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), 0, c32.a())).collect()),
+            ba : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, 0, c32.b(), c32.a())).collect()),
+            r  : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.r(), 0, 0, 0)).collect()),
+            g  : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, c32.g(), 0, 0)).collect()),
+            b  : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(0, 0, c32.b(), 0)).collect()),
+            a  : egui::ColorImage::new(src.size, src.pixels.iter().map(|c32| egui::Color32::from_rgba_premultiplied(c32.a(), c32.a(), c32.a(), 0)).collect()),
         }
     }
 

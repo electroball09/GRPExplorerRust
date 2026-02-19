@@ -1,3 +1,5 @@
+use crate::util::load_util::read_mat4;
+
 use super::ArchetypeImpl;
 use std::{fmt::Display, io::{Cursor, Read}};
 use byteorder::ReadBytesExt;
@@ -34,6 +36,8 @@ impl Display for BoneParent {
     }
 }
 
+pub const MATRIX_SEARCH_MAX: usize = 191 - 64;
+
 pub struct Bone {
     name: String,
     pub unk_01: [u8; 4],
@@ -48,6 +52,34 @@ impl Bone {
     }
 }
 
+impl Skeleton {
+    pub fn find_valid_matrix_offsets(&self) -> Vec<usize> {
+        let mut valid_offsets: Vec<usize> = Vec::new();
+
+        for offset in 0..=MATRIX_SEARCH_MAX {
+            let mut all_valid = true;
+            for bone in &self.bones {
+                let mut cursor = Cursor::new(bone.data.as_slice());
+                for _ in 0..offset {
+                    cursor.read_u8().unwrap();
+                }
+                let mat = read_mat4(&mut cursor);
+                
+                let (scl, rot, pos) = mat.unwrap().to_scale_rotation_translation();
+                if !pos.is_finite() || !rot.is_finite() || !scl.is_finite() {
+                    all_valid = false;
+                    break;
+                }
+            }
+            if all_valid {
+                valid_offsets.push(offset);
+            }
+        }
+
+        valid_offsets
+    }
+}
+
 impl ArchetypeImpl for Skeleton {
     fn load_from_buf(&mut self, buf: &[u8]) -> Result<(), super::YetiIOError> {
         let mut cursor = Cursor::new(buf);
@@ -55,8 +87,9 @@ impl ArchetypeImpl for Skeleton {
         self.num_bones = cursor.read_u8()?;
         self.unk_01 = cursor.read_u8()?;
 
-        let mut v: Vec<Bone> = Vec::with_capacity(self.num_bones as usize);
+        let mut bones: Vec<Bone> = Vec::with_capacity(self.num_bones as usize);
         for _ in 0..self.num_bones as usize {
+
             let mut bone = Bone {
                 name: String::new(),
                 unk_01: [0; 4],
@@ -72,26 +105,30 @@ impl ArchetypeImpl for Skeleton {
             };
             cursor.read(&mut bone.data)?;
 
-            v.push(bone);
+            bones.push(bone);
         }
         
+        let mut strbuf: Vec<u8> = Vec::new();
         for i in 0..self.num_bones as usize {
             let len = cursor.read_u8()?;
-            let mut strbuf: Vec<u8> = Vec::with_capacity(len as usize);
-            for _ in 0..len {
+            strbuf.clear();
+
+            for _ in 0..len - 1 {
                 strbuf.push(cursor.read_u8()?);
             }
-            v[i].name = String::from_utf8(strbuf)?;
+            cursor.read_u8()?; // null terminator
+
+            bones[i].name = String::from_utf8(strbuf.clone())?;
         }
 
         for i in 0..self.num_bones {
-            let b = &v[i as usize];
+            let b = &bones[i as usize];
             if let Some(idx) = b.parent.0 {
-                v[idx as usize].children.push(i);
+                bones[idx as usize].children.push(i);
             }
         }
 
-        self.bones = v;
+        self.bones = bones;
 
         Ok(())
     }
