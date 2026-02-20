@@ -1,17 +1,18 @@
 use super::*;
 use glam::{Vec2, Vec3, Vec4};
-use gltf::Semantic;
+use gltf::{Semantic};
 use gltf_json::{self as json, validation::Checked};
 use json::validation::Checked::Valid;
 
 pub struct GltfPrimitiveBuild<'a> {
-    pub pos_pre_transformed: &'a [Vec3],
-    pub indices: &'a [u32],
-    pub uv0: Option<&'a [Vec2]>,
-    pub uv1: Option<&'a [Vec2]>,
-    pub normals:  Option<&'a Vec<Vec3>>,
-    pub tangents: Option<&'a Vec<Vec3>>,
-    pub colors: Option<&'a [Vec4]>,
+    pub pos_pre_transformed: Box<dyn Iterator<Item = Vec3> + 'a>, 
+    pub indices: Box<dyn Iterator<Item = u32> + 'a>,
+    pub uv0: Option<Box<dyn Iterator<Item = Vec2> + 'a>>,
+    pub uv1: Option<Box<dyn Iterator<Item = Vec2> + 'a>>,
+    pub normals: Option<Box<dyn Iterator<Item = Vec3> + 'a>>,
+    pub tangents: Option<Box<dyn Iterator<Item = Vec3> + 'a>>,
+    pub colors: Option<Box<dyn Iterator<Item = Vec4> + 'a>>,
+    pub weights: Option<Box<dyn Iterator<Item = [(u32, f32); 4]> + 'a>>,
 }
 
 pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> json::mesh::Primitive {
@@ -27,6 +28,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
 
     let mut min = Vec3::splat(f32::INFINITY);
     let mut max = Vec3::splat(-f32::INFINITY);
+    let mut num_vertices: usize = 0;
     for p in build.pos_pre_transformed {
         let p = Vec3::new(-p.x, p.z, p.y);
 
@@ -36,6 +38,8 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         ct.cursor.write_f32::<ENDIAN>(p.x).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(p.y).expect("write error");
         ct.cursor.write_f32::<ENDIAN>(p.z).expect("write error");
+
+        num_vertices += 1;
     }
 
     let vtx_len = ct.cursor.position() - vtx_start;
@@ -56,7 +60,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
     let pos_acc = ct.root.push(json::Accessor {
         buffer_view: Some(vtx_view),
         byte_offset: Some(USize64(0)),
-        count: USize64::from(build.pos_pre_transformed.len()),
+        count: USize64::from(num_vertices),
         component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
         extensions: Default::default(),
         extras: Default::default(),
@@ -94,7 +98,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         let uv0_acc = ct.root.push(json::Accessor {
             buffer_view: Some(uv0_view),
             byte_offset: Some(USize64(0)),
-            count: USize64::from(build.pos_pre_transformed.len()),
+            count: USize64::from(num_vertices),
             component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
             extensions: Default::default(),
             extras: Default::default(),
@@ -133,7 +137,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         let uv1_acc = ct.root.push(json::Accessor {
             buffer_view: Some(uv1_view),
             byte_offset: Some(USize64(0)),
-            count: USize64::from(build.pos_pre_transformed.len()),
+            count: USize64::from(num_vertices),
             component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
             extensions: Default::default(),
             extras: Default::default(),
@@ -180,7 +184,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         let tangents_acc = ct.root.push(json::Accessor {
             buffer_view: Some(tangents_view),
             byte_offset: Some(USize64(0)),
-            count: USize64::from(build.pos_pre_transformed.len()),
+            count: USize64::from(num_vertices),
             component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
             extensions: Default::default(),
             extras: Default::default(),
@@ -222,7 +226,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         let normals_acc = ct.root.push(json::Accessor {
             buffer_view: Some(normals_view),
             byte_offset: Some(USize64(0)),
-            count: USize64::from(build.pos_pre_transformed.len()),
+            count: USize64::from(num_vertices),
             component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
             extensions: Default::default(),
             extras: Default::default(),
@@ -263,7 +267,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         let colors_acc = ct.root.push(json::Accessor {
             buffer_view: Some(colors_view),
             byte_offset: Some(USize64(0)),
-            count: USize64::from(build.pos_pre_transformed.len()),
+            count: USize64::from(num_vertices),
             component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
             extensions: Default::default(),
             extras: Default::default(),
@@ -277,11 +281,73 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         check_buffer_accessor!(ct, "col_acc");
         attributes.insert(Checked::Valid(Semantic::Colors(0)), colors_acc);
     }
-    
-    let idx_start = ct.cursor.position();
 
+    if let Some(weights) = build.weights {
+        let weights_start = ct.cursor.position();
+        for weight in weights {
+            for i in 0..4 {
+                ct.cursor.write_u32::<ENDIAN>(weight[i].0).expect("write error");
+            }
+            for i in 0..4 {
+                ct.cursor.write_f32::<ENDIAN>(weight[i].1).expect("write error");
+            }
+        }
+        let weights_len = ct.cursor.position() - weights_start;
+
+        let weights_view = ct.root.push(json::buffer::View {
+            buffer: *ct.buffer_js,
+            byte_length: USize64(weights_len.into()),
+            byte_offset: Some(weights_start.into()),
+            byte_stride: Some(json::buffer::Stride(8)),
+            name: None,
+            target: Some(Valid(json::buffer::Target::ArrayBuffer)),
+            extensions: None,
+            extras: None
+        });
+    
+        check_buffer_view!(ct, "weights_view");
+
+        let joints_acc = ct.root.push(json::Accessor {
+            buffer_view: Some(weights_view),
+            byte_offset: Some(USize64(0)),
+            count: USize64::from(num_vertices),
+            component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::U32)),
+            extensions: Default::default(),
+            extras: Default::default(),
+            type_: Valid(json::accessor::Type::Vec4),
+            min: None,
+            max: None,
+            name: None,
+            normalized: false,
+            sparse: None
+        });
+        check_buffer_accessor!(ct, "joints_acc");
+    
+        let weights_acc = ct.root.push(json::Accessor {
+            buffer_view: Some(weights_view),
+            byte_offset: Some(USize64(4)),
+            count: USize64::from(num_vertices),
+            component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::F32)),
+            extensions: Default::default(),
+            extras: Default::default(),
+            type_: Valid(json::accessor::Type::Vec4),
+            min: None,
+            max: None,
+            name: None,
+            normalized: false,
+            sparse: None
+        });
+        check_buffer_accessor!(ct, "weights_acc");
+
+        attributes.insert(Checked::Valid(Semantic::Weights(0)), weights_acc);
+        attributes.insert(Checked::Valid(Semantic::Joints(0)), joints_acc);
+    }
+
+    let idx_start = ct.cursor.position();
+    let mut num_indices: usize = 0;
     for idx in build.indices {
-        ct.cursor.write_u32::<ENDIAN>(*idx).expect("write error");
+        ct.cursor.write_u32::<ENDIAN>(idx).expect("write error");
+        num_indices += 1;
     }
 
     let idx_len = ct.cursor.position() - idx_start;
@@ -302,7 +368,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
     let idx_acc = ct.root.push(json::Accessor {
         buffer_view: Some(idx_view),
         byte_offset: Some(USize64(0)),
-        count: USize64::from(build.indices.len()),
+        count: USize64::from(num_indices),
         component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::U32)),
         extensions: Default::default(),
         extras: Default::default(),

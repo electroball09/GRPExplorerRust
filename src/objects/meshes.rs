@@ -97,8 +97,8 @@ pub struct FaceData {
 
 #[derive(Default, Debug, Clone, Copy)]
 pub struct Weight {
-    pub bone: u8,
-    pub weight: u8,
+    pub bone: u32,
+    pub weight: f32,
 }
 
 #[derive(Default)]
@@ -177,10 +177,10 @@ impl ArchetypeImpl for MeshData {
             weights.push({
                 let mut weights = [Weight::default(); 4];
                 for i in 0..4 {
-                    weights[i].weight = vbufr.read_u8()?;
+                    weights[i].weight = vbufr.read_u8()? as f32 / 255.0;
                 }
                 for i in 0..4 {
-                    weights[i].bone = vbufr.read_u8()?;
+                    weights[i].bone = vbufr.read_u8()? as u32;
                 }
                 weights
             });

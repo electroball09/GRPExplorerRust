@@ -23,6 +23,7 @@ mod exp_texture; use exp_texture::*;
 mod exp_mat; use exp_mat::*;
 mod exp_col; use exp_col::*;
 mod exp_way; use exp_way::*;
+mod exp_ske; use exp_ske::*;
 mod gltf_export_window; pub use gltf_export_window::*;
 mod util; use util::*;
 mod config; use config::*;
@@ -179,17 +180,19 @@ macro_rules! insert_cache {
 }
 pub(self) use insert_cache;
 macro_rules! do_sub_ct {
-    ($ct:expr, $key:expr, $code:block) => {
+    ($ct:expr, $key:expr, $code:block) => {{
         let old_key = $ct.key;
         let old_is_nested = $ct.is_nested;
         $ct.key = $key;
         $ct.is_nested = true;
-        $code;
+        let result = $code;
         $ct.key = old_key;
+        $ct.is_nested = old_is_nested;
         if !old_is_nested {
             $ct.sub_context = None;
         }
-    }
+        result
+    }}
 }
 pub(self) use do_sub_ct;
 const BUF_VALUES: [usize; 5] = [59, 61, 75, 89, 99];
@@ -228,7 +231,7 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
 }
 
 fn load_export_config() -> anyhow::Result<ExportConfig> {
-    let path = env::current_dir().unwrap().join("cfg\\gltf_export_config.json");
+    let path = env::current_dir()?.join("cfg\\gltf_export_config.json");
 
     let json = std::fs::read_to_string(path)?;
 

@@ -4,101 +4,103 @@ use super::*;
 use glam::Mat4;
 use gltf_json as json;
 use json::validation::Checked::Valid;
+use log::warn;
 
 pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
-    let map = {
+    let (map, skeleton_key) = {
         let mut map = HashMap::new();
         let mut curr_mesh = None;
-        let mut curr_mats = Vec::new();
         let references = &ct.bf.object_table[&ct.key].references;
-        for key in references {
-            if !ct.bf.is_key_valid(*key) {
-                if *key == references[references.len() - 1] {
-                    if let Some(mkey) = curr_mesh {
-                        map.insert(mkey, curr_mats);
-                        break;
-                    }
-                }
+        
+        // references are arranged, meshes and their corresponding materials are referenced in order
+        // the last reference is either a skeleton or 0xFFFFFFFF, only one skeleton per got
+        // e.g.
+        //  mesh1
+        //   mesh1mat1
+        //   mesh1mat2
+        //  mesh2
+        //   mesh2mat1
+        //  skeleton
+
+        let mut skeleton_key = None;
+        for &key in references {
+            if !ct.bf.is_key_valid(key) {
                 continue;
             }
 
-            let objtype = ct.bf.file_table[&key].object_type;
-            match objtype {
+            match ct.bf.file_table[&key].object_type {
                 ObjectType::msh => {
-                    if let Some(mkey) = curr_mesh {
-                        map.insert(mkey, curr_mats);
-                    }
-                    curr_mats = Vec::new();
-                    curr_mesh = Some(*key);
+                    curr_mesh = Some(key);
+                    map.insert(key, Vec::new()); 
                 },
                 ObjectType::mat => {
-                    if let Some(_) = curr_mesh {
-                        curr_mats.push(*key);
+                    if let Some(mesh_key) = curr_mesh {
+                        if let Some(mats) = map.get_mut(&mesh_key) {
+                            mats.push(key);
+                        }
                     }
                 },
                 ObjectType::ske => {
-                    if let Some(mkey) = curr_mesh {
-                        map.insert(mkey, curr_mats);
+                    if let Some(_) = skeleton_key {
+                        warn!("multiple skeletons referenced in got {:08X}", ct.key);
                     }
-                    break;
+
+                    skeleton_key = Some(key);
                 },
-                _ => { }
+                obj_type => {
+                    warn!("weird reference {:?} in got {:08X}", obj_type, ct.key);
+                }
             }
-        };
-        map
+        }
+        
+        (map, skeleton_key)
+
     };
+    
+    let skin = skeleton_key.and_then(|key| {
+        do_sub_ct!(ct, key, {
+            gltf_ske(ct).first().copied()
+        })
+    });
 
     let mut nodes = Vec::new();
+    for (&mesh_key, mat_keys) in &map {
+        do_sub_ct!(ct, mesh_key, {
+            let meshes = gltf_msh(ct);
+            
+            let mats: Vec<_> = mat_keys.iter().filter_map(|&key| {
+                do_sub_ct!(ct, key, {
+                    gltf_mat(ct).first().copied()
+                })
+            }).collect();
 
-    for kv in map.iter() {
-        let sub_context = std::mem::take(&mut ct.sub_context);
-        do_sub_ct!(ct, *kv.0, {
-            let meshes = super::gltf_msh(ct);
-            let mats = {
-                let mut mats = Vec::new();
-                for key in kv.1.iter() {
-                    ct.key = *key;
-                    let midx = gltf_mat(ct);
-                    if midx.len() > 0 {
-                        mats.push(midx[0]);
-                    }
-                }
-                mats
-            };
-            for i in 0..meshes.len() {
-                let mesh = &meshes[i];
-                for j in 0..ct.root.meshes[mesh.value()].primitives.len() {
-                    if mats.len() > 0 {
-                        let mat_idx = {
-                            if j >= mats.len() {
-                                mats.len() - 1
-                            } else {
-                                j
-                            }
-                        };
-                        ct.root.meshes[mesh.value()].primitives[j].material = Some(mats[mat_idx]);
+            let extras_val = ct.sub_context.as_ref()
+                .filter(|sc| !sc.capture_visual_for.is_empty())
+                .map(|sc| json!({
+                    "type": "capture_visual",
+                    "for_point": sc.capture_visual_for
+                }));
+
+            for mesh in &meshes {
+                let mesh_idx = mesh.value();
+
+                if !mats.is_empty() {
+                    let max_mat_idx = mats.len() - 1;
+                    for (j, prim) in ct.root.meshes[mesh_idx].primitives.iter_mut().enumerate() {
+                        let mat_idx = j.min(max_mat_idx); 
+                        prim.material = Some(mats[mat_idx]);
                     }
                 }
 
-                let extras = {
-                    let mut extras = Default::default();
-                    if let Some(sub_context) = &sub_context {
-                        if !sub_context.capture_visual_for.is_empty() {
-                            extras = Some(json!({
-                                "type": "capture_visual",
-                                "for_point": sub_context.capture_visual_for
-                            }));
-                            //log::info!("{:?}", extras);
-                        }
-                    }
-                    extras
-                };
-                
-    
+                let extras_raw = extras_val.as_ref()
+                    .map(|v| serde_json::value::to_raw_value(v).unwrap());
+
+                let name = ct.root.meshes[mesh_idx].name.clone();
                 nodes.push(ct.root.push(json::Node {
                     mesh: Some(*mesh),
-                    name: ct.root.meshes[mesh.value()].name.clone(),
-                    extras: extras.map(|v| serde_json::value::to_raw_value(&v).unwrap()),
+                    name,
+                    extras: extras_raw,
+                    skin,
                     ..Default::default()
                 }));
             }
@@ -154,7 +156,6 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
     if let Some(key) = script {
         if let Some(data) = ct.export_config.capture_visual_scripts.get(&key.to_string()) {
             capture_visual_for = data.for_point.clone();
-            //log::info!("capture visual {} for_point {}", &name, &capture_visual_for);
         }
     }
 

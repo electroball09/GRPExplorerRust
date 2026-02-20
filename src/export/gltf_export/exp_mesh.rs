@@ -29,27 +29,34 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
     for idx in 0..msh.submeshes.len() {
         let submesh = &msh.submeshes[idx];
         
-        let primitive = write_primitive(ct, GltfPrimitiveBuild {
-            pos_pre_transformed: &msd.vertex_data.pos,
-            indices: &msd.faces[(submesh.face_start / 3) as usize..(submesh.face_start / 3) as usize + submesh.face_num as usize].iter().flat_map(|face| [face.f0, face.f1, face.f2]).collect::<Vec<u32>>(),
+        let build = GltfPrimitiveBuild {
+            pos_pre_transformed: Box::new(msd.vertex_data.pos.iter().cloned()),
+            indices: Box::new(msd.faces[(submesh.face_start / 3) as usize..(submesh.face_start / 3) as usize + submesh.face_num as usize].iter().flat_map(|face| [face.f0, face.f1, face.f2])),
             uv0: match msd.vertex_data.uv0.len() {
                 0 => None,
-                _ => Some(&msd.vertex_data.uv0)
+                _ => Some(Box::new(msd.vertex_data.uv0.iter().cloned()))
             },
             uv1: match msd.vertex_data.uv1.len() {
                 0 => None,
-                _ => Some(&msd.vertex_data.uv1)
+                _ => Some(Box::new(msd.vertex_data.uv1.iter().cloned()))
             },
             tangents: match msd.vertex_data.tangents.len() {
                 0 => None,
-                _ => Some(&msd.vertex_data.tangents)
+                _ => Some(Box::new(msd.vertex_data.tangents.iter().cloned()))
             },
             normals: match msd.vertex_data.normals.len() {
                 0 => None,
-                _ => Some(&msd.vertex_data.normals)
+                _ => Some(Box::new(msd.vertex_data.normals.iter().cloned()))
             },
-            colors:None// colors.map(|v| &**v)
-        });
+            // never got vertex colors to work
+            colors:None, // colors.map(|v| &**v)
+            weights: match msd.vertex_data.weights.len() {
+                0 => None,
+                _ => Some(Box::new(msd.vertex_data.weights.iter().map(|weights| weights.map(|w| (w.bone, w.weight)))))
+            }
+        };
+
+        let primitive = write_primitive(ct, build);
 
         prims.push(primitive);
     };

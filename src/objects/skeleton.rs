@@ -3,6 +3,7 @@ use crate::util::load_util::read_mat4;
 use super::ArchetypeImpl;
 use std::{fmt::Display, io::{Cursor, Read}};
 use byteorder::ReadBytesExt;
+use glam::Mat4;
 
 #[derive(Default)]
 pub struct Skeleton {
@@ -13,7 +14,7 @@ pub struct Skeleton {
 }
 
 #[derive(Clone, Copy, Default)]
-pub struct BoneParent(Option<u8>);
+pub struct BoneParent(pub Option<u8>);
 
 impl From<Option<u8>> for BoneParent {
     fn from(value: Option<u8>) -> Self {
@@ -36,47 +37,19 @@ impl Display for BoneParent {
     }
 }
 
-pub const MATRIX_SEARCH_MAX: usize = 191 - 64;
-
 pub struct Bone {
     name: String,
     pub unk_01: [u8; 4],
     pub parent: BoneParent,
     pub children: Vec<u8>,
-    pub data: [u8; 191],
+    pub data: [u8; 63],
+    pub bind_matrix: Mat4,
+    pub inv_bind_matrix: Mat4,
 }
 
 impl Bone {
     pub fn get_name(&self) -> &str {
         &self.name
-    }
-}
-
-impl Skeleton {
-    pub fn find_valid_matrix_offsets(&self) -> Vec<usize> {
-        let mut valid_offsets: Vec<usize> = Vec::new();
-
-        for offset in 0..=MATRIX_SEARCH_MAX {
-            let mut all_valid = true;
-            for bone in &self.bones {
-                let mut cursor = Cursor::new(bone.data.as_slice());
-                for _ in 0..offset {
-                    cursor.read_u8().unwrap();
-                }
-                let mat = read_mat4(&mut cursor);
-                
-                let (scl, rot, pos) = mat.unwrap().to_scale_rotation_translation();
-                if !pos.is_finite() || !rot.is_finite() || !scl.is_finite() {
-                    all_valid = false;
-                    break;
-                }
-            }
-            if all_valid {
-                valid_offsets.push(offset);
-            }
-        }
-
-        valid_offsets
     }
 }
 
@@ -94,8 +67,10 @@ impl ArchetypeImpl for Skeleton {
                 name: String::new(),
                 unk_01: [0; 4],
                 parent: Option::<u8>::None.into(),
-                data: [0; 191],
+                data: [0; 63],
                 children: Vec::new(),
+                bind_matrix: Mat4::IDENTITY,
+                inv_bind_matrix: Mat4::IDENTITY,
             };
             
             cursor.read(&mut bone.unk_01)?;
@@ -104,6 +79,9 @@ impl ArchetypeImpl for Skeleton {
                 v => Some(v)
             };
             cursor.read(&mut bone.data)?;
+
+            bone.bind_matrix = read_mat4(&mut cursor)?;
+            bone.inv_bind_matrix = read_mat4(&mut cursor)?;
 
             bones.push(bone);
         }

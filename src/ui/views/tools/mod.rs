@@ -27,9 +27,6 @@ impl super::View for ToolsView {
             if ui.button("Export node hierarchy for .glb file").clicked() {
                 export_node_hierarchy();
             }
-            if ui.button("Export valid skeleton matrix offsets").clicked() {
-                export_valid_matrix_offsets(bf);
-            }
         }
     }
 }
@@ -162,48 +159,6 @@ fn export_shader_node_ids(bf: &mut Bigfile) {
             for id in v {
                 writeln!(file, "{}", id).unwrap();
             }
-        },
-        Err(err) => {
-            error!("{}", err.to_string());
-        }
-    };
-}
-
-fn export_valid_matrix_offsets(bf: &mut Bigfile) {
-    let path = match make_tool_output_file_path("valid_matrix_offsets.txt") {
-        Ok(p) => p,
-        Err(e) => {
-            error!("{}", e);
-            return;
-        }
-    };
-
-    info!("exporting valid matrix offsets to {}", path);
-    
-    let ske_keys: Vec<YKey> = bf.file_table.iter()
-        .filter(|ent| ent.1.object_type == ObjectType::ske)
-        .map(|ent| *ent.0)
-        .collect();
-    let mut valid_offsets = Vec::new();
-    for key in &ske_keys {
-        if let Ok(_) = bf.load_file(*key) {
-            if let ObjectArchetype::Skeleton(ske) = &bf.object_table[&key].archetype {
-                valid_offsets.push(ske.find_valid_matrix_offsets());
-            }
-        }
-        bf.unload_file(*key).unwrap();
-    }
-
-    let mut only_valid_offsets: HashSet<usize> = valid_offsets[0].iter().cloned().collect();
-    for offsets in valid_offsets.iter().skip(1) {
-        only_valid_offsets.retain(|o| offsets.contains(o));
-    }
-
-    match File::create(path) {
-        Ok(mut file) => {
-            let mut v = only_valid_offsets.iter().cloned().collect::<Vec<usize>>();
-            v.sort();
-            write!(file, "{}", v.iter().map(|i| i.to_string()).collect::<Vec<String>>().join(", ")).unwrap();
         },
         Err(err) => {
             error!("{}", err.to_string());
