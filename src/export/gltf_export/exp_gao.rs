@@ -23,6 +23,7 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         //  skeleton
 
         let mut skeleton_key = None;
+
         for &key in references {
             if !ct.bf.is_key_valid(key) {
                 continue;
@@ -62,10 +63,15 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             gltf_ske(ct).first().copied()
         })
     });
+    //let skin = None;
 
     let mut nodes = Vec::new();
     for (&mesh_key, mat_keys) in &map {
         do_sub_ct!(ct, mesh_key, {
+            ct.sub_context.num_skeleton_bones = skeleton_key.and_then(|key| {
+                    ct.bf.object_table[&key].archetype.as_skeleton().map(|ske| ske.num_bones)
+                });
+
             let meshes = gltf_msh(ct);
             
             let mats: Vec<_> = mat_keys.iter().filter_map(|&key| {
@@ -73,13 +79,17 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                     gltf_mat(ct).first().copied()
                 })
             }).collect();
-
-            let extras_val = ct.sub_context.as_ref()
-                .filter(|sc| !sc.capture_visual_for.is_empty())
-                .map(|sc| json!({
-                    "type": "capture_visual",
-                    "for_point": sc.capture_visual_for
-                }));
+            
+            let extras = if let Some(capture_visual_for) = &ct.sub_context.capture_visual_for {
+                Some(
+                    json!({
+                        "type": "capture_visual",
+                        "for_point": capture_visual_for
+                    })
+                )
+            } else {
+                None
+            };
 
             for mesh in &meshes {
                 let mesh_idx = mesh.value();
@@ -92,8 +102,7 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                     }
                 }
 
-                let extras_raw = extras_val.as_ref()
-                    .map(|v| serde_json::value::to_raw_value(v).unwrap());
+                let extras_raw = extras.as_ref().map(|v| serde_json::value::to_raw_value(v).unwrap());
 
                 let name = ct.root.meshes[mesh_idx].name.clone();
                 nodes.push(ct.root.push(json::Node {
@@ -152,17 +161,17 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
         }
     }
 
-    let mut capture_visual_for = String::new();
+    let mut capture_visual_for = None;
     if let Some(key) = script {
         if let Some(data) = ct.export_config.capture_visual_scripts.get(&key.to_string()) {
-            capture_visual_for = data.for_point.clone();
+            capture_visual_for = Some(data.for_point.clone());
         }
     }
 
-    let mut colors = vec!();
+    let mut colors = None;
     for key in &ct.bf.object_table[&ct.key].references {
         if ct.bf.is_key_valid(*key) && ct.bf.file_table[key].object_type.is_vxc() {
-            colors = ct.bf.object_table[key].archetype.as_vertex_colors().unwrap().colors.clone();
+            colors = Some(ct.bf.object_table[key].archetype.as_vertex_colors().unwrap().colors.clone());
             break;
         }
     }
@@ -173,12 +182,12 @@ pub fn gltf_gao<'a>(ct: &'a mut ExportContext, skip_empty_gaos_if_possible: bool
         for key in &ct.bf.object_table[&ct.key].references {
             if ct.bf.is_key_valid(*key) {
                 do_sub_ct!(ct, *key, {
-                    if !colors.is_empty() || !capture_visual_for.is_empty() {
-                        ct.sub_context = Some(SubContext {
-                            vertex_colors: colors.clone(),
-                            capture_visual_for: capture_visual_for.clone()
-                        });
-                    }
+                    ct.sub_context = SubContext {
+                        _vertex_colors: colors.clone(),
+                        capture_visual_for: capture_visual_for.clone(),
+                        ..ct.sub_context
+                    };
+                    
                     match ct.bf.file_table[key].object_type {
                         ObjectType::got => nodes.append(&mut gltf_got(ct)),
                         ObjectType::cot => nodes.append(&mut gltf_cot(ct)),

@@ -12,7 +12,7 @@ pub struct GltfPrimitiveBuild<'a> {
     pub normals: Option<Box<dyn Iterator<Item = Vec3> + 'a>>,
     pub tangents: Option<Box<dyn Iterator<Item = Vec3> + 'a>>,
     pub colors: Option<Box<dyn Iterator<Item = Vec4> + 'a>>,
-    pub weights: Option<Box<dyn Iterator<Item = [(u32, f32); 4]> + 'a>>,
+    pub weights: Option<Box<dyn Iterator<Item = [(u8, f32); 4]> + 'a>>,
 }
 
 pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> json::mesh::Primitive {
@@ -283,13 +283,20 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
     }
 
     if let Some(weights) = build.weights {
+        let num_bones = ct.sub_context.num_skeleton_bones.unwrap_or(0);
         let weights_start = ct.cursor.position();
         for weight in weights {
             for i in 0..4 {
-                ct.cursor.write_u32::<ENDIAN>(weight[i].0).expect("write error");
+                let value = if weight[i].0 > 0 && weight[i].0 <= num_bones {
+                    weight[i].0 - 1 // glTF joints are 0 indexed, yeti bones are 1 indexed
+                } else { 0 };
+                ct.cursor.write_u8(value).expect("write error");
             }
             for i in 0..4 {
-                ct.cursor.write_f32::<ENDIAN>(weight[i].1).expect("write error");
+                let value = if weight[i].0 > 0 && weight[i].0 <= num_bones { 
+                    weight[i].1 
+                } else { 0.0 };
+                ct.cursor.write_f32::<ENDIAN>(value).expect("write error");
             }
         }
         let weights_len = ct.cursor.position() - weights_start;
@@ -298,7 +305,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
             buffer: *ct.buffer_js,
             byte_length: USize64(weights_len.into()),
             byte_offset: Some(weights_start.into()),
-            byte_stride: Some(json::buffer::Stride(8)),
+            byte_stride: Some(json::buffer::Stride(20)),
             name: None,
             target: Some(Valid(json::buffer::Target::ArrayBuffer)),
             extensions: None,
@@ -311,7 +318,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
             buffer_view: Some(weights_view),
             byte_offset: Some(USize64(0)),
             count: USize64::from(num_vertices),
-            component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::U32)),
+            component_type: Valid(json::accessor::GenericComponentType(json::accessor::ComponentType::U8)),
             extensions: Default::default(),
             extras: Default::default(),
             type_: Valid(json::accessor::Type::Vec4),

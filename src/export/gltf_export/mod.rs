@@ -146,14 +146,15 @@ struct ExportContext<'a> {
     pub index_cache: HashMap<YKey, Vec<u32>>,
     pub options: GltfExportOptions,
     pub export_subworlds: bool,
-    pub sub_context: Option<SubContext>,
+    pub sub_context: SubContext,
     pub export_config: ExportConfig
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Clone)]
 struct SubContext {
-    pub vertex_colors: Vec<Vec4>,
-    pub capture_visual_for: String
+    pub _vertex_colors: Option<Vec<Vec4>>,
+    pub capture_visual_for: Option<String>,
+    pub num_skeleton_bones: Option<u8>,
 }
 
 macro_rules! gltf_export_init {
@@ -183,14 +184,13 @@ macro_rules! do_sub_ct {
     ($ct:expr, $key:expr, $code:block) => {{
         let old_key = $ct.key;
         let old_is_nested = $ct.is_nested;
+        let old_sub_context = $ct.sub_context.clone();
         $ct.key = $key;
         $ct.is_nested = true;
         let result = $code;
         $ct.key = old_key;
         $ct.is_nested = old_is_nested;
-        if !old_is_nested {
-            $ct.sub_context = None;
-        }
+        $ct.sub_context = old_sub_context;
         result
     }}
 }
@@ -287,7 +287,7 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool 
         index_cache: HashMap::new(),
         options,
         export_subworlds: true,
-        sub_context: None,
+        sub_context: SubContext::default(),
         export_config: load_export_config().expect("fail to load way config!"),
     };
 

@@ -97,7 +97,7 @@ pub struct FaceData {
 
 #[derive(Default, Debug, Clone, Copy)]
 pub struct Weight {
-    pub bone: u32,
+    pub bone: u8,
     pub weight: f32,
 }
 
@@ -180,8 +180,8 @@ impl ArchetypeImpl for MeshData {
                     weights[i].weight = vbufr.read_u8()? as f32 / 255.0;
                 }
                 for i in 0..4 {
-                    weights[i].bone = vbufr.read_u8()? as u32;
-                }
+                    weights[i].bone = vbufr.read_u8()?;
+                 }
                 weights
             });
 
@@ -224,7 +224,7 @@ impl ArchetypeImpl for MeshData {
 }
 
 impl MeshData {
-    pub fn bounding_box(&self) -> (Vec3, Vec3) {
+    pub fn _bounding_box(&self) -> (Vec3, Vec3) {
         let mut min = Vec3::new(0.0, 0.0, 0.0);
         let mut max = Vec3::new(0.0, 0.0, 0.0);
 
@@ -238,7 +238,7 @@ impl MeshData {
         (min, max)
     }
 
-    pub fn bounding_box_range(&self, range: Range<usize>) -> (Vec3, Vec3) {
+    pub fn _bounding_box_range(&self, range: Range<usize>) -> (Vec3, Vec3) {
         let mut min = Vec3::new(0.0, 0.0, 0.0);
         let mut max = Vec3::new(0.0, 0.0, 0.0);
 

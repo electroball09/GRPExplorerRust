@@ -21,10 +21,10 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
 
     let mut prims = Vec::new();
 
-    let sub_context = std::mem::take(&mut ct.sub_context);
-    let _colors = sub_context.as_ref().and_then(|sc| {
-        Some(&sc.vertex_colors)
-    });
+    //let sub_context = std::mem::take(&mut ct.sub_context);
+    // let _colors = sub_context.as_ref().and_then(|sc| {
+    //     Some(&sc.vertex_colors)
+    // });
 
     for idx in 0..msh.submeshes.len() {
         let submesh = &msh.submeshes[idx];

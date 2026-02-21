@@ -17,7 +17,7 @@ pub fn gltf_ske<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Skin>> {
     for (i, bone) in skeleton.bones.iter().enumerate() {
         index_map.insert(i, ct.root.push(json::Node {
             name: Some(bone.get_name().to_string()),
-            matrix: Some(transform_yeti_matrix(&bone.bind_matrix).to_cols_array()),
+            matrix: Some(bone.inv_bind_matrix.to_cols_array()), //Some(transform_yeti_matrix(&bone.bind_matrix).to_cols_array()),
             ..Default::default()
         }));
     };
