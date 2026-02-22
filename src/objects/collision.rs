@@ -9,7 +9,7 @@ pub struct CollisionObject {
 }
 
 impl CollisionObject {
-    pub fn bounding_box(&self) -> (Vec3, Vec3) {
+    pub fn _bounding_box(&self) -> (Vec3, Vec3) {
         let mut min = Vec3::splat(f32::INFINITY);
         let mut max = Vec3::splat(-f32::INFINITY);
 

@@ -4,7 +4,7 @@ use super::*;
 use gltf_json as json;
 use json::validation::Checked::Valid;
 
-pub fn gltf_ske<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Skin>> {
+pub fn gltf_ske<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
     gltf_export_init!(ct);
 
     let ObjectArchetype::Skeleton(ref skeleton) = ct.bf.object_table[&ct.key].archetype else {
@@ -13,19 +13,25 @@ pub fn gltf_ske<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Skin>> {
     
     // first push each bone to gltf, and track the index assigned for each
     // theoretically they should be in order starting at first assigned index but i can't promise that
-    let mut index_map = HashMap::new();
-    for (i, bone) in skeleton.bones.iter().enumerate() {
-        index_map.insert(i, ct.root.push(json::Node {
+    let mut index_list = Vec::new();
+    for bone in skeleton.bones.iter() {
+
+        // matrices are stored in mesh space, need to convert to bone space for gltf
+        let matrix = if let Some(parent_idx) = bone.parent {
+            skeleton.bones[parent_idx as usize].mesh_space_matrix.inverse() * bone.mesh_space_matrix
+        } else { bone.mesh_space_matrix };
+
+        index_list.push(ct.root.push(json::Node {
             name: Some(bone.get_name().to_string()),
-            matrix: Some(bone.inv_bind_matrix.to_cols_array()), //Some(transform_yeti_matrix(&bone.bind_matrix).to_cols_array()),
+            matrix: Some(transform_yeti_matrix(&matrix).to_cols_array()),
             ..Default::default()
         }));
     };
 
     // now we set up the children for the gltf nodes
     for (i, bone) in skeleton.bones.iter().enumerate() {
-        let node = &mut ct.root.nodes[index_map[&i].value()];
-        node.children = Some(bone.children.iter().map(|&child_idx| index_map[&(child_idx as usize)]).collect());
+        let node = &mut ct.root.nodes[index_list[i].value()];
+        node.children = Some(bone.children.iter().map(|&child_idx| index_list[child_idx as usize]).collect());
     }
 
     while ct.cursor.position() % 4 != 0 {
@@ -48,7 +54,7 @@ pub fn gltf_ske<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Skin>> {
         buffer: *ct.buffer_js,
         byte_length: USize64(maxtrix_len.into()),
         byte_offset: Some(matrix_start.into()),
-        byte_stride: Some(json::buffer::Stride(64)),
+        byte_stride: None, // gltf spec is stride to be null for non-interleaved data, like bind matrices
         name: None,
         target: Some(Valid(json::buffer::Target::ArrayBuffer)),
         extensions: None,
@@ -70,19 +76,22 @@ pub fn gltf_ske<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Skin>> {
         sparse: None
     });
 
+    let node = index_list[0];
+
     let name = ct.bf.object_table[&ct.key].get_name();
     let skin = json::Skin {
         name: Some(name.to_string()),
-        skeleton: Some(index_map[&0]),
-        joints: index_map.into_values().collect(),
+        skeleton: Some(index_list[0]),
+        joints: index_list,
         extensions: None,
         extras: None,
         inverse_bind_matrices: Some(matrix_acc)
     };
-
     let skin = ct.root.push(skin);
 
-    insert_cache!(ct, &ct.key, skin);
+    ct.root.nodes[node.value()].skin = Some(skin);
 
-    vec![skin]
+    insert_cache!(ct, &ct.key, node);
+
+    vec![node]
 }

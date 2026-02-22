@@ -1,7 +1,7 @@
 use crate::util::load_util::read_mat4;
 
 use super::ArchetypeImpl;
-use std::{fmt::Display, io::{Cursor, Read}};
+use std::{io::{Cursor, Read}};
 use byteorder::ReadBytesExt;
 use glam::Mat4;
 
@@ -13,37 +13,13 @@ pub struct Skeleton {
     pub bones: Vec<Bone>,
 }
 
-#[derive(Clone, Copy, Default)]
-pub struct BoneParent(pub Option<u8>);
-
-impl From<Option<u8>> for BoneParent {
-    fn from(value: Option<u8>) -> Self {
-        BoneParent(value)
-    }
-}
-
-impl From<BoneParent> for Option<u8> {
-    fn from(value: BoneParent) -> Self {
-        value.0
-    }
-}
-
-impl Display for BoneParent {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self.0 {
-            Some(v) => write!(f, "{}", v),
-            None => write!(f, "None")
-        }
-    }
-}
-
 pub struct Bone {
     name: String,
     pub unk_01: [u8; 4],
-    pub parent: BoneParent,
+    pub parent: Option<u8>,
     pub children: Vec<u8>,
     pub data: [u8; 63],
-    pub bind_matrix: Mat4,
+    pub mesh_space_matrix: Mat4,
     pub inv_bind_matrix: Mat4,
 }
 
@@ -69,18 +45,18 @@ impl ArchetypeImpl for Skeleton {
                 parent: Option::<u8>::None.into(),
                 data: [0; 63],
                 children: Vec::new(),
-                bind_matrix: Mat4::IDENTITY,
+                mesh_space_matrix: Mat4::IDENTITY,
                 inv_bind_matrix: Mat4::IDENTITY,
             };
             
             cursor.read(&mut bone.unk_01)?;
-            bone.parent.0 = match cursor.read_u8()? {
+            bone.parent = match cursor.read_u8()? {
                 255 => None,
                 v => Some(v)
             };
             cursor.read(&mut bone.data)?;
 
-            bone.bind_matrix = read_mat4(&mut cursor)?;
+            bone.mesh_space_matrix = read_mat4(&mut cursor)?;
             bone.inv_bind_matrix = read_mat4(&mut cursor)?;
 
             bones.push(bone);
@@ -100,8 +76,8 @@ impl ArchetypeImpl for Skeleton {
         }
 
         for i in 0..self.num_bones {
-            let b = &bones[i as usize];
-            if let Some(idx) = b.parent.0 {
+            let bone = &bones[i as usize];
+            if let Some(idx) = bone.parent {
                 bones[idx as usize].children.push(i);
             }
         }

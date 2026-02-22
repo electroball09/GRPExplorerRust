@@ -58,14 +58,17 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
     };
     
-    let skin = skeleton_key.and_then(|key| {
+    let mut nodes = Vec::new();
+
+    let skin_node = skeleton_key.and_then(|key| {
         do_sub_ct!(ct, key, {
             gltf_ske(ct).first().copied()
         })
     });
-    //let skin = None;
+    if let Some(skin_node) = skin_node {
+        nodes.push(skin_node);
+    }
 
-    let mut nodes = Vec::new();
     for (&mesh_key, mat_keys) in &map {
         do_sub_ct!(ct, mesh_key, {
             ct.sub_context.num_skeleton_bones = skeleton_key.and_then(|key| {
@@ -109,7 +112,7 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
                     mesh: Some(*mesh),
                     name,
                     extras: extras_raw,
-                    skin,
+                    skin: skin_node.and_then(|node| ct.root.nodes[node.value()].skin),
                     ..Default::default()
                 }));
             }

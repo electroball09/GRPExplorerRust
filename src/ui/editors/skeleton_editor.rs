@@ -20,7 +20,7 @@ impl SkeletonEditor{
         ui.collapsing(bone.get_name(), |ui| {
             ui.collapsing("     -data", |ui| {
                 
-                let (scl, rot, pos) = bone.bind_matrix.to_scale_rotation_translation();
+                let (scl, rot, pos) = bone.mesh_space_matrix.to_scale_rotation_translation();
                 ui.label(format!("bind pos: {}", pos));
                 ui.label(format!("bind rot: {}", rot));
                 ui.label(format!("bind scl: {}", scl));
@@ -29,7 +29,7 @@ impl SkeletonEditor{
                 ui.label(format!("inv bind rot: {}", rot));
                 ui.label(format!("inv bind scl: {}", scl));
 
-                let parent_byte: u8 = bone.parent.0.unwrap_or(0xFF);
+                let parent_byte: u8 = bone.parent.unwrap_or(0xFF);
 
                 let formatted_str = bone.unk_01.iter().copied()
                     .chain(std::iter::once(parent_byte))
@@ -75,9 +75,9 @@ impl super::EditorImpl for SkeletonEditor {
                 egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
                     for bone in &ske.bones {
                         ui.collapsing(bone.get_name(), |ui| {
-                            ui.label(format!("parent: {}", bone.parent));
+                            ui.label(format!("parent: {:?}", bone.parent));
 
-                            let parent_byte: u8 = bone.parent.0.unwrap_or(0xFF);
+                            let parent_byte: u8 = bone.parent.unwrap_or(0xFF);
 
                             let formatted_str = bone.unk_01.iter().copied()
                                 .chain(std::iter::once(parent_byte))
