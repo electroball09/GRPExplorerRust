@@ -288,7 +288,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         for weight in weights {
             for i in 0..4 {
                 let value = if weight[i].0 > 0 && weight[i].0 <= num_bones {
-                    weight[i].0 - 1 // glTF joints are 0 indexed, yeti bones are 1 indexed
+                    weight[i].0 + 1
                 } else { 0 };
                 ct.cursor.write_u8(value).expect("write error");
             }

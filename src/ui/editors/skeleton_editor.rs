@@ -17,7 +17,7 @@ impl SkeletonEditor{
     fn draw_bone_hierarchy(&self, ui: &mut egui::Ui, bones: &Vec<Bone>, idx: u8) {
         let bone = &bones[idx as usize];
 
-        ui.collapsing(bone.get_name(), |ui| {
+        ui.collapsing(format!("{} {}", idx, bone.get_name()), |ui| {
             ui.collapsing("     -data", |ui| {
                 
                 let (scl, rot, pos) = bone.mesh_space_matrix.to_scale_rotation_translation();
@@ -37,7 +37,7 @@ impl SkeletonEditor{
                     .collect::<Vec<u8>>()
                     .chunks_exact(8)
                     .map(|c| {
-                        format!("{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}",
+                        format!("{:02X} {:02X} {:02X} {:02X}  {:02X} {:02X} {:02X} {:02X}",
                             c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7]
                         )
                     })
@@ -73,8 +73,8 @@ impl super::EditorImpl for SkeletonEditor {
                 });
             } else {
                 egui::ScrollArea::both().auto_shrink(false).show(ui, |ui| {
-                    for bone in &ske.bones {
-                        ui.collapsing(bone.get_name(), |ui| {
+                    for (idx, bone) in ske.bones.iter().enumerate() {
+                        ui.collapsing(format!("{} {}", idx, bone.get_name()), |ui| {
                             ui.label(format!("parent: {:?}", bone.parent));
 
                             let parent_byte: u8 = bone.parent.unwrap_or(0xFF);

@@ -17,10 +17,11 @@ pub struct Bone {
     name: String,
     pub unk_01: [u8; 4],
     pub parent: Option<u8>,
-    pub children: Vec<u8>,
     pub data: [u8; 63],
     pub mesh_space_matrix: Mat4,
     pub inv_bind_matrix: Mat4,
+    
+    pub children: Vec<u8>,
 }
 
 impl Bone {

@@ -1,17 +1,29 @@
 use std::collections::HashMap;
 
-use crate::egui as egui;
+use crate::{egui as egui, ui::tools::{ExplorerToolId, Tool}};
 
 pub struct FileDiffTool {
+    id: ExplorerToolId,
     files: Vec<(String, String)>,
     datas: HashMap<usize, Vec<u8>>,
     diff: Vec<Option<u8>>,
     close_requested: bool,
 }
 
+impl Tool for FileDiffTool {
+    fn create(id: u32) -> Self{
+        Self::new(id)
+    }
+
+    fn draw(&mut self, ui: &mut egui::Ui, ctx: &egui::Context) -> bool {
+        self.draw(ui, ctx)
+    }
+}
+
 impl FileDiffTool {
-    pub fn new() -> Self {
+    fn new(id: u32) -> Self {
         Self {
+            id: ExplorerToolId::new("file_diff_tool", id),
             files: Vec::new(),
             diff: Vec::new(),
             datas: HashMap::new(),
@@ -51,11 +63,11 @@ impl FileDiffTool {
         self.datas = datas;
     }
 
-    pub fn draw(&mut self, _ui: &mut egui::Ui, ctx: &egui::Context) -> bool {
+    fn draw(&mut self, _ui: &mut egui::Ui, ctx: &egui::Context) -> bool {
         ctx.show_viewport_immediate(
-            egui::ViewportId::from_hash_of("test!"), 
+            egui::ViewportId::from_hash_of(&self.id), 
             egui::ViewportBuilder::default()
-            .with_title("test!")
+            .with_title("File Diff Tool")
             .with_always_on_top()
             .with_maximize_button(false)
             .with_minimize_button(false)

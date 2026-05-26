@@ -23,11 +23,12 @@ pub use init_mq as explorer_init;
 use self::views::*;
 use self::views::side_panel::SidePanelView;
 use views::editor_tabs_view::FileEditorTabs;
+use self::tools::*;
 
 pub mod views;
 pub mod editors;
+pub mod tools;
 mod editor_context; pub use editor_context::*;
-mod file_diff_tool; use file_diff_tool::*;
 
 mod util; pub use util::*;
 
@@ -42,7 +43,9 @@ pub struct ExplorerApp {
     side_panel: views::side_panel::SidePanelView,
     fe_view: FileEditorTabs, 
     pub shader_cache: ShaderCache,
-    file_diff_tool: Option<FileDiffTool>,
+    tool_windows: Vec<Box<dyn Tool>>,
+    id_counter: u32,
+
 }
 
 impl Default for ExplorerApp {
@@ -52,7 +55,8 @@ impl Default for ExplorerApp {
             side_panel: SidePanelView::new(),
             fe_view: FileEditorTabs::new(),
             shader_cache: ShaderCache::new(),
-            file_diff_tool: None
+            tool_windows: Vec::new(),
+            id_counter: 0,
         }
     }
 }
@@ -135,21 +139,21 @@ impl ExplorerApp {
         }
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
+            egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     if let None = &self.bigfile {
                         if ui.button("Open Bigfile...").clicked() {
                             info!("picking bigfile...");
                             let file = match FileDialog::new()
-                            .add_filter("bigfile", &["big"])
-                            .add_filter("Any", &["*"])
-                            .pick_file() {
-                                Some(f) => f,
-                                None => {
-                                    info!("bigfile picker cancelled");
-                                    return;
-                                }
-                            };
+                                .add_filter("bigfile", &["big"])
+                                .add_filter("Any", &["*"])
+                                .pick_file() {
+                                    Some(f) => f,
+                                    None => {
+                                        info!("bigfile picker cancelled");
+                                        return;
+                                    }
+                                };
 
                             let path = file.to_str().unwrap_or("invalid file path");
 
@@ -167,11 +171,12 @@ impl ExplorerApp {
 
                             if let Err(err) = bigfile.load_metadata() {
                                 error!("{}", &err);
+                            } else {
+                                self.bigfile = Some(bigfile);
                             }
-                
-                            self.bigfile = Some(bigfile);
                         }
                     }
+
                     if ui.button("Quit").clicked() {
                         ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                     }
@@ -184,17 +189,26 @@ impl ExplorerApp {
                 });
                 ui.separator();
 
-                let mut close_tool = false;
-                if let Some(fdt) = &mut self.file_diff_tool {
-                    close_tool = fdt.draw(ui, ctx);
-                } else {
-                    if ui.button("Open file diff tool...").clicked() {
-                        self.file_diff_tool = Some(FileDiffTool::new());
+                ui.menu_button("Tools", |ui| {
+                    if ui.button("File diff tool").clicked() {
+                        let id = self.increment_id();
+                        self.tool_windows.push(Box::new(FileDiffTool::create(id)));
                     }
-                    ui.separator();
+                    if ui.button("Yeti INI editor").clicked() {
+                        let id = self.increment_id();
+                        self.tool_windows.push(Box::new(IniEditor::create(id)));
+                    }
+                });
+
+                let mut to_close = Vec::new();
+                for (i, tool) in self.tool_windows.iter_mut().enumerate() {
+                    if tool.draw(ui, ctx) {
+                        to_close.push(i);
+                    }
                 }
-                if close_tool {
-                    self.file_diff_tool = None;
+
+                for idx in to_close.into_iter().rev() {
+                    self.tool_windows.remove(idx);
                 }
             });
         });
@@ -214,5 +228,11 @@ impl ExplorerApp {
             app_context!(app, ctx);
             self.fe_view.draw(ui, app);
         });
+    }
+
+    fn increment_id(&mut self) -> u32 {
+        let id = self.id_counter;
+        self.id_counter += 1;
+        id
     }
 }
