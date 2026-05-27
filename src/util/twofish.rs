@@ -2,14 +2,13 @@ use cipher::array::Array;
 use twofish::Twofish;
 use twofish::cipher::{BlockCipherEncrypt, KeyInit};
 
-
-pub fn twofish_decrypt_cfb1(ciphertext: &[u8], key: &[u8], iv: &[u8]) -> Vec<u8> {
+pub fn twofish_decrypt_cfb1(buffer: &mut [u8], key: &[u8], iv: &[u8]) {
     let engine = Twofish::new_from_slice(key).expect("Invalid key length");
     
     let mut shift_register = u128::from_be_bytes(iv.try_into().unwrap());
-    let mut plaintext = Vec::with_capacity(ciphertext.len());
 
-    for &c_byte in ciphertext {
+    for byte in buffer.iter_mut() {
+        let c_byte = *byte; 
         let mut p_byte = 0u8;
 
         for bit in (0..8).rev() {
@@ -24,20 +23,18 @@ pub fn twofish_decrypt_cfb1(ciphertext: &[u8], key: &[u8], iv: &[u8]) -> Vec<u8>
 
             shift_register = (shift_register << 1) | (cipher_bit as u128);
         }
-        plaintext.push(p_byte);
+        
+        *byte = p_byte;
     }
-
-    plaintext
 }
 
-
-pub fn twofish_encrypt_cfb1(plaintext: &[u8], key: &[u8], iv: &[u8]) -> Vec<u8> {
+pub fn twofish_encrypt_cfb1(buffer: &mut [u8], key: &[u8], iv: &[u8]) {
     let engine = Twofish::new_from_slice(key).expect("Invalid key length");
     
     let mut shift_register = u128::from_be_bytes(iv.try_into().unwrap());
-    let mut ciphertext = Vec::with_capacity(plaintext.len());
 
-    for &p_byte in plaintext {
+    for byte in buffer.iter_mut() {
+        let p_byte = *byte; 
         let mut c_byte = 0u8;
 
         for bit in (0..8).rev() {
@@ -52,8 +49,7 @@ pub fn twofish_encrypt_cfb1(plaintext: &[u8], key: &[u8], iv: &[u8]) -> Vec<u8> 
 
             shift_register = (shift_register << 1) | (cipher_bit as u128);
         }
-        ciphertext.push(c_byte);
+        
+        *byte = c_byte;
     }
-
-    ciphertext
 }

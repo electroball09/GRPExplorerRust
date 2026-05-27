@@ -194,7 +194,7 @@ impl ExplorerApp {
                         let id = self.increment_id();
                         self.tool_windows.push(Box::new(FileDiffTool::create(id)));
                     }
-                    if ui.button("Yeti INI editor").clicked() {
+                    if ui.button("Decryptor tool").clicked() {
                         let id = self.increment_id();
                         self.tool_windows.push(Box::new(IniEditor::create(id)));
                     }
