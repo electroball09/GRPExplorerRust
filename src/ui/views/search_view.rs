@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 use strum::{EnumString, AsRefStr};
 use crate::metadata::YKey;
+use crate::ui::ExplorerUi;
 use crate::{bigfile::Bigfile, ui::AppContext};
 use crate::egui as egui;
 
@@ -172,33 +173,7 @@ impl super::View for SearchView {
     
             ui.horizontal(|ui| {
                 let total_pages = (self.results.len() / self.files_per_page) + 1;
-                if ui.add_enabled(self.page > 0, egui::Button::new(" |< ")).clicked() {
-                    self.page = 0;
-                }
-                if ui.add_enabled(self.page > 0, egui::Button::new(" < ")).clicked() {
-                    self.page = self.page - 1;
-                }
-                ui.add_enabled_ui(total_pages > 1, |ui| {
-                    let old_page = self.page;
-                    let mut pg_str = format!("{}", old_page + 1);
-                    if egui::TextEdit::singleline(&mut pg_str).desired_width(20.0).show(ui).response.changed() {
-                        if let Ok(val) = usize::from_str_radix(&pg_str, 10) {
-                            if val <= total_pages {
-                                self.page = val - 1;
-                            } else {
-                                self.page = old_page;
-                            }
-                        } else {
-                            self.page = old_page;
-                        }
-                    }
-                });
-                if ui.add_enabled(total_pages > 1 && self.page < total_pages - 1, egui::Button::new(" > ")).clicked() {
-                    self.page = self.page + 1;
-                }
-                if ui.add_enabled(total_pages > 1 && self.page < total_pages - 1 , egui::Button::new(" >| ")).clicked() {
-                    self.page = total_pages - 1;
-                }
+                ExplorerUi::page_selector(ui, &mut self.page, total_pages);
             });
     
             if !self.results.is_empty() {

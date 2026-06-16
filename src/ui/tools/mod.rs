@@ -1,7 +1,7 @@
 use eframe::egui;
 
 mod file_diff_tool; pub use file_diff_tool::*;
-mod ini_editor; pub use ini_editor::*;
+mod file_decryptor; pub use file_decryptor::*;
 
 pub trait Tool {
     fn create(id: u32) -> Self where Self: Sized;
