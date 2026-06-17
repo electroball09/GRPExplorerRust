@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use strum::{EnumString, AsRefStr};
 use crate::metadata::YKey;
-use crate::ui::ExplorerUi;
+use crate::ui::AppUiUtil;
 use crate::{bigfile::Bigfile, ui::AppContext};
 use crate::egui as egui;
 
@@ -173,7 +173,7 @@ impl super::View for SearchView {
     
             ui.horizontal(|ui| {
                 let total_pages = (self.results.len() / self.files_per_page) + 1;
-                ExplorerUi::page_selector(ui, &mut self.page, total_pages);
+                ui.page_selector(&mut self.page, total_pages);
             });
     
             if !self.results.is_empty() {

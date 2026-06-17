@@ -122,6 +122,9 @@ impl ExplorerApp {
         };
         ctx.set_style(style);
 
+        if let Err(error) = crate::export::load_export_config() {
+            error!("Could not load gltf export config: {}", error);
+        }
         ExplorerApp::default()
     }
 

@@ -230,7 +230,7 @@ fn to_padded_byte_vector<T>(vec: Vec<T>) -> Vec<u8> {
     new_vec
 }
 
-fn load_export_config() -> anyhow::Result<ExportConfig> {
+pub fn load_export_config() -> anyhow::Result<ExportConfig> {
     let path = env::current_dir()?.join("cfg\\gltf_export_config.json");
 
     let json = std::fs::read_to_string(path)?;

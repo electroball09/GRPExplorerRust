@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::{io::Read, path::PathBuf};
 use std::fs::File;
-use crate::ui::ExplorerUi;
+use crate::ui::{AppUiUtil};
 use crate::{egui as egui, ui::tools::{ExplorerToolId, Tool}};
 use crate::util::twofish::*;
 use rfd::FileDialog;
@@ -395,7 +395,7 @@ impl IniEditor {
                         ui.label("UP TO DATE");
                     }
 
-                    ExplorerUi::page_selector(ui, &mut self.current_page, self.base_strings.len());
+                    ui.page_selector(&mut self.current_page, self.base_strings.len());
                     
                     egui::ScrollArea::vertical().show(ui, |ui| {
                         let output = &mut self.output_strings[self.current_page];

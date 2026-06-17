@@ -1,3 +1,6 @@
+[workspace]
+members = [".", "xtask"]
+
 [package]
 name = "grp_explorer_rust"
 version = "0.1.0"

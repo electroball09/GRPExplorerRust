@@ -21,9 +21,11 @@ pub fn gltf_ske<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             skeleton.bones[parent_idx as usize].mesh_space_matrix.inverse() * bone.mesh_space_matrix
         } else { bone.mesh_space_matrix };
 
+        let gltf_matrix = transform_yeti_matrix(&matrix);
+
         index_list.push(ct.root.push(json::Node {
             name: Some(bone.get_name().to_string()),
-            matrix: Some(transform_yeti_matrix(&matrix).to_cols_array()),
+            matrix: Some(gltf_matrix.to_cols_array()),
             ..Default::default()
         }));
     };

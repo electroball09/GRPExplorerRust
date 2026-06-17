@@ -6,31 +6,42 @@ use fs_extra::dir::{self, *};
 fn main() {
     env::set_var("RUST_BACKTRACE", "full");
 
-    copy_cfg_files_to_output();
-    copy_shader_sources_to_output(); // it crashes and it's useful right now
+    let directories_to_copy = ["cfg\\"];
+
+    for dir in directories_to_copy {
+        copy_files_to_output(dir).expect("failed to copy config files");
+    }
+
+    copy_shader_sources_to_output(); 
 
     println!("cargo::rerun-if-changed=build.rs");
 }
 
-fn copy_cfg_files_to_output() {
+fn copy_files_to_output(dir: &str) -> Result<(), String> {
     let build_profile = env::var("PROFILE").unwrap();
-    let source_dir = Path::new("cfg\\");
+    let source_dir = Path::new(dir);
     let output_path = Path::new(&env::var("CARGO_TARGET_DIR").unwrap_or_else(|_| "target\\".into())).join(&build_profile);
 
-    dir::create_all(&output_path, false).expect("fail to create cfg output dir!");
+    dir::create_all(&output_path, false).map_err(|_| "fail to create output dir")?;
+
+    let target_path = output_path.join(&source_dir);
+    dbg!(&target_path);
+    dir::remove(&target_path).map_err(|_| "Fail to remove output dir")?;
     
     let mut opt = CopyOptions::new();
     opt.overwrite = true;
     opt.copy_inside = true;
 
-    dir::copy(source_dir, &output_path, &opt).expect("failed to copy cfg folder!");
+    dir::copy(source_dir, &output_path, &opt).map_err(|_| "failed to copy folder!")?;
 
     println!("cargo:rerun-if-changed={}", source_dir.display());
-    for file in fs::read_dir(&source_dir).expect("failed to read files in cfg dir!") {
+    for file in fs::read_dir(&source_dir).map_err(|_| "failed to read files in dir")? {
         let file = file.unwrap();
         dbg!(file.path());
         println!("cargo:rerun-if-changed={}", file.path().display());
     }
+
+    Ok(())
 }
 
 fn copy_shader_sources_to_output() {

@@ -1,0 +1,2 @@
+[alias]
+bundle="run --package xtask"
