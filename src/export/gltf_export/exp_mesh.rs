@@ -20,12 +20,13 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
     };
     let _msd_name = ct.bf.file_table[&msd_key].get_name().to_string();
 
-    let mut prims = Vec::new();
-
     //let sub_context = std::mem::take(&mut ct.sub_context);
     // let _colors = sub_context.as_ref().and_then(|sc| {
     //     Some(&sc.vertex_colors)
     // });
+
+    let mut prims = Vec::new();
+    let mut meshes = Vec::new();
 
     for idx in 0..msh.submeshes.len() {
         let submesh = &msh.submeshes[idx];
@@ -67,23 +68,44 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
                         } else { (0, 0.0) }
                     }) 
                 })))
-            }
+            },
+            material: Some(submesh.material_index),
         };
 
         let primitive = write_primitive(ct, build);
 
-        prims.push(primitive);
+        if ct.options.export_submeshes_individually {
+            let mesh = ct.root.push(json::Mesh {
+                extensions: Default::default(),
+                extras: Default::default(),
+                name: Some(format!("{:#010X} {} submesh{}", ct.key, msh_name, idx)),
+                primitives: vec![primitive],
+                weights: None
+            });
+
+            meshes.push(mesh);
+        } else {
+            prims.push(primitive);
+        }
     };
     
-    let mesh = ct.root.push(json::Mesh {
-        extensions: Default::default(),
-        extras: Default::default(),
-        name: Some(format!("{:#010X} {}", ct.key, msh_name)),
-        primitives: prims,
-        weights: None
-    });
+    if ct.options.export_submeshes_individually {
+        for mesh in &meshes {
+            insert_cache!(ct, &ct.key, mesh);
+        }
 
-    insert_cache!(ct, &ct.key, mesh);
+        meshes
+    } else {
+        let mesh = ct.root.push(json::Mesh {
+            extensions: Default::default(),
+            extras: Default::default(),
+            name: Some(format!("{:#010X} {}", ct.key, msh_name)),
+            primitives: prims,
+            weights: None
+        });
 
-    vec![mesh]
+        insert_cache!(ct, &ct.key, mesh);
+
+        vec![mesh]
+    }
 }

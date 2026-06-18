@@ -68,6 +68,7 @@ pub struct GltfExportOptions {
     pub export_key_map                          : bool,
 
     pub way_export_strategy                     : WayExportStrategy,
+    pub export_submeshes_individually           : bool,
 
     pub map_name                                : String,
 }
@@ -88,6 +89,7 @@ impl Default for GltfExportOptions {
             way_export_strategy: WayExportStrategy::None,
             map_name: String::new(),
             export_key_map: false,
+            export_submeshes_individually: false,
         }
     }
 }

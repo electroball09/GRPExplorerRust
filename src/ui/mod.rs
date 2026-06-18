@@ -28,7 +28,6 @@ use self::tools::*;
 pub mod views;
 pub mod editors;
 pub mod tools;
-mod ui; pub use ui::*;
 mod editor_context; pub use editor_context::*;
 
 mod util; pub use util::*;

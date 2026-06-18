@@ -2,6 +2,17 @@ use std::fmt::Display;
 
 use eframe::egui;
 
+pub fn format_bytes_to_hex(bytes: &[u8]) -> String {bytes.chunks(8)
+        .map(|chunk| {
+            chunk.iter()
+                .map(|b| format!("{:02X}", b))
+                .collect::<Vec<String>>()
+                .join(" ")
+        })
+        .collect::<Vec<String>>()
+        .join("\r\n")
+}
+
 pub trait AppUiUtil {
     fn enum_selector<T: strum::IntoEnumIterator + Clone + Display + PartialEq>(&mut self, value: &mut T);
     fn number_field(&mut self, num: &mut f32, storage_string: &mut String);

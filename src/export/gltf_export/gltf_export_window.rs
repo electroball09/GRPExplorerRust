@@ -135,6 +135,7 @@ impl GltfExportWindow {
                             ui.label("Way Export: ");
                             ui.enum_selector(&mut options.way_export_strategy);
                         });
+                        ui.checkbox(&mut options.export_submeshes_individually, "Export Submeshes Individually");
                     });
 
                     ui.separator();

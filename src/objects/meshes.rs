@@ -20,9 +20,8 @@ pub struct SubmeshDescriptor {
     pub vtx_num: u16,
     pub face_start: u16,
     pub face_num: u16,
-    pub unk_03: u16,
-    pub unk_04: u16,
-    pub unk_05: u16,
+    pub unk_dat01: [u8; 5],
+    pub material_index: u8,
     pub bone_palette: Vec<u8>,
 }
 
@@ -38,19 +37,20 @@ impl ArchetypeImpl for MeshMetadata {
 
         cursor.read(&mut self.unk_dat01)?;
         for _ in 0..self.num_submeshes {
-            let mut desc = SubmeshDescriptor {
-                vtx_start: cursor.read_u16::<LittleEndian>()?,
-                vtx_num: cursor.read_u16::<LittleEndian>()?,
-                face_start: cursor.read_u16::<LittleEndian>()?,
-                face_num: cursor.read_u16::<LittleEndian>()?,
-                unk_03: cursor.read_u16::<LittleEndian>()?,
-                unk_04: cursor.read_u16::<LittleEndian>()?,
-                unk_05: cursor.read_u16::<LittleEndian>()?,
-                bone_palette: vec![0; cursor.read_u8()? as usize],
-            };
-            for idx in 0..desc.bone_palette.len() {
-                desc.bone_palette[idx] = cursor.read_u8()?;
-            }
+            let mut desc = SubmeshDescriptor::default();
+
+            desc.vtx_start = cursor.read_u16::<LittleEndian>()?;
+            desc.vtx_num = cursor.read_u16::<LittleEndian>()?;
+            desc.face_start = cursor.read_u16::<LittleEndian>()?;
+            desc.face_num = cursor.read_u16::<LittleEndian>()?;
+
+            cursor.read_exact(&mut desc.unk_dat01)?;
+
+            desc.material_index = cursor.read_u8()?;
+
+            desc.bone_palette = vec![0; cursor.read_u8()? as usize];
+            cursor.read_exact(&mut desc.bone_palette)?;
+            
             self.submeshes.push(desc);
         }
         cursor.read(&mut self.unk_dat02)?;

@@ -14,6 +14,7 @@ pub struct GltfPrimitiveBuild<'a> {
     pub tangents: Option<Box<dyn Iterator<Item = Vec3> + 'a>>,
     pub colors: Option<Box<dyn Iterator<Item = Vec4> + 'a>>,
     pub weights: Option<Box<dyn Iterator<Item = [(u8, f32); 4]> + 'a>>,
+    pub material: Option<u8>,
 }
 
 pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> json::mesh::Primitive {
@@ -394,7 +395,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         extensions: Default::default(),
         extras: Default::default(),
         indices: Some(idx_acc),
-        material: None,
+        material: build.material.map(|idx| json::Index::new(idx as u32)),
         mode: Valid(json::mesh::Mode::Triangles),
         targets: None
     };
