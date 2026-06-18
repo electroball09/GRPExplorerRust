@@ -97,11 +97,12 @@ pub fn gltf_got<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
             for mesh in &meshes {
                 let mesh_idx = mesh.value();
 
-                if !mats.is_empty() {
+                if !ct.meshes_processed.contains(&(mesh.value() as u32)) && !mats.is_empty() {
                     for prim in ct.root.meshes[mesh_idx].primitives.iter_mut(){
                         let mat_idx = prim.material.map_or(0, |index| index.value());
                         prim.material = Some(mats[mat_idx]);
                     }
+                    ct.meshes_processed.insert(mesh.value() as u32);
                 }
 
                 let extras_raw = extras.as_ref().map(|v| serde_json::value::to_raw_value(v).unwrap());

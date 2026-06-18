@@ -4,7 +4,7 @@ use byteorder::WriteBytesExt;
 use enum_as_inner::EnumAsInner;
 use glam::Vec4;
 use gltf_json as json;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::io::Cursor;
 use std::{env, mem};
 use json::validation::USize64;
@@ -149,7 +149,8 @@ struct ExportContext<'a> {
     pub options: GltfExportOptions,
     pub export_subworlds: bool,
     pub sub_context: SubContext,
-    pub export_config: ExportConfig
+    pub export_config: ExportConfig,
+    pub meshes_processed: HashSet<u32>,
 }
 
 #[derive(Default, Debug, Clone)]
@@ -291,6 +292,7 @@ pub fn gltf_export(key: YKey, bf: &Bigfile, options: GltfExportOptions) -> bool 
         export_subworlds: true,
         sub_context: SubContext::default(),
         export_config: load_export_config().expect("fail to load way config!"),
+        meshes_processed: HashSet::new(),
     };
 
     match bf.file_table[&key].object_type {
