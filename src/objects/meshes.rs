@@ -23,7 +23,7 @@ pub struct SubmeshDescriptor {
     pub unk_03: u16,
     pub unk_04: u16,
     pub unk_05: u16,
-    pub unk_vec: Vec<u8>,
+    pub bone_palette: Vec<u8>,
 }
 
 impl ArchetypeImpl for MeshMetadata {
@@ -46,10 +46,10 @@ impl ArchetypeImpl for MeshMetadata {
                 unk_03: cursor.read_u16::<LittleEndian>()?,
                 unk_04: cursor.read_u16::<LittleEndian>()?,
                 unk_05: cursor.read_u16::<LittleEndian>()?,
-                unk_vec: vec![0; cursor.read_u8()? as usize],
+                bone_palette: vec![0; cursor.read_u8()? as usize],
             };
-            for idx in 0..desc.unk_vec.len() {
-                desc.unk_vec[idx] = cursor.read_u8()?;
+            for idx in 0..desc.bone_palette.len() {
+                desc.bone_palette[idx] = cursor.read_u8()?;
             }
             self.submeshes.push(desc);
         }

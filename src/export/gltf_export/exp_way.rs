@@ -102,7 +102,7 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
 
     if ct.options.way_export_strategy.should_export_triangles() {
         primitives.push(write_primitive(ct, GltfPrimitiveBuild {
-            pos_pre_transformed: Box::new(pos.iter().cloned()),
+            pos: Box::new(pos.iter().map(|v| Vec3::new(-v.x, v.z, v.y))),
             indices: Box::new(indices.iter().cloned()),
             uv0: None,
             uv1: None,
@@ -140,7 +140,7 @@ pub fn gltf_way<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Node>> {
         pos.append(&mut top_pos);
 
         primitives.push(write_primitive(ct, GltfPrimitiveBuild {
-            pos_pre_transformed: Box::new(pos.iter().cloned()),
+            pos: Box::new(pos.iter().map(|v| Vec3::new(-v.x, v.z, v.y))),
             indices: Box::new(indices.iter().cloned()),
             uv0: None,
             uv1: None,

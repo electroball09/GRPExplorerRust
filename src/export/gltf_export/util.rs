@@ -5,7 +5,8 @@ use gltf_json::{self as json, validation::Checked};
 use json::validation::Checked::Valid;
 
 pub struct GltfPrimitiveBuild<'a> {
-    pub pos_pre_transformed: Box<dyn Iterator<Item = Vec3> + 'a>, 
+    //pub pos_pre_transformed: Box<dyn Iterator<Item = Vec3> + 'a>, 
+    pub pos: Box<dyn Iterator<Item = Vec3> + 'a>,
     pub indices: Box<dyn Iterator<Item = u32> + 'a>,
     pub uv0: Option<Box<dyn Iterator<Item = Vec2> + 'a>>,
     pub uv1: Option<Box<dyn Iterator<Item = Vec2> + 'a>>,
@@ -29,8 +30,8 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
     let mut min = Vec3::splat(f32::INFINITY);
     let mut max = Vec3::splat(-f32::INFINITY);
     let mut num_vertices: usize = 0;
-    for p in build.pos_pre_transformed {
-        let p = Vec3::new(-p.x, p.z, p.y);
+    for p in build.pos {
+        //let p = Vec3::new(-p.x, p.z, p.y);
 
         min = min.min(p);
         max = max.max(p);
@@ -288,7 +289,7 @@ pub fn write_primitive(ct: &'_ mut ExportContext, build: GltfPrimitiveBuild) -> 
         for weight in weights {
             for i in 0..4 {
                 let value = if weight[i].0 > 0 && weight[i].0 <= num_bones {
-                    weight[i].0 + 1
+                    weight[i].0 //- 1
                 } else { 0 };
                 ct.cursor.write_u8(value).expect("write error");
             }

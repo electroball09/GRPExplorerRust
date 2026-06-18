@@ -1,5 +1,6 @@
 use crate::objects::*;
 use super::*;
+use glam::Vec3;
 use gltf_json as json;
 
 pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
@@ -28,31 +29,44 @@ pub fn gltf_msh<'a>(ct: &'a mut ExportContext) -> Vec<json::Index<json::Mesh>> {
 
     for idx in 0..msh.submeshes.len() {
         let submesh = &msh.submeshes[idx];
+
+        let vertex_range = (submesh.vtx_start as usize)..(submesh.vtx_start as usize + submesh.vtx_num as usize);
+
+        let vertex_start_u32 = submesh.vtx_start as u32;
         
         let build = GltfPrimitiveBuild {
-            pos_pre_transformed: Box::new(msd.vertex_data.pos.iter().cloned()),
-            indices: Box::new(msd.faces[(submesh.face_start / 3) as usize..(submesh.face_start / 3) as usize + submesh.face_num as usize].iter().flat_map(|face| [face.f0, face.f1, face.f2])),
+            //pos_pre_transformed: Box::new(msd.vertex_data.pos.iter().cloned()),
+            pos: Box::new(msd.vertex_data.pos[vertex_range.clone()].iter().map(|v| Vec3::new(-v.x, v.z, v.y))),
+            indices: Box::new(msd.faces[(submesh.face_start / 3) as usize..(submesh.face_start / 3) as usize + submesh.face_num as usize]
+                .iter().flat_map(|face| [face.f0 - vertex_start_u32, face.f1 - vertex_start_u32, face.f2 - vertex_start_u32])),
             uv0: match msd.vertex_data.uv0.len() {
                 0 => None,
-                _ => Some(Box::new(msd.vertex_data.uv0.iter().cloned()))
+                _ => Some(Box::new(msd.vertex_data.uv0[vertex_range.clone()].iter().cloned()))
             },
             uv1: match msd.vertex_data.uv1.len() {
                 0 => None,
-                _ => Some(Box::new(msd.vertex_data.uv1.iter().cloned()))
+                _ => Some(Box::new(msd.vertex_data.uv1[vertex_range.clone()].iter().cloned()))
             },
             tangents: match msd.vertex_data.tangents.len() {
                 0 => None,
-                _ => Some(Box::new(msd.vertex_data.tangents.iter().cloned()))
+                _ => Some(Box::new(msd.vertex_data.tangents[vertex_range.clone()].iter().cloned()))
             },
             normals: match msd.vertex_data.normals.len() {
                 0 => None,
-                _ => Some(Box::new(msd.vertex_data.normals.iter().cloned()))
+                _ => Some(Box::new(msd.vertex_data.normals[vertex_range.clone()].iter().cloned()))
             },
             // never got vertex colors to work
             colors:None, // colors.map(|v| &**v)
             weights: match msd.vertex_data.weights.len() {
                 0 => None,
-                _ => Some(Box::new(msd.vertex_data.weights.iter().map(|weights| weights.map(|w| (w.bone, w.weight)))))
+                _ => Some(Box::new(msd.vertex_data.weights[vertex_range.clone()].iter().map(|weights| { 
+                    weights.map(|w| {
+                        // if the weight is zero we shouldn't try to index into bone palette
+                        if submesh.bone_palette.len() > 0 && w.weight > 0.0 {
+                            (submesh.bone_palette[w.bone as usize], w.weight)
+                        } else { (0, 0.0) }
+                    }) 
+                })))
             }
         };
 

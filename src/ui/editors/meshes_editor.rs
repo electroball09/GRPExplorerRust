@@ -1,3 +1,5 @@
+use log::info;
+
 use super::*;
 use crate::objects::ObjectArchetype;
 use crate::export::*;
@@ -6,11 +8,11 @@ pub struct MeshMetadataEditor;
 
 impl EditorImpl for MeshMetadataEditor {
     fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
-        let msd = if ui.button("Export to .glb").clicked() {
+        let msd = if ectx.bf.object_table.get(&key).unwrap().references.len() > 0 {
             Some(ectx.bf.object_table.get(&key).unwrap().references[0])
-        } else {
-            None
-        };
+        } else { None };
+
+        let do_export = ui.button("Export to .glb").clicked();
 
         if let ObjectArchetype::MeshMetadata(ref msh) = &ectx.bf.object_table.get(&key).unwrap().archetype {
             ui.label(format!("num submeshes: {}", msh.num_submeshes));
@@ -29,18 +31,45 @@ impl EditorImpl for MeshMetadataEditor {
                     ui.label(format!("unk_03: {0} {0:#06X}", sb.unk_03));
                     ui.label(format!("unk_04: {0} {0:#06X}", sb.unk_04));
                     ui.label(format!("unk_05: {0} {0:#06X}", sb.unk_05));
-                    ui.label(format!("unk_vec {}: {}", sb.unk_vec.len(), sb.unk_vec.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
+                    ui.label(format!("unk_vec {}: {}", sb.bone_palette.len(), sb.bone_palette.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
                 });
+            }
+
+            if let Some(msd_key) = msd {
+                if ui.button("Test bone palette theory").clicked() {
+                    if let ObjectArchetype::MeshData(ref msd) = &ectx.bf.object_table.get(&msd_key).unwrap().archetype {
+                        let mut passed = true;
+                        for idx in 0..msh.submeshes.len() {
+                            let submesh = &msh.submeshes[idx];
+                            for vertex_index in submesh.vtx_start..(submesh.vtx_start + submesh.vtx_num) {
+                                let weights = &msd.vertex_data.weights[vertex_index as usize];
+                                for weight in weights {
+                                    if weight.weight > 0.0 {
+                                        let valid_bone = (weight.bone as usize) < submesh.bone_palette.len();
+                                        if !valid_bone {
+                                            info!("submesh {} vertex {} has invalid bone index {} (palette len: {})", idx, vertex_index, weight.bone, submesh.bone_palette.len());
+                                            passed = false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        info!("test passed: {}", passed);
+                    }
+                }
             }
         }
 
-        if let Some(_msd) = msd {
+        if do_export {
             ectx.respond(EditorResponse::GltfExport(key));
         }
     }
 }
 
-pub struct MeshDataEditor;
+#[derive(Default, Debug)]
+pub struct MeshDataEditor {
+    show_vertices: bool,
+}
 
 impl EditorImpl for MeshDataEditor {
     fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, _tctx: &EditorTabContext) {
@@ -64,25 +93,29 @@ impl EditorImpl for MeshDataEditor {
                 }
             }
 
-            egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
-                for v in 0..msd.num_vertices as usize {
-                    ui.collapsing(format!("vertex {}", v), |ui| {
-                        let str = msd.vertex_data.bufs[v].chunks_exact(8).map(|c| format!("{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7])).collect::<Vec<String>>().join("\r\n");
-                        ui.label(str);
-                        ui.label(format!("pos: {}", msd.vertex_data.pos[v]));
-                        ui.label(format!("uv0: {}", msd.vertex_data.uv0[v]));
-                        ui.label(format!("uv1: {}", msd.vertex_data.uv1[v]));
-                        ui.label(format!("tan: {}", msd.vertex_data.tangents[v]));
-                        ui.label(format!("nrm: {}", msd.vertex_data.normals[v]));
-                        
-                        ui.label("bones: ");
-                        let bone = &msd.vertex_data.weights[v];
-                        for b in 0..bone.len() {
-                            ui.label(format!("  bone{}: {:?}", &b, bone[b]));
-                        };
-                    });
-                }
-            });
+            ui.checkbox(&mut self.show_vertices, "show vertices");
+
+            if self.show_vertices {
+                egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
+                    for v in 0..msd.num_vertices as usize {
+                        ui.collapsing(format!("vertex {}", v), |ui| {
+                            let str = msd.vertex_data.bufs[v].chunks_exact(8).map(|c| format!("{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7])).collect::<Vec<String>>().join("\r\n");
+                            ui.label(str);
+                            ui.label(format!("pos: {}", msd.vertex_data.pos[v]));
+                            ui.label(format!("uv0: {}", msd.vertex_data.uv0[v]));
+                            ui.label(format!("uv1: {}", msd.vertex_data.uv1[v]));
+                            ui.label(format!("tan: {}", msd.vertex_data.tangents[v]));
+                            ui.label(format!("nrm: {}", msd.vertex_data.normals[v]));
+                            
+                            ui.label("bones: ");
+                            let bone = &msd.vertex_data.weights[v];
+                            for b in 0..bone.len() {
+                                ui.label(format!("  bone{}: {:?}", &b, bone[b]));
+                            };
+                        });
+                    }
+                });
+            }
         }
     }
 }
