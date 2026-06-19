@@ -1,4 +1,4 @@
-use std::fs::{File, canonicalize};
+use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use zip::write::SimpleFileOptions;

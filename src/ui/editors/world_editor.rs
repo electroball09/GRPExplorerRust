@@ -14,7 +14,8 @@ impl EditorImpl for WorldEditor {
             let mut mat_map = HashMap::new();
             for mat in tctx.load_set.loaded_by_type(ObjectType::mat).unwrap() {
                 let shd_key = ectx.bf.object_table[mat].references.last().unwrap();
-                mat_map.entry(*shd_key).or_insert(vec![*mat]).push(*mat);
+                let list = mat_map.entry(*shd_key).or_insert(vec![]);
+                if !list.contains(mat) { list.push(*mat); };
             }
             self.display_order = mat_map.keys().map(|b| *b).collect::<Vec<YKey>>();
             self.display_order.sort_by(|a, b| {

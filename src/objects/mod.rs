@@ -23,6 +23,7 @@ mod vxc;         pub use vxc::*;
 mod vxt;         pub use vxt::*;
 mod world;       pub use world::*;
 mod collision;   pub use collision::*;
+mod anim_other;  pub use anim_other::*;
 
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -79,7 +80,11 @@ pub enum ObjectArchetype {
     GraphicObjectTable(GraphicObjectTable),
     World(World),
     CollisionObject(CollisionObject),
-    CollisionObjectTable(CollisionObjectTable)
+    CollisionObjectTable(CollisionObjectTable),
+    AnimEvent(AnimEventContainer),
+    ListActionBank(ListActionBank),
+    ActionBank(ActionBank),
+    Action(Action),
 }
 
 impl ObjectArchetype {
@@ -112,6 +117,10 @@ impl ObjectArchetype {
             Self::World                 (ref mut arch) => Some(arch),
             Self::CollisionObject       (ref mut arch) => Some(arch),
             Self::CollisionObjectTable  (ref mut arch) => Some(arch),
+            Self::AnimEvent             (ref mut arch) => Some(arch),
+            Self::ListActionBank        (ref mut arch) => Some(arch),
+            Self::ActionBank            (ref mut arch) => Some(arch),
+            Self::Action                (ref mut arch) => Some(arch),
             Self::NoImpl => None
         };
 
@@ -171,6 +180,10 @@ impl YetiObject {
             ObjectType::wor => ObjectArchetype::World(World::default()),
             ObjectType::col => ObjectArchetype::CollisionObject(CollisionObject::default()),
             ObjectType::cot => ObjectArchetype::CollisionObjectTable(Default::default()),
+            ObjectType::aev => ObjectArchetype::AnimEvent(AnimEventContainer::default()),
+            ObjectType::lab => ObjectArchetype::ListActionBank(ListActionBank::default()),
+            ObjectType::acb => ObjectArchetype::ActionBank(ActionBank::default()),
+            ObjectType::act => ObjectArchetype::Action(Action::default()),
             _ => ObjectArchetype::NoImpl
         }
     }
