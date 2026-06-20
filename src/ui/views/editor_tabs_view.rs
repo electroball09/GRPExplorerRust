@@ -133,16 +133,16 @@ impl FileEditorTabs {
                     let open_tab_key = self.open_tab.expect("we have tabs, but none are open???");
                     let rsp = match tab.key == open_tab_key {
                         true => {
-                            ui.selectable_label(true, &tab.name)
+                            ui.selectable_label(true, &tab.name).on_hover_text("Middle click to close")
                         },
                         false => {
-                            ui.selectable_label(false, &tab.name)
+                            ui.selectable_label(false, &tab.name).on_hover_text("Middle click to close")
                         }
                     };
                     if rsp.clicked() {
                         new_open_tab = Some(tab.key);
                     }
-                    if rsp.middle_clicked() || ui.selectable_label(false, "x").clicked() {
+                    if rsp.middle_clicked() /*|| ui.selectable_label(false, "x").clicked()*/ {
                         ectx.respond(EditorResponse::CloseTab(tab.key));
                     }
                     ui.separator();

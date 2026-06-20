@@ -2,7 +2,8 @@ use std::fmt::Display;
 
 use eframe::egui;
 
-pub fn format_bytes_to_hex(bytes: &[u8]) -> String {bytes.chunks(8)
+pub fn format_bytes_to_hex_wrapped(bytes: &[u8]) -> String {
+    bytes.chunks(8)
         .map(|chunk| {
             chunk.iter()
                 .map(|b| format!("{:02X}", b))
@@ -11,6 +12,10 @@ pub fn format_bytes_to_hex(bytes: &[u8]) -> String {bytes.chunks(8)
         })
         .collect::<Vec<String>>()
         .join("\r\n")
+}
+
+pub fn format_bytes_to_hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")
 }
 
 pub trait AppUiUtil {

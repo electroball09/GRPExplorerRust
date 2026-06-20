@@ -3,7 +3,7 @@ use log::info;
 use super::*;
 use crate::objects::ObjectArchetype;
 use crate::export::*;
-use crate::ui::format_bytes_to_hex;
+use crate::ui::util::format_bytes_to_hex_wrapped;
 
 pub struct MeshMetadataEditor;
 
@@ -29,7 +29,7 @@ impl EditorImpl for MeshMetadataEditor {
                     ui.label(format!("face_start: {0} {0:#06X}", sb.face_start));
                     ui.label(format!("face_num: {0} {0:#06X}", sb.face_num));
                     ui.label(format!("  -calc face end: {}", sb.face_start + sb.face_num * 3));
-                    ui.label(format_bytes_to_hex(&sb.unk_dat01));
+                    ui.label(format_bytes_to_hex_wrapped(&sb.unk_dat01));
                     ui.label(format!("unk_vec {}: {}", sb.bone_palette.len(), sb.bone_palette.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
                 });
             }
@@ -98,7 +98,7 @@ impl EditorImpl for MeshDataEditor {
                 egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
                     for v in 0..msd.num_vertices as usize {
                         ui.collapsing(format!("vertex {}", v), |ui| {
-                            ui.label(format_bytes_to_hex(&msd.vertex_data.bufs[v]));
+                            ui.label(format_bytes_to_hex_wrapped(&msd.vertex_data.bufs[v]));
                             ui.label(format!("pos: {}", msd.vertex_data.pos[v]));
                             ui.label(format!("uv0: {}", msd.vertex_data.uv0[v]));
                             ui.label(format!("uv1: {}", msd.vertex_data.uv1[v]));

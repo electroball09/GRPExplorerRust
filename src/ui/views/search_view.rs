@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use strum::{EnumString, AsRefStr};
 use crate::metadata::YKey;
-use crate::ui::AppUiUtil;
+use crate::ui::util::AppUiUtil;
 use crate::{bigfile::Bigfile, ui::AppContext};
 use crate::egui as egui;
 

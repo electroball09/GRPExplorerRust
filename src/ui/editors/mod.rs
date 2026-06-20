@@ -20,6 +20,7 @@ mod vxc_editor; use vxc_editor::*;
 mod world_editor; use world_editor::*;
 mod collision_editor; use collision_editor::*;
 mod anim_other_editor; use anim_other_editor::*;
+mod way_editor; use way_editor::*;
 
 pub use crate::egui as egui;
 
@@ -63,6 +64,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::lab => Box::new(ListActionBankEditor { }),
         ObjectType::acb => Box::new(ActionBankEditor { }),
         ObjectType::act => Box::new(ActionEditor { }),
+        ObjectType::way => Box::new(WayEditor { }),
         _               => Box::new(BlankEditor { }),
     }
 }

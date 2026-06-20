@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::{io::Read, path::PathBuf};
 use std::fs::File;
-use crate::ui::{AppUiUtil};
+use crate::ui::util::AppUiUtil;
 use crate::{egui as egui, ui::tools::{ExplorerToolId, Tool}};
 use crate::util::twofish::*;
 use rfd::FileDialog;

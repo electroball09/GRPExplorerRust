@@ -30,7 +30,7 @@ pub mod editors;
 pub mod tools;
 mod editor_context; pub use editor_context::*;
 
-mod util; pub use util::*;
+pub mod util;
 
 pub struct AppContext<'a> {
     pub bigfile: Option<&'a mut Bigfile>,

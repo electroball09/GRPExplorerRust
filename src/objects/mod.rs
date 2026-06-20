@@ -24,10 +24,11 @@ mod vxt;         pub use vxt::*;
 mod world;       pub use world::*;
 mod collision;   pub use collision::*;
 mod anim_other;  pub use anim_other::*;
+mod way;         pub use way::*;
 
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::{bigfile::metadata::{FileEntry, ObjectType}, metadata::YKey, YetiIOError};
+use crate::{YetiIOError, bigfile::metadata::{FileEntry, ObjectType}, metadata::YKey, objects::ObjectArchetype::Way};
 
 pub struct YetiObject {
     load_refs: u32,
@@ -85,6 +86,7 @@ pub enum ObjectArchetype {
     ListActionBank(ListActionBank),
     ActionBank(ActionBank),
     Action(Action),
+    Way(way::Way),
 }
 
 impl ObjectArchetype {
@@ -121,6 +123,7 @@ impl ObjectArchetype {
             Self::ListActionBank        (ref mut arch) => Some(arch),
             Self::ActionBank            (ref mut arch) => Some(arch),
             Self::Action                (ref mut arch) => Some(arch),
+            Self::Way                   (ref mut arch) => Some(arch),
             Self::NoImpl => None
         };
 
@@ -184,6 +187,7 @@ impl YetiObject {
             ObjectType::lab => ObjectArchetype::ListActionBank(ListActionBank::default()),
             ObjectType::acb => ObjectArchetype::ActionBank(ActionBank::default()),
             ObjectType::act => ObjectArchetype::Action(Action::default()),
+            ObjectType::way => ObjectArchetype::Way(way::Way::default()),
             _ => ObjectArchetype::NoImpl
         }
     }

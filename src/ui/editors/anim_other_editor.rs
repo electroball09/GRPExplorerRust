@@ -1,4 +1,4 @@
-use crate::{objects::{ActionType, AnimEventData}, ui::{editors::EditorImpl, format_bytes_to_hex}};
+use crate::{objects::{ActionType, AnimEventData}, ui::{editors::EditorImpl, util::format_bytes_to_hex_wrapped}};
 use super::*;
 
 
@@ -16,9 +16,9 @@ impl EditorImpl for AnimEventEditor {
                 ui.label(format!("flags {:08b}", event.flags));
                 ui.label(match &event.data {
                     AnimEventData::None => String::from("None"),
-                    AnimEventData::Type01(buf) => format_bytes_to_hex(buf),
-                    AnimEventData::Type02(buf) => format_bytes_to_hex(buf),
-                    AnimEventData::Type03(buf) => format_bytes_to_hex(buf)
+                    AnimEventData::Type01(buf) => format_bytes_to_hex_wrapped(buf),
+                    AnimEventData::Type02(buf) => format_bytes_to_hex_wrapped(buf),
+                    AnimEventData::Type03(buf) => format_bytes_to_hex_wrapped(buf)
                 })
             });
         }
@@ -43,7 +43,7 @@ impl EditorImpl for ActionBankEditor {
         let ObjectArchetype::ActionBank(acb) = &ectx.bf.object_table.get(&key).unwrap().archetype else { return; };
 
         ui.label(format!("version: {}", acb.version));
-        ui.label(format_bytes_to_hex(&acb.unk_dat01));
+        ui.label(format_bytes_to_hex_wrapped(&acb.unk_dat01));
     }
 }
 
