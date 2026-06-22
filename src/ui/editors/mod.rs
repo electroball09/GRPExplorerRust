@@ -65,6 +65,7 @@ pub fn create_editor_for_type(obj_type: &ObjectType) -> Box<dyn EditorImpl> {
         ObjectType::acb => Box::new(ActionBankEditor { }),
         ObjectType::act => Box::new(ActionEditor { }),
         ObjectType::way => Box::new(WayEditor { }),
+        ObjectType::rsf => Box::new(RsfEditor::default()),
         _               => Box::new(BlankEditor { }),
     }
 }

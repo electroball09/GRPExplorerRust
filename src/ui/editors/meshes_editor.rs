@@ -30,7 +30,8 @@ impl EditorImpl for MeshMetadataEditor {
                     ui.label(format!("face_num: {0} {0:#06X}", sb.face_num));
                     ui.label(format!("  -calc face end: {}", sb.face_start + sb.face_num * 3));
                     ui.label(format_bytes_to_hex_wrapped(&sb.unk_dat01));
-                    ui.label(format!("unk_vec {}: {}", sb.bone_palette.len(), sb.bone_palette.iter().map(|b| format!("{:02X}", b)).collect::<Vec<String>>().join(" ")));
+                    ui.label(format!("material index: {}", sb.material_index));
+                    ui.label(format!("bone palette {}: {}", sb.bone_palette.len(), format_bytes_to_hex_wrapped(&sb.bone_palette)));
                 });
             }
 

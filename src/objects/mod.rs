@@ -28,7 +28,7 @@ mod way;         pub use way::*;
 
 use std::io::Cursor;
 use byteorder::{LittleEndian, ReadBytesExt};
-use crate::{YetiIOError, bigfile::metadata::{FileEntry, ObjectType}, metadata::YKey, objects::ObjectArchetype::Way};
+use crate::{YetiIOError, bigfile::metadata::{FileEntry, ObjectType}, metadata::YKey};
 
 pub struct YetiObject {
     load_refs: u32,
@@ -86,7 +86,8 @@ pub enum ObjectArchetype {
     ListActionBank(ListActionBank),
     ActionBank(ActionBank),
     Action(Action),
-    Way(way::Way),
+    Way(Way),
+    Rsf(Rsf),
 }
 
 impl ObjectArchetype {
@@ -124,6 +125,7 @@ impl ObjectArchetype {
             Self::ActionBank            (ref mut arch) => Some(arch),
             Self::Action                (ref mut arch) => Some(arch),
             Self::Way                   (ref mut arch) => Some(arch),
+            Self::Rsf                   (ref mut arch) => Some(arch),
             Self::NoImpl => None
         };
 
@@ -187,7 +189,8 @@ impl YetiObject {
             ObjectType::lab => ObjectArchetype::ListActionBank(ListActionBank::default()),
             ObjectType::acb => ObjectArchetype::ActionBank(ActionBank::default()),
             ObjectType::act => ObjectArchetype::Action(Action::default()),
-            ObjectType::way => ObjectArchetype::Way(way::Way::default()),
+            ObjectType::way => ObjectArchetype::Way(Way::default()),
+            ObjectType::rsf => ObjectArchetype::Rsf(Rsf::default()),
             _ => ObjectArchetype::NoImpl
         }
     }

@@ -47,3 +47,20 @@ impl EditorImpl for WorldEditor {
         });
     }
 }
+
+#[derive(Default)]
+pub struct RsfEditor;
+
+impl EditorImpl for RsfEditor {
+    fn draw(&mut self, key: YKey, ui: &mut egui::Ui, ectx: &mut EditorContext, tctx: &EditorTabContext) {
+        let ObjectArchetype::Rsf(rsf) = &ectx.bf.object_table.get(&key).unwrap().archetype else { return; };
+
+        ui.label(format!("num entries: {}", rsf.entries.len()));
+
+        egui::ScrollArea::vertical().auto_shrink(false).show(ui, |ui| {
+            for (idx, entry) in rsf.entries.iter().enumerate() {
+                ui.label(format!("{}: {}", idx, &entry.data));
+            }
+        });
+    }
+}
